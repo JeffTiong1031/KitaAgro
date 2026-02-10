@@ -1,0 +1,50 @@
+import 'package:flutter/material.dart';
+import '../../main_layout'; // This links to your main dashboard
+
+class LoginScreen extends StatelessWidget {
+  const LoginScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(30.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.agriculture, size: 80, color: Colors.green),
+              const SizedBox(height: 20),
+              const Text(
+                "Kita Agro",
+                style: TextStyle(
+                  fontSize: 32, 
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green
+                ),
+              ),
+              const SizedBox(height: 50),
+              ElevatedButton.icon(
+                onPressed: () {
+                  // Navigate to the dashboard
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => MainLayout()),
+                  );
+                },
+                icon: const Icon(Icons.login),
+                label: const Text("Login to Trial Run"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

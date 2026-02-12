@@ -1,0 +1,115 @@
+import 'package:flutter/material.dart';
+import 'package:kita_agro/features/Farmer/grant/grant_intro_screen.dart';
+import 'package:kita_agro/features/Farmer/Rental/rental_screen.dart';
+import 'package:kita_agro/features/Farmer/marketplace_screen.dart';
+import 'package:kita_agro/features/Farmer/pest_distribution_map_screen.dart';
+
+class FarmerScreen extends StatelessWidget {
+  const FarmerScreen({super.key});
+
+  void _navigateTo(BuildContext context, Widget screen) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Farmer Hub')),
+      body: GridView.count(
+        crossAxisCount: 2,
+        padding: const EdgeInsets.all(12),
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        children: [
+          _buildFunctionCard(
+            context,
+            icon: Icons.school,
+            title: 'Agropreneur\nGuideline',
+            color: Colors.blue,
+            onTap: () => _navigateTo(
+              context,
+              const GrantIntroScreen(),
+            ),
+          ),
+          _buildFunctionCard(
+            context,
+            icon: Icons.agriculture,
+            title: 'Farm Land\nRental',
+            color: Colors.green,
+            onTap: () => _navigateTo(
+              context,
+              const RentalScreen(),
+            ),
+          ),
+          _buildFunctionCard(
+            context,
+            icon: Icons.shopping_bag,
+            title: 'Marketplace &\nMap',
+            color: Colors.orange,
+            onTap: () => _navigateTo(
+              context,
+              const MarketplaceScreen(),
+            ),
+          ),
+          _buildFunctionCard(
+            context,
+            icon: Icons.bug_report,
+            title: 'Pest\nDistribution',
+            color: Colors.red,
+            onTap: () => _navigateTo(
+              context,
+              const PestDistributionMapScreen(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFunctionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: [color.withOpacity(0.7), color.withOpacity(0.3)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 48, color: color),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

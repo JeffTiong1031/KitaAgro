@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kita_agro/features/Farmer/agropreneur_guideline_screen';
+import 'package:kita_agro/features/Farmer/grant/grant_intro_screen.dart';
 import 'package:kita_agro/features/Farmer/Rental/rental_screen';
 import 'package:kita_agro/features/Farmer/marketplace_screen';
 import 'package:kita_agro/features/Farmer/pest_distribution_map_screen';
@@ -31,7 +31,7 @@ class FarmerScreen extends StatelessWidget {
             color: Colors.blue,
             onTap: () => _navigateTo(
               context,
-              const AgropreneurGuidelineScreen(),
+              const GrantIntroScreen(),
             ),
           ),
           _buildFunctionCard(
@@ -76,13 +76,14 @@ class FarmerScreen extends StatelessWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),

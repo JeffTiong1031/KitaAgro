@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kita_agro/features/Farmer/grant/grant_intro_screen.dart';
-import 'package:kita_agro/features/Farmer/Rental/rental_screen.dart';
+import 'package:kita_agro/features/Farmer/Rental/land_listing_screen.dart';
 import 'package:kita_agro/features/Farmer/marketplace_screen.dart';
 import 'package:kita_agro/features/Farmer/pest_distribution_map_screen.dart';
 
@@ -41,7 +41,7 @@ class FarmerScreen extends StatelessWidget {
             color: Colors.green,
             onTap: () => _navigateTo(
               context,
-              const RentalScreen(),
+              const LandListingScreen(),
             ),
           ),
           _buildFunctionCard(

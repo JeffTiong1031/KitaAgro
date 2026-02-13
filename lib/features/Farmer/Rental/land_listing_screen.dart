@@ -1,6 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'land_model.dart';
-import 'land_service.dart';
 
 class LandListingScreen extends StatefulWidget {
   const LandListingScreen({super.key});
@@ -10,107 +10,34 @@ class LandListingScreen extends StatefulWidget {
 }
 
 class _LandListingScreenState extends State<LandListingScreen> {
-  final LandService _landService = LandService();
-  List<Land> _allLands = [];
-  List<Land> _filteredLands = [];
+  static const String _allStatesLabel = 'All States';
+  static const String _anyPriceLabel = 'Any Price';
+  static const String _allSizeLabel = 'All';
+  static const List<String> _priceOptions = [
+    _anyPriceLabel,
+    'Budget (< RM 1,000)',
+    'Standard (RM 1,000 - 3,000)',
+    'Premium (> RM 3,000)',
+  ];
+  static const List<String> _sizeOptions = [
+    _allSizeLabel,
+    'Small (< 1 Acre)',
+    'Medium (1-5 Acres)',
+    'Large (> 5 Acres)',
+  ];
 
-  // Filter states
+  final Stream<QuerySnapshot<Map<String, dynamic>>> _landsStream =
+      FirebaseFirestore.instance.collection('lands').snapshots();
+
   String _searchText = '';
-  String _selectedState = 'All States';
-  String _selectedPrice = 'Any Price';
-  String _selectedSize = 'All';
-
-  List<String> _states = ['All States'];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadLands();
-  }
-
-  /// Load lands from Google Sheets
-  Future<void> _loadLands() async {
-    try {
-      final lands = await _landService.fetchLands();
-      setState(() {
-        _allLands = lands;
-        _extractStates();
-        _applyFilters();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading lands: $e')),
-        );
-      }
-    }
-  }
-
-  /// Extract unique states from lands data
-  void _extractStates() {
-    final states = _allLands.map((land) => land.state).toSet().toList();
-    states.sort();
-    _states = ['All States', ...states];
-  }
-
-  /// Apply all filters: search + state + price + size
-  void _applyFilters() {
-    _filteredLands = _allLands.where((land) {
-      // Search filter (title OR location)
-      final searchMatch = _searchText.isEmpty ||
-          land.title.toLowerCase().contains(_searchText.toLowerCase()) ||
-          land.location.toLowerCase().contains(_searchText.toLowerCase());
-
-      // State filter
-      final stateMatch =
-          _selectedState == 'All States' || land.state == _selectedState;
-
-      // Price filter
-      bool priceMatch = true;
-      switch (_selectedPrice) {
-        case 'Budget (< RM 1,000)':
-          priceMatch = land.price < 1000;
-          break;
-        case 'Standard (RM 1,000 - 3,000)':
-          priceMatch = land.price >= 1000 && land.price <= 3000;
-          break;
-        case 'Premium (> RM 3,000)':
-          priceMatch = land.price > 3000;
-          break;
-        default:
-          priceMatch = true;
-      }
-
-      // Size filter
-      bool sizeMatch = true;
-      switch (_selectedSize) {
-        case 'Small (< 1 Acre)':
-          sizeMatch = land.sizeValue < 1;
-          break;
-        case 'Medium (1-5 Acres)':
-          sizeMatch = land.sizeValue >= 1 && land.sizeValue <= 5;
-          break;
-        case 'Large (> 5 Acres)':
-          sizeMatch = land.sizeValue > 5;
-          break;
-        default:
-          sizeMatch = true;
-      }
-
-      return searchMatch && stateMatch && priceMatch && sizeMatch;
-    }).toList();
-  }
+  String _selectedState = _allStatesLabel;
+  String _selectedPrice = _anyPriceLabel;
+  String _selectedSize = _allSizeLabel;
 
   /// Handle search text changes
   void _onSearchChanged(String value) {
     setState(() {
       _searchText = value;
-      _applyFilters();
     });
   }
 
@@ -119,7 +46,6 @@ class _LandListingScreenState extends State<LandListingScreen> {
     if (value != null) {
       setState(() {
         _selectedState = value;
-        _applyFilters();
       });
     }
   }
@@ -129,7 +55,6 @@ class _LandListingScreenState extends State<LandListingScreen> {
     if (value != null) {
       setState(() {
         _selectedPrice = value;
-        _applyFilters();
       });
     }
   }
@@ -138,7 +63,6 @@ class _LandListingScreenState extends State<LandListingScreen> {
   void _onSizeSelected(String size) {
     setState(() {
       _selectedSize = size;
-      _applyFilters();
     });
   }
 
@@ -188,139 +112,222 @@ class _LandListingScreenState extends State<LandListingScreen> {
         title: const Text('Farm Land Rental'),
         elevation: 0,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Search Bar
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: TextField(
-                    onChanged: _onSearchChanged,
-                    decoration: InputDecoration(
-                      hintText: 'Search by title or location...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: _landsStream,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Unable to load land listings right now.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(color: Colors.grey[600]),
+              ),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final docs = snapshot.data?.docs ?? <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+          final lands = docs.map(Land.fromFirestore).toList();
+          final stateOptions = _buildStateOptions(lands);
+          final filteredLands = _filterLands(lands);
+
+          final currentStateValue = stateOptions.contains(_selectedState)
+              ? _selectedState
+              : _allStatesLabel;
+
+          if (currentStateValue != _selectedState) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) {
+                return;
+              }
+              setState(() {
+                _selectedState = currentStateValue;
+              });
+            });
+          }
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: TextField(
+                  onChanged: _onSearchChanged,
+                  decoration: InputDecoration(
+                    hintText: 'Search by title or location...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
                   ),
                 ),
-
-                // Filters Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // State and Price Dropdowns
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButton<String>(
-                              value: _selectedState,
-                              isExpanded: true,
-                              onChanged: _onStateChanged,
-                              items: _states.map((state) {
-                                return DropdownMenuItem(
-                                  value: state,
-                                  child: Text(state),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: DropdownButton<String>(
-                              value: _selectedPrice,
-                              isExpanded: true,
-                              onChanged: _onPriceChanged,
-                              items: [
-                                'Any Price',
-                                'Budget (< RM 1,000)',
-                                'Standard (RM 1,000 - 3,000)',
-                                'Premium (> RM 3,000)',
-                              ]
-                                  .map((price) {
-                                    return DropdownMenuItem(
-                                      value: price,
-                                      child: Text(price),
-                                    );
-                                  })
-                                  .toList(),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Size Chips
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            'All',
-                            'Small (< 1 Acre)',
-                            'Medium (1-5 Acres)',
-                            'Large (> 5 Acres)',
-                          ]
-                              .map((size) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 8.0),
-                                  child: ChoiceChip(
-                                    label: Text(size),
-                                    selected: _selectedSize == size,
-                                    onSelected: (_) => _onSizeSelected(size),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButton<String>(
+                            value: currentStateValue,
+                            isExpanded: true,
+                            onChanged: _onStateChanged,
+                            items: stateOptions
+                                .map(
+                                  (state) => DropdownMenuItem(
+                                    value: state,
+                                    child: Text(state),
                                   ),
-                                );
-                              })
-                              .toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Land List
-                Expanded(
-                  child: _filteredLands.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.search_off,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No lands found',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(color: Colors.grey[600]),
-                              ),
-                            ],
+                                )
+                                .toList(),
                           ),
-                        )
-                      : ListView.builder(
-                          itemCount: _filteredLands.length,
-                          itemBuilder: (ctx, index) {
-                            final land = _filteredLands[index];
-                            return _buildLandCard(land);
-                          },
                         ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButton<String>(
+                            value: _selectedPrice,
+                            isExpanded: true,
+                            onChanged: _onPriceChanged,
+                            items: _priceOptions
+                                .map(
+                                  (price) => DropdownMenuItem(
+                                    value: price,
+                                    child: Text(price),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _sizeOptions
+                            .map(
+                              (size) => Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: ChoiceChip(
+                                  label: Text(size),
+                                  selected: _selectedSize == size,
+                                  onSelected: (_) => _onSizeSelected(size),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: filteredLands.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No lands found',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: filteredLands.length,
+                        itemBuilder: (ctx, index) {
+                          final land = filteredLands[index];
+                          return _buildLandCard(land);
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  List<Land> _filterLands(List<Land> lands) {
+    return lands.where((land) {
+      final searchable = '${land.title} ${land.location}'.toLowerCase();
+      final searchMatch =
+          _searchText.isEmpty || searchable.contains(_searchText.toLowerCase());
+
+      final stateMatch =
+          _selectedState == _allStatesLabel || land.state == _selectedState;
+
+      bool priceMatch;
+      switch (_selectedPrice) {
+        case 'Budget (< RM 1,000)':
+          priceMatch = land.price < 1000;
+          break;
+        case 'Standard (RM 1,000 - 3,000)':
+          priceMatch = land.price >= 1000 && land.price <= 3000;
+          break;
+        case 'Premium (> RM 3,000)':
+          priceMatch = land.price > 3000;
+          break;
+        default:
+          priceMatch = true;
+      }
+
+      bool sizeMatch;
+      switch (_selectedSize) {
+        case 'Small (< 1 Acre)':
+          sizeMatch = land.sizeValue < 1;
+          break;
+        case 'Medium (1-5 Acres)':
+          sizeMatch = land.sizeValue >= 1 && land.sizeValue <= 5;
+          break;
+        case 'Large (> 5 Acres)':
+          sizeMatch = land.sizeValue > 5;
+          break;
+        default:
+          sizeMatch = true;
+      }
+
+      return searchMatch && stateMatch && priceMatch && sizeMatch;
+    }).toList();
+  }
+
+  List<String> _buildStateOptions(List<Land> lands) {
+    final stateSet = <String>{};
+    for (final land in lands) {
+      if (land.state.isNotEmpty) {
+        stateSet.add(land.state);
+      }
+    }
+    final sortedStates = stateSet.toList()..sort();
+    return [_allStatesLabel, ...sortedStates];
+  }
+
+  String _formatPrice(double price) {
+    final rounded = price.toStringAsFixed(0);
+    return rounded.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => ',',
     );
   }
 
@@ -406,7 +413,7 @@ class _LandListingScreenState extends State<LandListingScreen> {
                   children: [
                     // Price
                     Text(
-                      'RM ${land.price.toStringAsFixed(0)} /mo',
+                      'RM ${_formatPrice(land.price)} /mo',
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,

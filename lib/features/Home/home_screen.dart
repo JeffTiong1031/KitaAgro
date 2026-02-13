@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:kita_agro/features/Home/Planting/planting_screen.dart';
 import 'package:kita_agro/features/Home/community/community_screen.dart';
+import 'package:kita_agro/features/Home/Dictionary/dictionary_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -271,6 +272,12 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.orange[100]!,
             icon: Icons.description,
             iconColor: Colors.orange,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const DictionaryScreen()),
+              );
+            },
           ),
           _buildActionButton(
             label: 'AI Assistant',
@@ -288,27 +295,31 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color color,
     required IconData icon,
     required Color iconColor,
+    VoidCallback? onTap,
   }) {
-    return Column(
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 28),
           ),
-          child: Icon(icon, color: iconColor, size: 28),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w500,
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+        ],
+      ),
     );
   }
 

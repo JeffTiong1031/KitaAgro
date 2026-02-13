@@ -11,35 +11,72 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _selectedTabIndex = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kita Agro'),
+        backgroundColor: Colors.white,
         elevation: 0,
+        title: null,
+        automaticallyImplyLeading: false,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(80),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search crops, pests...',
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        suffixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(Icons.notifications, color: Colors.grey[700], size: 24),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       body: CustomScrollView(
         slivers: [
-          // Dashboard Section (Fixed at top)
+          // Dashboard Section
           SliverToBoxAdapter(
             child: _buildDashboard(),
           ),
-          // Community Forum Section (Scrollable)
+          // Action Buttons Section
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-              child: Text(
-                'Community Forum',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            child: _buildActionButtons(),
           ),
+          // Tab Navigation
+          SliverToBoxAdapter(
+            child: _buildTabNavigation(),
+          ),
+          // Community Posts
           SliverList(
             delegate: SliverChildBuilderDelegate(
-              (context, index) => _buildForumPost(index),
-              childCount: 15,
+              (context, index) => _buildCommunityPost(index),
+              childCount: 10,
             ),
           ),
         ],
@@ -49,179 +86,160 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDashboard() {
     return Container(
-      color: Colors.green[50],
+      color: Colors.grey[50],
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Welcome Section
-          Text(
-            'Welcome, Farmer!',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+          // Growth Stage Card with Weather and Reminder
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
             ),
-          ),
-          const SizedBox(height: 16),
-
-          // Dashboard Cards
-          Row(
-            children: [
-              Expanded(
-                child: _buildDashboardCard(
-                  title: 'Crop Health',
-                  value: '92%',
-                  icon: Icons.eco,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildDashboardCard(
-                  title: 'Weather',
-                  value: '28°C',
-                  icon: Icons.cloud,
-                  color: Colors.blue,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildDashboardCard(
-                  title: 'Soil Moisture',
-                  value: '65%',
-                  icon: Icons.water_drop,
-                  color: Colors.cyan,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildDashboardCard(
-                  title: 'Yield Forecast',
-                  value: '120 kg',
-                  icon: Icons.trending_up,
-                  color: Colors.orange,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Quick Actions
-          Text(
-            'Quick Actions',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildActionButton(
-                icon: Icons.add_a_photo,
-                label: 'Log Activity',
-              ),
-              _buildActionButton(
-                icon: Icons.bug_report,
-                label: 'Report Issue',
-              ),
-              _buildActionButton(
-                icon: Icons.info,
-                label: 'Get Advice',
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDashboardCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-  }) {
-    return Column(
-      children: [
-        CircleAvatar(
-          backgroundColor: Colors.green[100],
-          child: Icon(icon, color: Colors.green[700]),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.labelSmall,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildForumPost(int index) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // User Info
-            Row(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: Colors.green[300 + (index % 5) * 100],
-                  child: Text('F${index + 1}'),
-                ),
-                const SizedBox(width: 12),
+                // Growth Stage Circle
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      SizedBox(
+                        width: 120,
+                        height: 120,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Outer circle
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.grey[300]!,
+                                  width: 8,
+                                ),
+                              ),
+                            ),
+                            // Progress circle
+                            SizedBox(
+                              width: 120,
+                              height: 120,
+                              child: CircularProgressIndicator(
+                                value: 0.75,
+                                strokeWidth: 8,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.teal[400]!),
+                                backgroundColor: Colors.transparent,
+                              ),
+                            ),
+                            // Center circle with plant icon
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.black,
+                              ),
+                              child: const Icon(Icons.eco, color: Colors.white, size: 32),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Text(
-                        'Farmer ${index + 1}',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        '75%',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: Colors.teal[400],
                         ),
                       ),
                       Text(
-                        '${index + 1} hour${index + 1 == 1 ? '' : 's'} ago',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.grey,
+                        'Growth Stage',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Weather and Reminder
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Weather Card
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Today',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                Icon(Icons.wb_sunny, color: Colors.amber, size: 20),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              '24°C',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Text(
+                              'Sunny',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Reminder Card
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Reminder',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                Icon(Icons.water_drop, color: Colors.red, size: 20),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Watering',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -229,48 +247,271 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // Post Content
-            Text(
-              _getForumPostTitle(index),
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+  Widget _buildActionButtons() {
+    return Container(
+      color: Colors.grey[50],
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildActionButton(
+            label: 'My Journey',
+            color: Colors.teal[100]!,
+            icon: Icons.favorite,
+            iconColor: Colors.teal,
+          ),
+          _buildActionButton(
+            label: 'Dictionary',
+            color: Colors.orange[100]!,
+            icon: Icons.description,
+            iconColor: Colors.orange,
+          ),
+          _buildActionButton(
+            label: 'AI Assistant',
+            color: Colors.purple[100]!,
+            icon: Icons.smart_toy,
+            iconColor: Colors.purple,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required String label,
+    required Color color,
+    required IconData icon,
+    required Color iconColor,
+  }) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: iconColor, size: 28),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabNavigation() {
+    final tabs = ['Community', 'Recommend', 'Market', 'Q&A'];
+    return Container(
+      color: Colors.white,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: List.generate(
+          tabs.length,
+          (index) => Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedTabIndex = index;
+                });
+              },
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0),
+                    child: Text(
+                      tabs[index],
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: _selectedTabIndex == index ? FontWeight.bold : FontWeight.normal,
+                        color: _selectedTabIndex == index ? Colors.teal : Colors.grey,
+                      ),
+                    ),
+                  ),
+                  if (_selectedTabIndex == index)
+                    Container(
+                      height: 3,
+                      color: Colors.teal,
+                    ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              _getForumPostContent(index),
-              style: Theme.of(context).textTheme.bodySmall,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 12),
+          ),
+        ),
+      ),
+    );
+  }
 
-            // Engagement Metrics
+  Widget _buildCommunityPost(int index) {
+    final users = [
+      {'name': 'David Miller', 'role': 'Urban Gardener', 'time': '2h ago'},
+      {'name': 'Sarah Jenkins', 'role': 'Expert Farmer', 'time': '5h ago'},
+      {'name': 'John Smith', 'role': 'Crop Specialist', 'time': '3h ago'},
+      {'name': 'Emma Wilson', 'role': 'Soil Expert', 'time': '1h ago'},
+      {'name': 'Robert Brown', 'role': 'Farmer', 'time': '4h ago'},
+    ];
+
+    final posts = [
+      {
+        'title': 'First harvest of my hydroponic lettuce!',
+        'content': 'Look at these vibrant colors 🌱 #UrbanFarming #Hydroponics',
+        'hasImage': true,
+        'likes': 245,
+        'comments': 42,
+        'shares': 12,
+      },
+      {
+        'title': 'Tips for pest control this season',
+        'content': 'Tips for pest control this season without harmful chemicals. Check out my new guide!',
+        'hasImage': false,
+        'likes': 89,
+        'comments': 15,
+        'shares': 8,
+      },
+      {
+        'title': 'New greenhouse setup completed!',
+        'content': 'Finally completed my greenhouse. Super excited to start growing vegetables!',
+        'hasImage': true,
+        'likes': 156,
+        'comments': 28,
+        'shares': 10,
+      },
+      {
+        'title': 'Soil preparation tips',
+        'content': 'Best practices for preparing your soil before planting season starts.',
+        'hasImage': false,
+        'likes': 120,
+        'comments': 22,
+        'shares': 9,
+      },
+      {
+        'title': 'Composting guide for farmers',
+        'content': 'Learn how to make your own compost at home and improve soil quality.',
+        'hasImage': true,
+        'likes': 198,
+        'comments': 35,
+        'shares': 14,
+      },
+    ];
+
+    final user = users[index % users.length];
+    final post = posts[index % posts.length];
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // User Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.favorite_border, size: 16, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text('${10 + index}', style: Theme.of(context).textTheme.labelSmall),
+                    CircleAvatar(
+                      backgroundColor: Colors.teal[300],
+                      radius: 24,
+                      child: Text(
+                        user['name']![0],
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user['name']!,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${user['role']} • ${user['time']}',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-                Row(
-                  children: [
-                    Icon(Icons.comment_outlined, size: 16, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text('${5 + index}', style: Theme.of(context).textTheme.labelSmall),
-                  ],
+                Icon(Icons.more_vert, color: Colors.grey[400], size: 20),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Post Title
+            Text(
+              post['title']! as String,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Post Content
+            Text(
+              post['content']! as String,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+
+            // Post Image (if available)
+            if (post['hasImage'] == true)
+              Container(
+                width: double.infinity,
+                height: 180,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                Row(
-                  children: [
-                    Icon(Icons.share_outlined, size: 16, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text('${3 + index}', style: Theme.of(context).textTheme.labelSmall),
-                  ],
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: AssetImage('assets/images/ArgiPic.jpg'),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+
+            if (post['hasImage'] == true) const SizedBox(height: 12),
+
+            // Engagement Metrics
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildEngagementButton(
+                  icon: Icons.favorite_outline,
+                  count: post['likes']! as int,
+                ),
+                _buildEngagementButton(
+                  icon: Icons.comment_outlined,
+                  count: post['comments']! as int,
+                ),
+                _buildEngagementButton(
+                  icon: Icons.share_outlined,
+                  count: post['shares']! as int,
                 ),
               ],
             ),
@@ -280,45 +521,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String _getForumPostTitle(int index) {
-    final titles = [
-      'Best time to plant tomatoes?',
-      'How to deal with leaf spots?',
-      'Irrigation tips for dry season',
-      'Pest control methods',
-      'Fertilizer recommendations',
-      'Harvesting strategies',
-      'Soil preparation guide',
-      'Market prices discussion',
-      'Weather impact on crops',
-      'Crop rotation advice',
-      'Water conservation tips',
-      'Disease prevention',
-      'Equipment sharing group',
-      'New farming techniques',
-      'Community harvest event',
-    ];
-    return titles[index % titles.length];
-  }
-
-  String _getForumPostContent(int index) {
-    final contents = [
-      'Anyone here growing tomatoes? I\'m looking for advice on the best planting time.',
-      'My plants are showing signs of leaf spots. What\'s the best treatment?',
-      'With the dry season coming, I need irrigation tips. Please share your experience.',
-      'Looking for organic pest control methods. Any suggestions?',
-      'What fertilizers work best for your crops? Share your experience.',
-      'When and how do you harvest your crops? Tips welcome!',
-      'Preparing my soil for the next season. What\'s your method?',
-      'Current market prices are interesting. Let\'s discuss commodity prices.',
-      'Weather forecast shows heavy rain. How will this affect our crops?',
-      'Should I rotate my crops this season? Any good rotation patterns?',
-      'Saving water is important. Share your water conservation methods.',
-      'Disease outbreaks reported nearby. How can we prevent them?',
-      'Looking to share farming equipment with neighbors. Anyone interested?',
-      'Heard about new sustainable farming techniques. Let\'s learn together!',
-      'Planning a community harvest event. Who would like to join?',
-    ];
-    return contents[index % contents.length];
+  Widget _buildEngagementButton({
+    required IconData icon,
+    required int count,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.grey[600]),
+        const SizedBox(width: 6),
+        Text(
+          count.toString(),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
   }
 }

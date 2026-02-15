@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'grant_tutorial_screen.dart';
+import 'package:kita_agro/main_layout.dart';
 
 class GrantRequirementsScreen extends StatelessWidget {
   const GrantRequirementsScreen({super.key});
@@ -23,8 +24,12 @@ class GrantRequirementsScreen extends StatelessWidget {
             icon: const Icon(Icons.home),
             tooltip: 'Home',
             onPressed: () {
-              // Navigate back to the first route (home screen)
-              Navigator.popUntil(context, (route) => route.isFirst);
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const MainLayout(initialIndex: 1),
+                ),
+                (route) => false,
+              );
             },
           ),
         ],

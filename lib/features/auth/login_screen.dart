@@ -1,5 +1,12 @@
+import 'package:firebase_auth/firebase_auth.dart'; // Needed for User? handling
 import 'package:flutter/material.dart';
-import '../../main_layout.dart'; // This links to your main dashboard
+import '../../features/auth/auth_service.dart';
+import '../../main_layout.dart';
+import '../../features/auth/register_screen.dart';
+import '../../features/auth/complete_profile_screen.dart';
+import '../../core/models/user_model.dart';
+import '../../features/auth/welcome_screen.dart'; // Add import
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,30 +16,93 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String? _errorMessage;
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
-  void _login() {
-    final String username = _usernameController.text.trim();
+  Future<void> _login() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
 
-    if (username == 'test' && password == 'test') {
-      // Navigate to the dashboard
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainLayout()),
-      );
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        _errorMessage = "Please enter both email and password.";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    String? error = await _authService.signIn(email: email, password: password);
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (error == null) { // Success
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainLayout()),
+        );
+      }
     } else {
       setState(() {
-        _errorMessage = "Invalid username or password!";
+        _errorMessage = error;
       });
     }
   }
 
+  Future<void> _loginWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
+    // Returns UserModel, allowing us to check if profile is complete
+    UserModel? userModel = await _authService.signInWithGoogle();
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (userModel != null) { 
+      if (mounted) {
+        // Check if important fields are missing (e.g. Town/Role which default to 'Not Specified' or 'Farmer')
+        // Or checks if it was a new user (age == 0 usually indicates fresh Google sign up)
+        if (userModel.town == 'Not Specified' || userModel.age == 0) {
+           Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => CompleteProfileScreen(user: userModel)),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainLayout()),
+          );
+        }
+      }
+    } else {
+      setState(() {
+        _errorMessage = "Google Sign In failed or canceled.";
+      });
+    }
+  }
+
+  // Alias for tutorial consistency
+  Future<void> _handleGoogleLogin() async {
+    await _loginWithGoogle();
+  }
+
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -46,7 +116,17 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              // If we are at the root (e.g. after logout), go to WelcomeScreen
+              Navigator.pushReplacement(
+                context, 
+                MaterialPageRoute(builder: (context) => const WelcomeScreen()) // Need to import WelcomeScreen
+              );
+            }
+          },
         ),
       ),
       body: Center(
@@ -67,13 +147,14 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 50),
               
-              // Username Field
+              // Email Field
               TextField(
-                controller: _usernameController,
-                textInputAction: TextInputAction.next, // Allows jumping to next field
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
-                  labelText: "Username",
-                  prefixIcon: const Icon(Icons.person),
+                  labelText: "Email",
+                  prefixIcon: const Icon(Icons.email),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -106,19 +187,53 @@ class _LoginScreenState extends State<LoginScreen> {
               
               const SizedBox(height: 30),
               
-              ElevatedButton.icon(
-                onPressed: _login,
-                icon: const Icon(Icons.login),
-                label: const Text("Login"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
+              _isLoading
+                  ? const CircularProgressIndicator()
+                  : Column(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _login,
+                          icon: const Icon(Icons.login),
+                          label: const Text("Login"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        OutlinedButton.icon(
+                          onPressed: _loginWithGoogle,
+                          icon: Image.asset('assets/images/google_logo.png', height: 24, errorBuilder: (context, error, stackTrace) => const Icon(Icons.public),), // Fallback icon if image missing
+                          label: const Text("Sign in with Google"),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text("Don't have an account?"),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                                );
+                              },
+                              child: const Text("Register"),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
             ],
           ),
         ),

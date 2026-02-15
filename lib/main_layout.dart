@@ -15,8 +15,8 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  // Start at Index 2 (The Middle "Scan" Button) for quick access
-  int _selectedIndex = 2; 
+  // Start at Index 0 (Home)
+  int _selectedIndex = 0; 
 
   // The list of pages matching the icons below
   final List<Widget> _screens = [

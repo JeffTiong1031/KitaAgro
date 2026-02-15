@@ -8,6 +8,10 @@
         android:label="kita_agro"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCf5smGNWcHkWOb6wqhQ8SPfOeqSulApu8"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

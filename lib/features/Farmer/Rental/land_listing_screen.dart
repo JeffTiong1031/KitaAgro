@@ -26,6 +26,22 @@ class _LandListingScreenState extends State<LandListingScreen> {
     'Large (> 5 Acres)',
   ];
 
+  /// Stream of land listings.
+  ///
+  /// Security note:
+  /// This direct Firestore access assumes that Firestore security rules
+  /// are configured to protect the `lands` collection. At minimum, rules
+  /// should:
+  /// - Allow read access to `lands` only for the intended audience
+  ///   (e.g. `allow read: if request.auth != null;` or a suitably
+  ///   constrained public-read rule).
+  /// - Restrict write/update/delete operations to authorized users or
+  ///   server-side processes (e.g. using role/claim checks).
+  /// - Validate the structure and types of `lands` documents on writes
+  ///   (e.g. required fields, correct data types, and value ranges).
+  ///
+  /// Ensure the Firestore rules file (e.g. `firestore.rules`) enforces
+  /// these constraints to prevent unauthorized access or data exposure.
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _landsStream;
 
   @override

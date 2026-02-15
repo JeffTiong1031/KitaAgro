@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 // Import wrapper screens
 import 'features/Home/home_screen.dart';
 import 'features/Farmer/farmer_screen.dart';
-import 'features/Diagnostic/ai_scan.dart'; // The Scanner
+import 'features/Diagnostic/scan_feature.dart'; // Import the new ScanFeature
 import 'features/Message/message_screen.dart';
 import 'features/Profile/profile_screen.dart';
 
@@ -22,7 +22,7 @@ class _MainLayoutState extends State<MainLayout> {
   final List<Widget> _screens = [
     const HomeScreen(),        // 0 - Home (Planting + Community)
     const FarmerScreen(),      // 1 - Farmer (Rental + Map)
-    const DiagnosticsScreen(), // 2 - Scan
+    const ScanFeature(),       // 2 - Scan
     const MessageScreen(),     // 3 - Message
     const ProfileScreen(),     // 4 - Profile
   ];

@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'kitaagro.firebasestorage.app',
     measurementId: 'G-DGF1FFV2T3',
   );
+
 }

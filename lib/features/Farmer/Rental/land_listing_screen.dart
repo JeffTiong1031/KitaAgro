@@ -222,11 +222,28 @@ class _LandListingScreenState extends State<LandListingScreen> {
                             value: _selectedPrice,
                             isExpanded: true,
                             onChanged: _onPriceChanged,
+                            selectedItemBuilder: (context) {
+                              return _priceOptions
+                                  .map(
+                                    (price) => Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        _shortPriceLabel(price),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  )
+                                  .toList();
+                            },
                             items: _priceOptions
                                 .map(
                                   (price) => DropdownMenuItem(
                                     value: price,
-                                    child: Text(price),
+                                    child: Text(
+                                      price,
+                                      softWrap: true,
+                                      maxLines: 2,
+                                    ),
                                   ),
                                 )
                                 .toList(),
@@ -345,6 +362,19 @@ class _LandListingScreenState extends State<LandListingScreen> {
     }
     final sortedStates = stateSet.toList()..sort();
     return [_allStatesLabel, ...sortedStates];
+  }
+
+  String _shortPriceLabel(String price) {
+    switch (price) {
+      case 'Budget (< RM 1,000)':
+        return 'Budget (< RM1k)';
+      case 'Standard (RM 1,000 - 3,000)':
+        return 'Standard (RM1k-3k)';
+      case 'Premium (> RM 3,000)':
+        return 'Premium (> RM3k)';
+      default:
+        return price;
+    }
   }
 
   String _formatPrice(double price) {

@@ -8,15 +8,16 @@ import 'features/Message/message_screen.dart';
 import 'features/Profile/profile_screen.dart';
 
 class MainLayout extends StatefulWidget {
-  const MainLayout({super.key});
+  const MainLayout({super.key, this.initialIndex = 2});
+
+  final int initialIndex;
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  // Start at Index 2 (The Middle "Scan" Button) for quick access
-  int _selectedIndex = 2; 
+  late int _selectedIndex;
 
   // The list of pages matching the icons below
   final List<Widget> _screens = [
@@ -26,6 +27,27 @@ class _MainLayoutState extends State<MainLayout> {
     const MessageScreen(),     // 3 - Message
     const ProfileScreen(),     // 4 - Profile
   ];
+
+  int _sanitizeIndex(int index) {
+    if (index < 0 || index >= _screens.length) {
+      return 2;
+    }
+    return index;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = _sanitizeIndex(widget.initialIndex);
+  }
+
+  @override
+  void didUpdateWidget(covariant MainLayout oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialIndex != widget.initialIndex) {
+      _selectedIndex = _sanitizeIndex(widget.initialIndex);
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {

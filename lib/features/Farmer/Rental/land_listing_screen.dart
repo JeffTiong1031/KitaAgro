@@ -170,14 +170,9 @@ class _LandListingScreenState extends State<LandListingScreen> {
               : _allStatesLabel;
 
           if (currentStateValue != _selectedState) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) {
-                return;
-              }
-              setState(() {
-                _selectedState = currentStateValue;
-              });
-            });
+            // Update the selected state directly during this build instead of
+            // scheduling a post-frame setState, to avoid unnecessary rebuilds.
+            _selectedState = currentStateValue;
           }
 
           return Column(

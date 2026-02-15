@@ -26,9 +26,22 @@ class _LandListingScreenState extends State<LandListingScreen> {
     'Large (> 5 Acres)',
   ];
 
-  final Stream<QuerySnapshot<Map<String, dynamic>>> _landsStream =
-      FirebaseFirestore.instance.collection('lands').snapshots();
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _landsStream;
 
+  @override
+  void initState() {
+    super.initState();
+    // Enable Firestore local persistence so previously loaded listings
+    // remain available when the device is offline.
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+    );
+    // Use metadata-aware snapshots so cached data is surfaced even
+    // when offline or before the server is reached.
+    _landsStream = FirebaseFirestore.instance
+        .collection('lands')
+        .snapshots(includeMetadataChanges: true);
+  }
   String _searchText = '';
   String _selectedState = _allStatesLabel;
   String _selectedPrice = _anyPriceLabel;

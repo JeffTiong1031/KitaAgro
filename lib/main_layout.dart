@@ -8,7 +8,7 @@ import 'features/Message/message_screen.dart';
 import 'features/Profile/profile_screen.dart';
 
 class MainLayout extends StatefulWidget {
-  const MainLayout({super.key, this.initialIndex = 2});
+  const MainLayout({super.key, this.initialIndex = 0});
 
   final int initialIndex;
 
@@ -17,6 +17,7 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
+  // Use late because we initialize it in initState using widget.initialIndex
   late int _selectedIndex;
 
   // The list of pages matching the icons below
@@ -28,9 +29,10 @@ class _MainLayoutState extends State<MainLayout> {
     const ProfileScreen(),     // 4 - Profile
   ];
 
+  // Helper to ensure the index stays within bounds
   int _sanitizeIndex(int index) {
     if (index < 0 || index >= _screens.length) {
-      return 2;
+      return 0; // Default to Home if index is invalid
     }
     return index;
   }
@@ -38,14 +40,18 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   void initState() {
     super.initState();
+    // Initialize the selection based on what was passed to the widget
     _selectedIndex = _sanitizeIndex(widget.initialIndex);
   }
 
   @override
   void didUpdateWidget(covariant MainLayout oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // If the parent updates the initialIndex, update our local selection
     if (oldWidget.initialIndex != widget.initialIndex) {
-      _selectedIndex = _sanitizeIndex(widget.initialIndex);
+      setState(() {
+        _selectedIndex = _sanitizeIndex(widget.initialIndex);
+      });
     }
   }
 
@@ -58,7 +64,10 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,

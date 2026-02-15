@@ -12,7 +12,20 @@
           "package_name": "com.example.kita_agro"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "437822465539-h2se5e4g9cm2kqfq340fmeb3acupvt1o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.kita_agro",
+            "certificate_hash": "85e06bae8e316d399fcd3f81bc2f98286e3b7575"
+          }
+        },
+        {
+          "client_id": "437822465539-unodc8ggt8habhhh1hoh6n09bp4ljjda.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCyvrduQjcCTrknXlscoyTWmnQJ3gcJusI"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "437822465539-unodc8ggt8habhhh1hoh6n09bp4ljjda.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "437822465539-7m5qcsef5hus62bqrsrujvjecv2ss0p3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kitaAgro"
+              }
+            }
+          ]
         }
       }
     }

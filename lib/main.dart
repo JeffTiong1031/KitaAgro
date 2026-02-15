@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 
-// Import the Welcome Screen
-import 'features/auth/welcome_screen.dart'; 
+// Import necessary screens
+import 'features/auth/login_screen.dart';
+import 'main_layout.dart'; 
+import 'core/widgets/auth_wrapper.dart';
+
+// import 'package:flutter_dotenv/flutter_dotenv.dart'; // Reverted: Team convenience
 
 Future <void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables
+  // await dotenv.load(fileName: ".env"); // Reverted: Team convenience
   
   // Cleanly initialized Firebase without conflict markers
   await Firebase.initializeApp(
@@ -31,7 +39,8 @@ class KitaAgroApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const WelcomeScreen(), 
+      // 4. The Magic Switcher
+      home: const AuthWrapper(),
     );
   } 
 }

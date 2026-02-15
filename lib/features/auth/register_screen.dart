@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../features/auth/auth_service.dart';
 import '../../main_layout.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -10,16 +11,87 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final PageController _pageController = PageController();
+  final AuthService _authService = AuthService();
+  
   int _currentStep = 0;
   final int _totalSteps = 4;
+  bool _isLoading = false;
 
-  // Form Data
+  // step 1: Account
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  
+  // step 2: Personal
   final TextEditingController _nameController = TextEditingController();
-  String? _selectedRole;
-  String? _selectedLocation;
-  String? _experienceLevel;
+  final TextEditingController _ageController = TextEditingController();
+  String? _selectedGender;
 
-  void _nextPage() {
+  // step 3: Location
+  final TextEditingController _townController = TextEditingController();
+  final TextEditingController _stateController = TextEditingController(); // Or dropdown
+  final TextEditingController _countryController = TextEditingController();
+  
+  // step 4: Role
+  String? _selectedRole;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _usernameController.dispose();
+    _nameController.dispose();
+    _ageController.dispose();
+    _townController.dispose();
+    _stateController.dispose();
+    _countryController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  // Regex for basic email validation
+  bool _isValidEmail(String email) {
+    return RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(email);
+  }
+
+  Future<void> _nextPage() async {
+    // Validation logic for each step
+    if (_currentStep == 0) {
+      String email = _emailController.text.trim();
+      String username = _usernameController.text.trim();
+      String password = _passwordController.text.trim();
+
+      if (email.isEmpty || password.isEmpty || username.isEmpty) {
+        _showError("Please fill in all fields");
+        return;
+      }
+      if (!_isValidEmail(email)) {
+         _showError("Please enter a valid email address");
+         return;
+      }
+      if (password.length < 6) {
+         _showError("Password must be at least 6 characters");
+         return;
+      }
+      
+      // Check username uniqueness (Optional UX improvement: show loading indicator here)
+      bool isAvailable = await _authService.isUsernameAvailable(username);
+      if (!isAvailable) {
+        _showError("Username is already taken. Please choose another.");
+        return;
+      }
+    } else if (_currentStep == 1) {
+      if (_nameController.text.isEmpty || _ageController.text.isEmpty || _selectedGender == null) {
+        _showError("Please fill in all fields");
+        return;
+      }
+    } else if (_currentStep == 2) {
+      if (_townController.text.isEmpty || _stateController.text.isEmpty || _countryController.text.isEmpty) {
+        _showError("Please fill in all fields");
+        return;
+      }
+    }
+
     if (_currentStep < _totalSteps - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -41,24 +113,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _finishRegistration() {
-    // Show a loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+  Future<void> _finishRegistration() async {
+    if (_selectedRole == null) {
+      _showError("Please select a role");
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    List<String> errors = await _authService.signUp(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+      username: _usernameController.text.trim(),
+      fullName: _nameController.text.trim(),
+      age: int.tryParse(_ageController.text.trim()) ?? 0,
+      gender: _selectedGender!,
+      town: _townController.text.trim(),
+      state: _stateController.text.trim(),
+      country: _countryController.text.trim(),
+      role: _selectedRole!,
     );
 
-    // Simulate registration
-    Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pop(context); // Close dialog
-      // Go to main dashboard
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const MainLayout()),
-        (route) => false,
-      );
+    setState(() {
+      _isLoading = false;
     });
+
+    if (errors.isEmpty) {
+      // Success
+      if (mounted) {
+         // Navigate to dashboard and remove history
+         Navigator.pushReplacement(
+           context,
+           MaterialPageRoute(builder: (context) => const MainLayout()),
+         );
+      }
+    } else {
+      _showError(errors.join("\n"));
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   @override
@@ -82,86 +181,194 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       body: PageView(
         controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
+        physics: const NeverScrollableScrollPhysics(), // Prevent swipe
         onPageChanged: (index) {
           setState(() {
             _currentStep = index;
           });
         },
         children: [
-          _buildQuestionPage(
-            title: "What is your full name?",
-            input: TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                hintText: "Enter your name",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-          _buildQuestionPage(
-            title: "What is your role?",
-            input: _buildDropdown(
-              items: ["Farmer", "Student", "Agropreneur", "Investor", "Researcher"],
-              value: _selectedRole,
-              onChanged: (val) => setState(() => _selectedRole = val),
-              hint: "Select your role",
-            ),
-          ),
-          _buildQuestionPage(
-            title: "Where are you located?",
-            input: _buildDropdown(
-              items: ["Selangor", "Johor", "Kedah", "Perak", "Sabah", "Sarawak", "Other"],
-              value: _selectedLocation,
-              onChanged: (val) => setState(() => _selectedLocation = val),
-              hint: "Select state",
-            ),
-          ),
-          _buildQuestionPage(
-            title: "How much experience do you have in agriculture?",
-            input: _buildDropdown(
-              items: ["Beginner (0-1 years)", "Intermediate (2-5 years)", "Expert (5+ years)"],
-              value: _experienceLevel,
-              onChanged: (val) => setState(() => _experienceLevel = val),
-              hint: "Select experience level",
-            ),
-          ),
+          _buildAccountPage(),
+          _buildPersonalPage(),
+          _buildLocationPage(),
+          _buildRolePage(),
         ],
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
-          child: ElevatedButton(
-            onPressed: _nextPage,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 55),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          child: _isLoading 
+            ? const Center(child: CircularProgressIndicator())
+            : ElevatedButton(
+              onPressed: _nextPage,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 55),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              ),
+              child: Text(
+                _currentStep == _totalSteps - 1 ? "Finish" : "Next",
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ),
-            child: Text(
-              _currentStep == _totalSteps - 1 ? "Finish" : "Next",
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
         ),
       ),
     );
   }
 
-  Widget _buildQuestionPage({required String title, required Widget input}) {
-    return Padding(
+  Widget _buildStepTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+    );
+  }
+
+  Widget _buildAccountPage() {
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(30.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-          ),
+          _buildStepTitle("Create your account"),
           const SizedBox(height: 30),
-          input,
+          _buildTextField(
+            controller: _emailController, 
+            label: "Email", 
+            icon: Icons.email, 
+            type: TextInputType.emailAddress,
+            action: TextInputAction.next,
+          ),
+          const SizedBox(height: 20),
+          _buildTextField(
+            controller: _usernameController, 
+            label: "Username", 
+            icon: Icons.person,
+            action: TextInputAction.next,
+          ),
+          const SizedBox(height: 20),
+          _buildTextField(
+            controller: _passwordController, 
+            label: "Password", 
+            icon: Icons.lock, 
+            obscure: true,
+            action: TextInputAction.done,
+            onSubmitted: (_) => _nextPage(),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(30.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStepTitle("Tell us about yourself"),
+          const SizedBox(height: 30),
+          _buildTextField(
+            controller: _nameController, 
+            label: "Full Name", 
+            icon: Icons.badge,
+            action: TextInputAction.next,
+          ),
+          const SizedBox(height: 20),
+          _buildTextField(
+            controller: _ageController, 
+            label: "Age", 
+            icon: Icons.calendar_today, 
+            type: TextInputType.number,
+            action: TextInputAction.done,
+             // Not calling _nextPage() here because gender dropdown is next
+          ),
+          const SizedBox(height: 20),
+          _buildDropdown(
+            items: ["Male", "Female", "Prefer not to say"],
+            value: _selectedGender,
+            onChanged: (val) => setState(() => _selectedGender = val),
+            hint: "Select Gender",
+            icon: Icons.people,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(30.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStepTitle("Where are you located?"),
+          const SizedBox(height: 30),
+          _buildTextField(
+            controller: _townController,
+            label: "Town/City",
+            icon: Icons.location_city,
+            action: TextInputAction.next,
+          ),
+          const SizedBox(height: 20),
+          _buildTextField(
+            controller: _stateController, 
+            label: "State", 
+            icon: Icons.map,
+            action: TextInputAction.next,
+          ),
+          const SizedBox(height: 20),
+          _buildTextField(
+            controller: _countryController, 
+            label: "Country", 
+            icon: Icons.flag,
+            action: TextInputAction.done,
+            onSubmitted: (_) => _nextPage(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRolePage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(30.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStepTitle("What best describes you?"),
+          const SizedBox(height: 30),
+          _buildDropdown(
+            items: ["Farmer", "Home Grower", "Agronomist", "Business Company"],
+            value: _selectedRole,
+            onChanged: (val) => setState(() => _selectedRole = val),
+            hint: "Select Role",
+            icon: Icons.work,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller, 
+    required String label, 
+    required IconData icon, 
+    bool obscure = false,
+    TextInputType type = TextInputType.text,
+    TextInputAction action = TextInputAction.done,
+    Function(String)? onSubmitted,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      keyboardType: type,
+      textInputAction: action,
+      onSubmitted: onSubmitted,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -171,6 +378,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required String? value,
     required Function(String?) onChanged,
     required String hint,
+    required IconData icon,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -178,14 +386,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
         border: Border.all(color: Colors.grey),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          hint: Text(hint),
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-          onChanged: onChanged,
-        ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.grey[600]),
+          const SizedBox(width: 10),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: value,
+                isExpanded: true,
+                hint: Text(hint),
+                items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

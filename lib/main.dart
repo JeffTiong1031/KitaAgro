@@ -8,8 +8,9 @@ import 'features/auth/welcome_screen.dart';
 Future <void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Cleanly initialized Firebase without conflict markers
   await Firebase.initializeApp(
-  options: DefaultFirebaseOptions.currentPlatform,
+    options: DefaultFirebaseOptions.currentPlatform,
   );
 
   runApp(const KitaAgroApp());
@@ -22,7 +23,7 @@ class KitaAgroApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Kita Agro',
-      debugShowCheckedModeBanner: false, // Removes the "Debug" banner
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF2E7D32), // Forest Green
@@ -30,7 +31,6 @@ class KitaAgroApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      // START HERE: Send user to Login Screen first
       home: const WelcomeScreen(), 
     );
   } 

@@ -5,12 +5,12 @@ import 'firebase_options.dart';
 // Import the Welcome Screen
 import 'features/auth/welcome_screen.dart'; 
 
-void main() async {
+Future <void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  //await Firebase.initializeApp(
-  //  options: DefaultFirebaseOptions.currentPlatform,
-  //);
+  await Firebase.initializeApp(
+  options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const KitaAgroApp());
 }

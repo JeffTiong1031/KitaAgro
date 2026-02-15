@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DictionaryScreen extends StatefulWidget {
   const DictionaryScreen({super.key});
@@ -9,6 +11,7 @@ class DictionaryScreen extends StatefulWidget {
 
 class _DictionaryScreenState extends State<DictionaryScreen> {
   String _selectedCategory = 'All';
+  final ScrollController _gridController = ScrollController();
 
   final List<String> _categories = [
     'All',
@@ -96,6 +99,91 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   }
 
   @override
+  void dispose() {
+    _gridController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addPlantToGarden(Map<String, dynamic> plant) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to add plants.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final int totalDays = _parseGrowthDays(plant['growthTime'] as String?);
+    final IconData icon = plant['icon'] as IconData;
+    final Color color = plant['color'] as Color;
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('plantations')
+        .add({
+          'name': plant['name'],
+          'scientificName': plant['scientificName'],
+          'category': plant['category'],
+          'totalDays': totalDays,
+          'daysPlanted': 0,
+          'plantedAt': Timestamp.now(),
+          'icon': _iconName(icon),
+          'color': color.value,
+        });
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${plant['name']} added to your garden!'),
+        backgroundColor: const Color(0xFF2E7D32),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  int _parseGrowthDays(String? growthTime) {
+    if (growthTime == null || growthTime.trim().isEmpty) {
+      return 60;
+    }
+    final String lower = growthTime.toLowerCase();
+    final match = RegExp(r'(\d+)').firstMatch(lower);
+    if (match == null) {
+      return 60;
+    }
+    final int value = int.tryParse(match.group(1) ?? '') ?? 60;
+    if (lower.contains('month')) {
+      return value * 30;
+    }
+    return value;
+  }
+
+  String _iconName(IconData icon) {
+    if (icon == Icons.circle) {
+      return 'circle';
+    }
+    if (icon == Icons.local_fire_department) {
+      return 'local_fire_department';
+    }
+    if (icon == Icons.spa) {
+      return 'spa';
+    }
+    if (icon == Icons.nature) {
+      return 'nature';
+    }
+    if (icon == Icons.grass) {
+      return 'grass';
+    }
+    return 'spa';
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF1B5E20),
@@ -177,6 +265,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: GridView.builder(
+                key: const PageStorageKey<String>('dictionary_grid'),
+                controller: _gridController,
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 4,
@@ -296,25 +386,50 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                     // Header with icon and name
                     Row(
                       children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: plant['color'] as Color,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (plant['color'] as Color).withOpacity(0.4),
-                                blurRadius: 12,
-                                offset: Offset(0, 4),
+                        Stack(
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: plant['color'] as Color,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (plant['color'] as Color).withOpacity(0.4),
+                                    blurRadius: 12,
+                                    offset: Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: Icon(
-                            plant['icon'] as IconData,
-                            color: Colors.white,
-                            size: 40,
-                          ),
+                              child: Icon(
+                                plant['icon'] as IconData,
+                                color: Colors.white,
+                                size: 40,
+                              ),
+                            ),
+                            Positioned(
+                              top: -2,
+                              right: -2,
+                              child: GestureDetector(
+                                onTap: () => _addPlantToGarden(plant),
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF1B5E20),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 1.5),
+                                  ),
+                                  child: const Icon(
+                                    Icons.add,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -408,13 +523,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${plant['name']} added to your garden!'),
-                              backgroundColor: Color(0xFF2E7D32),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                          _addPlantToGarden(plant);
                         },
                         icon: const Icon(Icons.add),
                         label: const Text('Add to My Garden'),

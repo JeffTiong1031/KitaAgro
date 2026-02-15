@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:kita_agro/features/Home/Planting/planting_screen.dart';
 import 'package:kita_agro/features/Home/community/community_screen.dart';
 import 'package:kita_agro/features/Home/Dictionary/dictionary_screen.dart';
+import 'package:kita_agro/features/Home/my_journey/my_journey_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,37 +18,12 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedTabIndex = 0;
   final PageController _gardenCarouselController = PageController(viewportFraction: 0.85);
   int _currentGardenPage = 0;
-
-  final List<Map<String, dynamic>> _myGardenPlants = [
-    {
-      'name': 'Tomato',
-      'scientificName': 'Solanum lycopersicum',
-      'daysPlanted': 45,
-      'totalDays': 60,
-      'icon': Icons.circle,
-      'color': Color(0xFFE53935),
-    },
-    {
-      'name': 'Chili',
-      'scientificName': 'Capsicum annuum',
-      'daysPlanted': 30,
-      'totalDays': 75,
-      'icon': Icons.local_fire_department,
-      'color': Color(0xFFD32F2F),
-    },
-    {
-      'name': 'Pandan',
-      'scientificName': 'Pandanus amaryllifolius',
-      'daysPlanted': 120,
-      'totalDays': 180,
-      'icon': Icons.grass,
-      'color': Color(0xFF388E3C),
-    },
-  ];
+  final ValueNotifier<int> _gardenPageNotifier = ValueNotifier<int>(0);
 
   @override
   void dispose() {
     _gardenCarouselController.dispose();
+    _gardenPageNotifier.dispose();
     super.dispose();
   }
 
@@ -305,6 +283,12 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.teal[100]!,
             icon: Icons.favorite,
             iconColor: Colors.teal,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MyJourneyScreen()),
+              );
+            },
           ),
           _buildActionButton(
             label: 'Dictionary',
@@ -572,236 +556,463 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMyGardenCarousel() {
-    if (_myGardenPlants.isEmpty) {
-      return Container(
-        margin: const EdgeInsets.all(16.0),
-        padding: const EdgeInsets.all(24.0),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _gardenPlantStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildGardenLoadingState();
+        }
+        if (snapshot.hasError) {
+          return _buildGardenErrorState();
+        }
+
+        final plants = snapshot.data ?? <Map<String, dynamic>>[];
+        if (plants.isEmpty) {
+          return _buildGardenEmptyState();
+        }
+
+        var safeCurrentPage = _currentGardenPage;
+        if (safeCurrentPage >= plants.length) {
+          safeCurrentPage = 0;
+        }
+        if (_gardenPageNotifier.value != safeCurrentPage) {
+          _gardenPageNotifier.value = safeCurrentPage;
+        }
+        if (_gardenCarouselController.hasClients &&
+            _gardenCarouselController.page?.round() != safeCurrentPage) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_gardenCarouselController.hasClients) {
+              _gardenCarouselController.jumpToPage(safeCurrentPage);
+            }
+          });
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.yard_outlined, size: 48, color: Colors.grey[400]),
-            const SizedBox(height: 12),
-            Text(
-              'No plants in your garden yet',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add plants to start tracking their growth',
-              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'My Garden',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              Text(
-                '${_currentGardenPage + 1}/${_myGardenPlants.length}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 220,
-          child: PageView.builder(
-            controller: _gardenCarouselController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentGardenPage = index;
-              });
-            },
-            itemCount: _myGardenPlants.length,
-            itemBuilder: (context, index) {
-              final plant = _myGardenPlants[index];
-              final progress = plant['daysPlanted'] / plant['totalDays'];
-
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      plant['color'].withOpacity(0.8),
-                      plant['color'],
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: plant['color'].withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: -20,
-                      bottom: -20,
-                      child: Icon(
-                        plant['icon'],
-                        size: 150,
-                        color: Colors.white.withOpacity(0.1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: ValueListenableBuilder<int>(
+                valueListenable: _gardenPageNotifier,
+                builder: (context, pageIndex, _) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'My Garden',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
                       ),
+                      Text(
+                        '${pageIndex + 1}/${plants.length}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            SizedBox(
+              height: 220,
+              child: PageView.builder(
+                key: const PageStorageKey<String>('my_garden_pageview'),
+                controller: _gardenCarouselController,
+                onPageChanged: (index) {
+                  _currentGardenPage = index;
+                  _gardenPageNotifier.value = index;
+                },
+                itemCount: plants.length,
+                itemBuilder: (context, index) {
+                  final plant = plants[index];
+                  final int totalDays = plant['totalDays'] as int;
+                  final int daysPlanted = plant['daysPlanted'] as int;
+                  final double progress = totalDays <= 0
+                      ? 0.0
+                      : (daysPlanted / totalDays).clamp(0.0, 1.0);
+                  final int remainingDays = (totalDays - daysPlanted) < 0
+                      ? 0
+                      : (totalDays - daysPlanted);
+
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          (plant['color'] as Color).withOpacity(0.8),
+                          plant['color'] as Color,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (plant['color'] as Color).withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Icon(
-                                plant['icon'],
-                                color: Colors.white,
-                                size: 32,
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'Day ${plant['daysPlanted']}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          right: -20,
+                          bottom: -20,
+                          child: Icon(
+                            plant['icon'] as IconData,
+                            size: 150,
+                            color: Colors.white.withOpacity(0.1),
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            plant['name'],
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            plant['scientificName'],
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 14,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                          const Spacer(),
-                          Column(
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Icon(
+                                    plant['icon'] as IconData,
+                                    color: Colors.white,
+                                    size: 32,
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      '$daysPlanted days',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              Text(
+                                plant['name'] as String,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                plant['scientificName'] as String,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     'Growth Progress',
                                     style: TextStyle(
                                       color: Colors.white.withOpacity(0.9),
                                       fontSize: 12,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
+                                  const SizedBox(height: 6),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: LinearProgressIndicator(
+                                      value: progress,
+                                      backgroundColor: Colors.white.withOpacity(0.3),
+                                      valueColor: const AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                      minHeight: 8,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
                                   Text(
-                                    '${(progress * 100).toInt()}%',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
+                                    '$remainingDays days to harvest',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: LinearProgressIndicator(
-                                  value: progress,
-                                  backgroundColor: Colors.white.withOpacity(0.3),
-                                  valueColor: const AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                  minHeight: 8,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '${plant['totalDays'] - plant['daysPlanted']} days to harvest',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
-                                  fontSize: 11,
-                                ),
-                              ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  );
+                },
+              ),
+            ),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 8),
+                child: ValueListenableBuilder<int>(
+                  valueListenable: _gardenPageNotifier,
+                  builder: (context, pageIndex, _) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(
+                        plants.length,
+                        (index) => Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: pageIndex == index ? 24 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: pageIndex == index
+                                ? Colors.green[700]
+                                : Colors.grey[300],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Stream<List<Map<String, dynamic>>> _gardenPlantStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Stream.value(<Map<String, dynamic>>[]);
+    }
+
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('plantations')
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _mapGardenPlant(doc.data()))
+              .toList(),
+        );
+  }
+
+  Map<String, dynamic> _mapGardenPlant(Map<String, dynamic> data) {
+    final String? rawName = data['name'] as String?;
+    final String name = (rawName == null || rawName.trim().isEmpty)
+        ? 'Unnamed Plant'
+        : rawName.trim();
+    final String scientificName = data['scientificName'] as String? ?? '';
+    final int totalDays = _parsePositiveInt(data['totalDays'], fallback: 60);
+    final int daysPlanted = _resolveDaysPlanted(data, totalDays);
+    final Color color = _parseColor(data['color']) ?? const Color(0xFF2E7D32);
+    final IconData icon = _iconFromName(data['icon'] as String?);
+
+    return {
+      'name': name,
+      'scientificName': scientificName,
+      'daysPlanted': daysPlanted,
+      'totalDays': totalDays,
+      'icon': icon,
+      'color': color,
+    };
+  }
+
+  int _parsePositiveInt(dynamic value, {required int fallback}) {
+    if (value is num) {
+      final int parsed = value.round();
+      return parsed <= 0 ? fallback : parsed;
+    }
+    return fallback;
+  }
+
+  int _resolveDaysPlanted(Map<String, dynamic> data, int totalDays) {
+    final dynamic daysValue = data['daysPlanted'];
+    if (daysValue is num) {
+      final int clamped = daysValue.round();
+      if (clamped < 0) {
+        return 0;
+      }
+      return clamped > totalDays ? totalDays : clamped;
+    }
+
+    final dynamic plantedAt = data['plantedAt'];
+    if (plantedAt is Timestamp) {
+      final int diffDays = DateTime.now().difference(plantedAt.toDate()).inDays;
+      if (diffDays < 0) {
+        return 0;
+      }
+      return diffDays > totalDays ? totalDays : diffDays;
+    }
+
+    return 0;
+  }
+
+  Color? _parseColor(dynamic value) {
+    if (value is int) {
+      return Color(value);
+    }
+    if (value is String) {
+      var sanitized = value.trim();
+      if (sanitized.startsWith('#')) {
+        sanitized = sanitized.substring(1);
+      }
+      if (sanitized.startsWith('0x')) {
+        sanitized = sanitized.substring(2);
+      }
+      if (sanitized.length == 6) {
+        sanitized = 'FF$sanitized';
+      }
+      final int? colorInt = int.tryParse(sanitized, radix: 16);
+      if (colorInt != null) {
+        return Color(colorInt);
+      }
+    }
+    return null;
+  }
+
+  IconData _iconFromName(String? name) {
+    switch (name) {
+      case 'circle':
+      case 'tomato':
+        return Icons.circle;
+      case 'local_fire_department':
+      case 'fire':
+      case 'chili':
+        return Icons.local_fire_department;
+      case 'grass':
+      case 'pandan':
+        return Icons.grass;
+      case 'spa':
+      case 'papaya':
+        return Icons.spa;
+      case 'nature':
+      case 'banana':
+        return Icons.nature;
+      case 'eco':
+        return Icons.eco;
+      case 'yard':
+        return Icons.yard;
+      default:
+        return Icons.spa;
+    }
+  }
+
+  Widget _buildGardenEmptyState() {
+    return Container(
+      margin: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(24.0),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFE8F5E9),
+            Color(0xFFC8E6C9),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(
-                _myGardenPlants.length,
-                (index) => Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: _currentGardenPage == index ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _currentGardenPage == index
-                        ? Colors.green[700]
-                        : Colors.grey[300],
-                    borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFAED581)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.yard_outlined, size: 48, color: Color(0xFF2E7D32)),
+          const SizedBox(height: 12),
+          const Text(
+            'No plantations yet',
+            style: TextStyle(
+              fontSize: 16,
+              color: Color(0xFF1B5E20),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add your first plant to start tracking growth.',
+            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PlantingScreen(),
                   ),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add Plantation'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2E7D32),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGardenLoadingState() {
+    return Container(
+      margin: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(24.0),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8E9),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
+      ),
+    );
+  }
+
+  Widget _buildGardenErrorState() {
+    return Container(
+      margin: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(24.0),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8E9),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline, size: 40, color: Color(0xFFD32F2F)),
+          const SizedBox(height: 12),
+          Text(
+            'Unable to load your garden right now.',
+            style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 

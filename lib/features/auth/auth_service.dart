@@ -166,7 +166,7 @@ class AuthService {
       await _firestore.collection('users').doc(user.uid).update(user.toMap());
     } catch (e) {
       print("Error updating profile: $e");
-      throw e;
+      rethrow;
     }
   }
 

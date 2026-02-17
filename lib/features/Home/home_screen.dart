@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:kita_agro/features/Home/Planting/planting_screen.dart';
-import 'package:kita_agro/features/Home/community/community_screen.dart';
 import 'package:kita_agro/features/Home/Dictionary/dictionary_screen.dart';
 import 'package:kita_agro/features/Home/my_journey/my_journey_screen.dart';
 

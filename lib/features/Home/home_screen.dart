@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:kita_agro/features/Home/Planting/planting_screen.dart';
 import 'package:kita_agro/features/Home/Dictionary/dictionary_screen.dart';
@@ -18,6 +21,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _gardenCarouselController = PageController(viewportFraction: 0.85);
   int _currentGardenPage = 0;
   final ValueNotifier<int> _gardenPageNotifier = ValueNotifier<int>(0);
+  Future<_WeatherData?>? _weatherFuture;
+  String? _weatherLocationKey;
+  DateTime? _weatherFetchedAt;
 
   @override
   void dispose() {
@@ -102,172 +108,401 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDashboard() {
-    return Container(
-      color: Colors.grey[50],
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          // Growth Stage Card with Weather and Reminder
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                // Growth Stage Circle
-                Expanded(
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        height: 120,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Outer circle
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.grey[300]!,
-                                  width: 8,
-                                ),
-                              ),
-                            ),
-                            // Progress circle
-                            SizedBox(
-                              width: 120,
-                              height: 120,
-                              child: CircularProgressIndicator(
-                                value: 0.75,
-                                strokeWidth: 8,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.teal[400]!),
-                                backgroundColor: Colors.transparent,
-                              ),
-                            ),
-                            // Center circle with plant icon
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.black,
-                              ),
-                              child: const Icon(Icons.eco, color: Colors.white, size: 32),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '75%',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.teal[400],
-                        ),
-                      ),
-                      Text(
-                        'Growth Stage',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _gardenPlantStream(),
+      builder: (context, snapshot) {
+        final plants = snapshot.data ?? <Map<String, dynamic>>[];
+
+        final totalProgress = plants.fold<double>(
+          0,
+          (sum, plant) {
+            final totalDays = plant['totalDays'] as int;
+            final daysPlanted = plant['daysPlanted'] as int;
+            if (totalDays <= 0) {
+              return sum;
+            }
+            return sum + (daysPlanted / totalDays).clamp(0.0, 1.0);
+          },
+        );
+
+        final averageProgress = plants.isEmpty ? 0.0 : (totalProgress / plants.length);
+        final progressPercent = (averageProgress * 100).round();
+
+        Map<String, dynamic>? nextPlant;
+        int? nextHarvestDays;
+        for (final plant in plants) {
+          final totalDays = plant['totalDays'] as int;
+          final daysPlanted = plant['daysPlanted'] as int;
+          final remaining = totalDays - daysPlanted;
+          if (remaining <= 0) {
+            continue;
+          }
+          if (nextHarvestDays == null || remaining < nextHarvestDays) {
+            nextHarvestDays = remaining;
+            nextPlant = plant;
+          }
+        }
+
+        final reminderTitle = plants.isEmpty
+            ? 'Add your first plant'
+            : nextPlant == null
+                ? 'Ready to harvest'
+                : '${nextPlant['name']} in $nextHarvestDays day${nextHarvestDays == 1 ? '' : 's'}';
+
+        final reminderColor = plants.isEmpty
+            ? Colors.orange
+            : nextPlant == null
+                ? Colors.green
+                : Colors.red;
+
+        final reminderIcon = plants.isEmpty
+            ? Icons.add_circle_outline
+            : nextPlant == null
+                ? Icons.check_circle
+                : Icons.schedule;
+
+        return Container(
+          color: Colors.grey[50],
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(width: 16),
-                // Weather and Reminder
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Weather Card
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.all(12.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: 120,
+                            height: 120,
+                            child: Stack(
+                              alignment: Alignment.center,
                               children: [
-                                const Text(
-                                  'Today',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.grey[300]!,
+                                      width: 8,
+                                    ),
                                   ),
                                 ),
-                                Icon(Icons.wb_sunny, color: Colors.amber, size: 20),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              '24°C',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Text(
-                              'Sunny',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Reminder Card
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.red[50],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.all(12.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Reminder',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
+                                SizedBox(
+                                  width: 120,
+                                  height: 120,
+                                  child: CircularProgressIndicator(
+                                    value: averageProgress,
+                                    strokeWidth: 8,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.teal[400]!),
+                                    backgroundColor: Colors.transparent,
                                   ),
                                 ),
-                                Icon(Icons.water_drop, color: Colors.red, size: 20),
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.black,
+                                  ),
+                                  child: const Icon(Icons.eco, color: Colors.white, size: 32),
+                                ),
                               ],
                             ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Watering',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            '$progressPercent%',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.teal[400],
                             ),
-                          ],
-                        ),
+                          ),
+                          Text(
+                            plants.isEmpty ? 'No plants yet' : 'Average Growth',
+                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          StreamBuilder<Map<String, dynamic>?>(
+                            stream: _gardenLocationStream(),
+                            builder: (context, locationSnapshot) {
+                              final locationData = locationSnapshot.data;
+                              final locationText = _formatGardenLocation(locationData);
+                              final weatherFuture = _weatherFutureForLocation(locationData);
+
+                              return FutureBuilder<_WeatherData?>(
+                                future: weatherFuture,
+                                builder: (context, weatherSnapshot) {
+                                  final weather = weatherSnapshot.data;
+                                  final isLoading = weatherSnapshot.connectionState == ConnectionState.waiting;
+                                  final hasError = weatherSnapshot.hasError;
+
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue[50],
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    padding: const EdgeInsets.all(12.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text(
+                                              'Today',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            Icon(
+                                              weather != null ? _weatherIconForCode(weather.weatherCode) : Icons.cloud_outlined,
+                                              color: Colors.blue[600],
+                                              size: 20,
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        if (isLoading)
+                                          const Text(
+                                            'Loading weather...',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          )
+                                        else if (weather != null)
+                                          Text(
+                                            '${weather.temperatureCelsius.toStringAsFixed(1)}°C',
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          )
+                                        else
+                                          Text(
+                                            hasError
+                                                ? 'Weather unavailable'
+                                                : 'Set location first',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          weather != null
+                                              ? _weatherConditionLabel(weather.weatherCode)
+                                              : locationText,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.red[50],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      'Reminder',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    Icon(reminderIcon, color: reminderColor, size: 20),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  reminderTitle,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  Stream<Map<String, dynamic>?> _gardenLocationStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Stream.value(null);
+    }
+
+    return FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots().map((snapshot) {
+      final data = snapshot.data();
+      final location = data?['gardenLocation'];
+      if (location is Map<String, dynamic>) {
+        return location;
+      }
+      if (location is Map) {
+        return location.cast<String, dynamic>();
+      }
+      return null;
+    });
+  }
+
+  String _formatGardenLocation(Map<String, dynamic>? locationData) {
+    if (locationData == null) {
+      return 'Set in My Journey';
+    }
+
+    final address = locationData['address'] as String?;
+    if (address != null && address.trim().isNotEmpty) {
+      final firstSegment = address.split(',').first.trim();
+      return firstSegment.isEmpty ? address : firstSegment;
+    }
+
+    final latitude = (locationData['latitude'] as num?)?.toDouble();
+    final longitude = (locationData['longitude'] as num?)?.toDouble();
+    if (latitude != null && longitude != null) {
+      return '${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
+    }
+
+    return 'Set in My Journey';
+  }
+
+  Future<_WeatherData?> _weatherFutureForLocation(Map<String, dynamic>? locationData) {
+    final latitude = (locationData?['latitude'] as num?)?.toDouble();
+    final longitude = (locationData?['longitude'] as num?)?.toDouble();
+    if (latitude == null || longitude == null) {
+      return Future.value(null);
+    }
+
+    final key = '${latitude.toStringAsFixed(3)},${longitude.toStringAsFixed(3)}';
+    final now = DateTime.now();
+    final shouldRefresh = _weatherFuture == null ||
+        _weatherLocationKey != key ||
+        _weatherFetchedAt == null ||
+        now.difference(_weatherFetchedAt!) > const Duration(minutes: 20);
+
+    if (shouldRefresh) {
+      _weatherLocationKey = key;
+      _weatherFetchedAt = now;
+      _weatherFuture = _fetchCurrentWeather(latitude: latitude, longitude: longitude);
+    }
+
+    return _weatherFuture!;
+  }
+
+  Future<_WeatherData?> _fetchCurrentWeather({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final uri = Uri.https('api.open-meteo.com', '/v1/forecast', {
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+        'current': 'temperature_2m,weather_code',
+        'timezone': 'auto',
+      });
+
+      final response = await http.get(uri);
+      if (response.statusCode != 200) {
+        return null;
+      }
+
+      final payload = jsonDecode(response.body) as Map<String, dynamic>;
+      final current = payload['current'] as Map<String, dynamic>?;
+      if (current == null) {
+        return null;
+      }
+
+      final temperature = (current['temperature_2m'] as num?)?.toDouble();
+      final weatherCode = (current['weather_code'] as num?)?.toInt();
+      if (temperature == null || weatherCode == null) {
+        return null;
+      }
+
+      return _WeatherData(
+        temperatureCelsius: temperature,
+        weatherCode: weatherCode,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _weatherConditionLabel(int code) {
+    if (code == 0) return 'Clear sky';
+    if (code == 1 || code == 2) return 'Partly cloudy';
+    if (code == 3) return 'Cloudy';
+    if (code == 45 || code == 48) return 'Fog';
+    if (code == 51 || code == 53 || code == 55) return 'Drizzle';
+    if (code == 56 || code == 57) return 'Freezing drizzle';
+    if (code == 61 || code == 63 || code == 65) return 'Rain';
+    if (code == 66 || code == 67) return 'Freezing rain';
+    if (code == 71 || code == 73 || code == 75 || code == 77) return 'Snow';
+    if (code == 80 || code == 81 || code == 82) return 'Rain showers';
+    if (code == 85 || code == 86) return 'Snow showers';
+    if (code == 95 || code == 96 || code == 99) return 'Thunderstorm';
+    return 'Unknown';
+  }
+
+  IconData _weatherIconForCode(int code) {
+    if (code == 0) return Icons.wb_sunny;
+    if (code == 1 || code == 2) return Icons.wb_cloudy;
+    if (code == 3) return Icons.cloud;
+    if (code == 45 || code == 48) return Icons.foggy;
+    if (code == 51 || code == 53 || code == 55 || code == 56 || code == 57) {
+      return Icons.grain;
+    }
+    if (code == 61 || code == 63 || code == 65 || code == 66 || code == 67 || code == 80 || code == 81 || code == 82) {
+      return Icons.umbrella;
+    }
+    if (code == 71 || code == 73 || code == 75 || code == 77 || code == 85 || code == 86) {
+      return Icons.ac_unit;
+    }
+    if (code == 95 || code == 96 || code == 99) return Icons.flash_on;
+    return Icons.cloud_outlined;
   }
 
   Widget _buildActionButtons() {
@@ -1032,4 +1267,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+}
+
+class _WeatherData {
+  const _WeatherData({
+    required this.temperatureCelsius,
+    required this.weatherCode,
+  });
+
+  final double temperatureCelsius;
+  final int weatherCode;
 }

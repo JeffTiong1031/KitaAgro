@@ -1,6 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 
 class MyJourneyScreen extends StatefulWidget {
   const MyJourneyScreen({super.key});
@@ -10,7 +15,254 @@ class MyJourneyScreen extends StatefulWidget {
 }
 
 class _MyJourneyScreenState extends State<MyJourneyScreen> {
+  static const String _googleMapsApiKey = String.fromEnvironment(
+    'GOOGLE_MAPS_API_KEY',
+    defaultValue: '',
+  );
+
   String _sortBy = 'name'; // 'name', 'daysPlanted', 'health'
+  bool _gardenLocationLoading = false;
+  String? _gardenAddress;
+  double? _gardenLatitude;
+  double? _gardenLongitude;
+  String? _gardenPlaceId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGardenLocation();
+  }
+
+  DocumentReference<Map<String, dynamic>>? _userDocRef() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return null;
+    }
+    return FirebaseFirestore.instance.collection('users').doc(user.uid);
+  }
+
+  Future<void> _loadGardenLocation() async {
+    final userDocRef = _userDocRef();
+    if (userDocRef == null) {
+      return;
+    }
+
+    setState(() {
+      _gardenLocationLoading = true;
+    });
+
+    try {
+      final snapshot = await userDocRef.get();
+      final data = snapshot.data();
+      final location = data?['gardenLocation'] as Map<String, dynamic>?;
+
+      if (!mounted) {
+        return;
+      }
+
+      if (location != null) {
+        setState(() {
+          _gardenAddress = location['address'] as String?;
+          _gardenLatitude = (location['latitude'] as num?)?.toDouble();
+          _gardenLongitude = (location['longitude'] as num?)?.toDouble();
+          _gardenPlaceId = location['placeId'] as String?;
+          _gardenLocationLoading = false;
+        });
+      } else {
+        setState(() {
+          _gardenAddress = null;
+          _gardenLatitude = null;
+          _gardenLongitude = null;
+          _gardenPlaceId = null;
+          _gardenLocationLoading = false;
+        });
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _gardenLocationLoading = false;
+      });
+    }
+  }
+
+  Future<void> _setGardenLocation() async {
+    final userDocRef = _userDocRef();
+    if (userDocRef == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please sign in to save garden location.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    final result = await Navigator.push<_GardenLocationResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => _GardenLocationPickerScreen(
+          apiKey: _googleMapsApiKey,
+          initialLatitude: _gardenLatitude,
+          initialLongitude: _gardenLongitude,
+          initialAddress: _gardenAddress,
+        ),
+      ),
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _gardenLocationLoading = true;
+    });
+
+    try {
+      await userDocRef.set(
+        {
+          'gardenLocation': {
+            'latitude': result.latitude,
+            'longitude': result.longitude,
+            'address': result.address,
+            'placeId': result.placeId,
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+        },
+        SetOptions(merge: true),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _gardenLatitude = result.latitude;
+        _gardenLongitude = result.longitude;
+        _gardenAddress = result.address;
+        _gardenPlaceId = result.placeId;
+        _gardenLocationLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Garden location saved successfully.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _gardenLocationLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save garden location: $error'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Widget _buildGardenLocationCard() {
+    final hasLocation = _gardenLatitude != null && _gardenLongitude != null;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.location_on, color: Color(0xFF2E7D32)),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'My Garden Location',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1B5E20),
+                  ),
+                ),
+              ),
+              if (_gardenLocationLoading)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            hasLocation
+                ? (_gardenAddress ??
+                      'Lat: ${_gardenLatitude!.toStringAsFixed(5)}, Lng: ${_gardenLongitude!.toStringAsFixed(5)}')
+                : 'Set your garden location to get localized suggestions and weather context.',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          if (hasLocation) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Lat: ${_gardenLatitude!.toStringAsFixed(5)}, Lng: ${_gardenLongitude!.toStringAsFixed(5)}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              ElevatedButton.icon(
+                onPressed: _gardenLocationLoading ? null : _setGardenLocation,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.edit_location_alt),
+                label: Text(hasLocation ? 'Edit Location' : 'Set Location'),
+              ),
+              const SizedBox(width: 10),
+              if (_googleMapsApiKey.isEmpty)
+                Expanded(
+                  child: Text(
+                    'Tip: pass --dart-define=GOOGLE_MAPS_API_KEY=YOUR_KEY for Places search.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.orange.shade800,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Stream<List<Map<String, dynamic>>> _gardenPlantStream() {
     final user = FirebaseAuth.instance.currentUser;
@@ -205,6 +457,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       ),
       body: Column(
         children: [
+          _buildGardenLocationCard(),
           // Sort options
           Container(
             color: Color(0xFF2E7D32),
@@ -507,4 +760,572 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       ),
     );
   }
+}
+
+class _GardenLocationResult {
+  const _GardenLocationResult({
+    required this.latitude,
+    required this.longitude,
+    required this.address,
+    this.placeId,
+  });
+
+  final double latitude;
+  final double longitude;
+  final String address;
+  final String? placeId;
+}
+
+class _GardenLocationPickerScreen extends StatefulWidget {
+  const _GardenLocationPickerScreen({
+    required this.apiKey,
+    this.initialLatitude,
+    this.initialLongitude,
+    this.initialAddress,
+  });
+
+  final String apiKey;
+  final double? initialLatitude;
+  final double? initialLongitude;
+  final String? initialAddress;
+
+  @override
+  State<_GardenLocationPickerScreen> createState() => _GardenLocationPickerScreenState();
+}
+
+class _GardenLocationPickerScreenState extends State<_GardenLocationPickerScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  GoogleMapController? _mapController;
+  List<_PlaceSuggestion> _suggestions = [];
+  bool _searching = false;
+  bool _resolvingAddress = false;
+  String? _selectedAddress;
+  String? _selectedPlaceId;
+  LatLng _selectedPoint = const LatLng(3.1390, 101.6869);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialLatitude != null && widget.initialLongitude != null) {
+      _selectedPoint = LatLng(widget.initialLatitude!, widget.initialLongitude!);
+      _selectedAddress = widget.initialAddress;
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _goToCurrentLocation() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enable location services.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Location permission denied.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    final position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+    final target = LatLng(position.latitude, position.longitude);
+
+    setState(() {
+      _selectedPoint = target;
+      _selectedPlaceId = null;
+      _resolvingAddress = true;
+    });
+
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngZoom(target, 16),
+    );
+
+    final address = await _reverseGeocode(target);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _selectedAddress =
+          address ?? 'Lat: ${target.latitude.toStringAsFixed(5)}, Lng: ${target.longitude.toStringAsFixed(5)}';
+      _resolvingAddress = false;
+    });
+  }
+
+  Future<void> _onMapTap(LatLng point) async {
+    setState(() {
+      _selectedPoint = point;
+      _selectedPlaceId = null;
+      _resolvingAddress = true;
+    });
+
+    final address = await _reverseGeocode(point);
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _selectedAddress =
+          address ?? 'Lat: ${point.latitude.toStringAsFixed(5)}, Lng: ${point.longitude.toStringAsFixed(5)}';
+      _resolvingAddress = false;
+    });
+  }
+
+  Future<void> _searchPlaces(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _suggestions = [];
+      });
+      return;
+    }
+
+    if (widget.apiKey.isEmpty) {
+      await _searchPlacesFallback(query);
+      return;
+    }
+
+    setState(() {
+      _searching = true;
+    });
+
+    try {
+      final uri = Uri.https('maps.googleapis.com', '/maps/api/place/autocomplete/json', {
+        'input': query,
+        'key': widget.apiKey,
+      });
+      final response = await http.get(uri);
+      if (response.statusCode != 200) {
+        if (mounted) {
+          setState(() {
+            _searching = false;
+            _suggestions = [];
+          });
+        }
+        return;
+      }
+
+      final payload = jsonDecode(response.body) as Map<String, dynamic>;
+      final predictions = (payload['predictions'] as List<dynamic>? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .toList();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _suggestions = predictions
+            .map(
+              (item) => _PlaceSuggestion(
+                placeId: (item['place_id'] as String?) ?? '',
+                description: (item['description'] as String?) ?? '',
+              ),
+            )
+            .where((item) => (item.placeId?.isNotEmpty ?? false) && item.description.isNotEmpty)
+            .toList();
+        _searching = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _searching = false;
+        _suggestions = [];
+      });
+    }
+  }
+
+  Future<void> _searchPlacesFallback(String query) async {
+    setState(() {
+      _searching = true;
+    });
+
+    try {
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=5',
+      );
+      final response = await http.get(
+        uri,
+        headers: const {'User-Agent': 'KitaAgroApp/1.0'},
+      );
+
+      if (response.statusCode != 200) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _searching = false;
+          _suggestions = [];
+        });
+        return;
+      }
+
+      final results = (jsonDecode(response.body) as List<dynamic>)
+          .whereType<Map<String, dynamic>>()
+          .toList();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _suggestions = results
+            .map(
+              (item) => _PlaceSuggestion(
+                placeId: null,
+                description: (item['display_name'] as String?) ?? '',
+                latitude: double.tryParse(item['lat'] as String? ?? ''),
+                longitude: double.tryParse(item['lon'] as String? ?? ''),
+              ),
+            )
+            .where(
+              (item) =>
+                  item.description.isNotEmpty &&
+                  item.latitude != null &&
+                  item.longitude != null,
+            )
+            .toList();
+        _searching = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _searching = false;
+        _suggestions = [];
+      });
+    }
+  }
+
+  Future<void> _selectSuggestion(_PlaceSuggestion suggestion) async {
+    if (suggestion.latitude != null && suggestion.longitude != null) {
+      final target = LatLng(suggestion.latitude!, suggestion.longitude!);
+      setState(() {
+        _selectedPoint = target;
+        _selectedAddress = suggestion.description;
+        _selectedPlaceId = suggestion.placeId;
+        _suggestions = [];
+        _resolvingAddress = false;
+        _searching = false;
+      });
+      _searchController.text = suggestion.description;
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(target, 16));
+      return;
+    }
+
+    if (widget.apiKey.isEmpty || suggestion.placeId == null) {
+      return;
+    }
+
+    setState(() {
+      _searching = true;
+      _suggestions = [];
+      _resolvingAddress = true;
+    });
+
+    try {
+      final uri = Uri.https('maps.googleapis.com', '/maps/api/place/details/json', {
+        'place_id': suggestion.placeId!,
+        'fields': 'geometry,formatted_address,place_id',
+        'key': widget.apiKey,
+      });
+      final response = await http.get(uri);
+      if (response.statusCode != 200) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _searching = false;
+          _resolvingAddress = false;
+        });
+        return;
+      }
+
+      final payload = jsonDecode(response.body) as Map<String, dynamic>;
+      final result = payload['result'] as Map<String, dynamic>?;
+      final geometry = result?['geometry'] as Map<String, dynamic>?;
+      final location = geometry?['location'] as Map<String, dynamic>?;
+
+      final lat = (location?['lat'] as num?)?.toDouble();
+      final lng = (location?['lng'] as num?)?.toDouble();
+      final formattedAddress = result?['formatted_address'] as String?;
+
+      if (lat == null || lng == null) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _searching = false;
+          _resolvingAddress = false;
+        });
+        return;
+      }
+
+      final target = LatLng(lat, lng);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _selectedPoint = target;
+        _selectedAddress =
+            formattedAddress ??
+            'Lat: ${target.latitude.toStringAsFixed(5)}, Lng: ${target.longitude.toStringAsFixed(5)}';
+        _selectedPlaceId = suggestion.placeId!;
+        _searching = false;
+        _resolvingAddress = false;
+      });
+
+      _searchController.text = suggestion.description;
+
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(target, 16));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _searching = false;
+        _resolvingAddress = false;
+      });
+    }
+  }
+
+  Future<String?> _reverseGeocode(LatLng point) async {
+    if (widget.apiKey.isEmpty) {
+      try {
+        final uri = Uri.parse(
+          'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${point.latitude}&lon=${point.longitude}',
+        );
+        final response = await http.get(
+          uri,
+          headers: const {'User-Agent': 'KitaAgroApp/1.0'},
+        );
+        if (response.statusCode != 200) {
+          return null;
+        }
+        final payload = jsonDecode(response.body) as Map<String, dynamic>;
+        return payload['display_name'] as String?;
+      } catch (_) {
+        return null;
+      }
+    }
+    try {
+      final uri = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
+        'latlng': '${point.latitude},${point.longitude}',
+        'key': widget.apiKey,
+      });
+      final response = await http.get(uri);
+      if (response.statusCode != 200) {
+        return null;
+      }
+      final payload = jsonDecode(response.body) as Map<String, dynamic>;
+      final results = (payload['results'] as List<dynamic>? ?? []);
+      if (results.isEmpty) {
+        return null;
+      }
+      final first = results.first as Map<String, dynamic>;
+      return first['formatted_address'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fallbackAddress =
+        'Lat: ${_selectedPoint.latitude.toStringAsFixed(5)}, Lng: ${_selectedPoint.longitude.toStringAsFixed(5)}';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Set Garden Location'),
+        backgroundColor: const Color(0xFF2E7D32),
+        foregroundColor: Colors.white,
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      hintText: widget.apiKey.isEmpty
+                          ? 'Search place or address (fallback mode)'
+                          : 'Search place or address',
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: _searchPlaces,
+                    onSubmitted: _searchPlaces,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _goToCurrentLocation,
+                  icon: const Icon(Icons.my_location),
+                  tooltip: 'Use current location',
+                ),
+              ],
+            ),
+          ),
+          if (_searching) const LinearProgressIndicator(minHeight: 2),
+          if (_suggestions.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              constraints: const BoxConstraints(maxHeight: 220),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: _suggestions.length,
+                separatorBuilder: (context, index) => Divider(
+                  height: 1,
+                  color: Colors.grey.shade300,
+                ),
+                itemBuilder: (context, index) {
+                  final suggestion = _suggestions[index];
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.place_outlined),
+                    title: Text(suggestion.description),
+                    onTap: () => _selectSuggestion(suggestion),
+                  );
+                },
+              ),
+            ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: _selectedPoint,
+                zoom: 14,
+              ),
+              onMapCreated: (controller) {
+                _mapController = controller;
+              },
+              onTap: _onMapTap,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+              markers: {
+                Marker(
+                  markerId: const MarkerId('garden_location'),
+                  position: _selectedPoint,
+                ),
+              },
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.pin_drop, color: Color(0xFF2E7D32)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _selectedAddress ?? fallbackAddress,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                    if (_resolvingAddress)
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(
+                        context,
+                        _GardenLocationResult(
+                          latitude: _selectedPoint.latitude,
+                          longitude: _selectedPoint.longitude,
+                          address: _selectedAddress ?? fallbackAddress,
+                          placeId: _selectedPlaceId,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Save Garden Location'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlaceSuggestion {
+  const _PlaceSuggestion({
+    required this.placeId,
+    required this.description,
+    this.latitude,
+    this.longitude,
+  });
+
+  final String? placeId;
+  final String description;
+  final double? latitude;
+  final double? longitude;
 }

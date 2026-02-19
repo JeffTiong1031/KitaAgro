@@ -26,3 +26,17 @@ This project has been configured for easy collaboration. Configuration files are
 flutter pub get
 flutter run
 ```
+
+### Google APIs for Garden Location Feature
+
+1. In Google Cloud Console, enable:
+	- Maps SDK for Android
+	- Places API
+	- Geocoding API
+2. Set Android Maps key in [android/app/src/main/res/values/strings.xml](android/app/src/main/res/values/strings.xml):
+	- `google_maps_key`
+3. Run Flutter with Places/Geocoding key for REST calls:
+
+```bash
+flutter run --dart-define=GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_API_KEY
+```

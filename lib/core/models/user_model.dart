@@ -10,6 +10,8 @@ class UserModel {
   final String country;
   final String role;
   final DateTime createdAt;
+  final String bio;
+  final String profilePicUrl;
 
   UserModel({
     required this.uid,
@@ -23,6 +25,8 @@ class UserModel {
     required this.country,
     required this.role,
     required this.createdAt,
+    this.bio = '',
+    this.profilePicUrl = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -38,6 +42,8 @@ class UserModel {
       'country': country,
       'role': role,
       'createdAt': createdAt.toIso8601String(),
+      'bio': bio,
+      'profilePicUrl': profilePicUrl,
     };
   }
 
@@ -54,6 +60,8 @@ class UserModel {
       country: map['country'] ?? 'Not Specified',
       role: map['role'] ?? 'Farmer',
       createdAt: DateTime.tryParse(map['createdAt'] ?? '') ?? DateTime.now(),
+      bio: map['bio'] ?? '',
+      profilePicUrl: map['profilePicUrl'] ?? '',
     );
   }
 }

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/user_model.dart';
 import '../../features/auth/auth_service.dart';
+import '../../features/community/community_service.dart';
 import '../auth/login_screen.dart';
 import '../auth/welcome_screen.dart'; // Add import
+import 'edit_profile_screen.dart';
+import 'single_post_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -13,6 +17,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
+  final CommunityService _communityService = CommunityService();
   UserModel? _user;
   bool _isLoading = true;
 
@@ -41,108 +46,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _showEditProfileDialog() async {
+  Future<void> _navigateToEditProfile() async {
     if (_user == null) return;
+    
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(user: _user!),
+      ),
+    );
 
-    final TextEditingController nameController = TextEditingController(text: _user!.fullName);
-    final TextEditingController ageController = TextEditingController(text: _user!.age.toString());
-    final TextEditingController townController = TextEditingController(text: _user!.town);
-    final TextEditingController stateController = TextEditingController(text: _user!.state);
-    final TextEditingController countryController = TextEditingController(text: _user!.country);
-    String selectedRole = _user!.role.isNotEmpty && ["Farmer", "Home Grower", "Agronomist", "Business Company"].contains(_user!.role) 
-        ? _user!.role 
-        : "Farmer";
+    // If profile was updated, refresh data
+    if (result == true) {
+      _fetchUserData();
+    }
+  }
 
-    await showDialog(
+  Future<void> _showChangePasswordDialog() async {
+    showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text("Edit Profile"),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(labelText: "Full Name"),
-                    ),
-                    TextField(
-                      controller: ageController,
-                      decoration: const InputDecoration(labelText: "Age"),
-                      keyboardType: TextInputType.number,
-                    ),
-                    TextField(
-                      controller: townController,
-                      decoration: const InputDecoration(labelText: "Town"),
-                    ),
-                    TextField(
-                      controller: stateController,
-                      decoration: const InputDecoration(labelText: "State"),
-                    ),
-                    TextField(
-                      controller: TextEditingController(text: _user!.town),
-                      onChanged: (val) {
-                         // We need a controller for town to capture this
-                      },
-                      decoration: const InputDecoration(labelText: "Town"),
-                    ),
-                    TextField(
-                      controller: countryController,
-                      decoration: const InputDecoration(labelText: "Country"),
-                    ),
-                    DropdownButton<String>(
-                      value: selectedRole,
-                      isExpanded: true,
-                      onChanged: (val) {
-                        setDialogState(() {
-                          selectedRole = val!;
-                        });
-                      },
-                      items: ["Farmer", "Home Grower", "Agronomist", "Business Company"]
-                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                          .toList(),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    // Update user model
-                    UserModel updatedUser = UserModel(
-                      uid: _user!.uid,
-                      email: _user!.email,
-                      username: _user!.username,
-                      fullName: nameController.text.trim(),
-                      age: int.tryParse(ageController.text.trim()) ?? _user!.age,
-                      gender: _user!.gender, // Not editing gender for now
-                      town: townController.text.trim(),
-                      state: stateController.text.trim(),
-                      country: countryController.text.trim(),
-                      role: selectedRole,
-                      createdAt: _user!.createdAt,
-                    );
-
-                    await _authService.updateUserProfile(updatedUser);
-                    
-                    if (mounted) {
-                      Navigator.pop(context);
-                      _fetchUserData(); // Refresh data
-                    }
-                  },
-                  child: const Text("Save"),
-                ),
-              ],
-            );
-          }
-        );
-      },
+      builder: (context) => AlertDialog(
+        title: const Text("Change Password"),
+        content: const TextField(
+          obscureText: true,
+          decoration: InputDecoration(labelText: "New Password"),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Password change feature coming soon!")));
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      )
     );
   }
 
@@ -157,131 +96,247 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Row(
+          children: [
+            Text(
+              _user!.username,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings, color: Colors.black),
+              onPressed: _showChangePasswordDialog,
+            ),
+          ],
+        ),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
         children: [
-          // Profile Header
-          Center(
-            child: Column(
+          // Header: Avatar + Stats
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+            child: Row(
               children: [
                 CircleAvatar(
-                  radius: 50,
+                  radius: 40,
                   backgroundColor: Colors.green.shade100,
-                  child: Text(
-                    _user!.fullName.isNotEmpty ? _user!.fullName[0].toUpperCase() : '?',
-                    style: const TextStyle(fontSize: 40, color: Colors.green),
+                  backgroundImage: _user!.profilePicUrl.isNotEmpty 
+                      ? NetworkImage(_user!.profilePicUrl) 
+                      : null,
+                  child: _user!.profilePicUrl.isEmpty 
+                      ? Text(
+                          _user!.fullName.isNotEmpty ? _user!.fullName[0].toUpperCase() : '?',
+                          style: const TextStyle(fontSize: 32, color: Colors.green, fontWeight: FontWeight.bold),
+                        )
+                      : null,
+                ),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildStatColumn("0", "posts"), // We can update posts dynamically if needed, but keeping simple for now
+                      _buildStatColumn("0", "followers"),
+                      _buildStatColumn("0", "following"),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  _user!.fullName,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  _user!.email,
-                  style: const TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  _user!.role, // Role
-                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 30),
-          // Profile Details Card
-          Card(
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            child: Padding(
-              padding: const EdgeInsets.all(15.0),
-              child: Column(
-                children: [
-                  _buildProfileRow("Username", _user!.username),
-                  const Divider(),
-                  _buildProfileRow("Age", "${_user!.age}"),
-                  const Divider(),
-                  _buildProfileRow("Gender", _user!.gender),
-                  const Divider(),
-                  _buildProfileRow("Location", "${_user!.town}, ${_user!.state}, ${_user!.country}"),
+          // Bio details
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _user!.fullName,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${_user!.role} | ${_user!.town} | ${_user!.country}',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                if (_user!.bio.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    _user!.bio,
+                    style: const TextStyle(fontSize: 14),
+                  ),
                 ],
-              ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Actions
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _navigateToEditProfile,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.black,
+                      side: const BorderSide(color: Colors.grey),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Edit profile', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.black,
+                      side: const BorderSide(color: Colors.grey),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('View archive', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Divider(thickness: 0.5),
+          
+          // My Posts Grid
+          StreamBuilder<QuerySnapshot>(
+            stream: _communityService.getPostsStream(), 
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                 return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                 return const Center(child: Padding(padding: EdgeInsets.all(40), child: Text("No posts yet.")));
+              }
+              
+              // Filter posts by user id 
+              final myPosts = snapshot.data!.docs.where((doc) {
+                 final data = doc.data() as Map<String, dynamic>;
+                 return data['publisherId'] == _user!.uid; 
+              }).toList();
+
+              if (myPosts.isEmpty) {
+                 return const Center(child: Padding(padding: EdgeInsets.all(40), child: Flexible(child: Text("Share photos to see them on your profile.", textAlign: TextAlign.center,))));
+              }
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 2,
+                  mainAxisSpacing: 2,
+                ),
+                itemCount: myPosts.length,
+                itemBuilder: (context, index) {
+                  final post = myPosts[index].data() as Map<String, dynamic>;
+                  final imageUrl = post['imageUrl'] as String? ?? "";
+                  
+                  if (imageUrl.isNotEmpty) {
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SinglePostScreen(postDoc: myPosts[index]),
+                          ),
+                        );
+                      },
+                      child: Image.network(
+                        imageUrl, 
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.error_outline),
+                        ),
+                      ),
+                    );
+                  } else {
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SinglePostScreen(postDoc: myPosts[index]),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        color: Colors.grey[200],
+                        child: const Center(child: Icon(Icons.text_snippet, color: Colors.grey)),
+                      ),
+                    );
+                  }
+                },
+              );
+            }
+          ),
+
+          const SizedBox(height: 40),
+          
+          // Logout Button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: TextButton(
+              onPressed: () {
+                // Show confirmation dialog before logout
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text("Logout"),
+                      content: const Text("Are you sure you want to logout?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text("Cancel"),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                             Navigator.pop(context); // Close dialog
+                             await _authService.signOut();
+                            
+                             if (mounted) {
+                               // Navigate to Welcome screen
+                               Navigator.pushAndRemoveUntil(
+                                 context,
+                                 MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+                                 (route) => false,
+                               );
+                             }
+                          },
+                          child: const Text("Log Out", style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              child: const Text('Log Out', style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 20),
-          
-          // Profile Options
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('Edit Profile'),
-            onTap: _showEditProfileDialog,
-          ),
-          ListTile(
-            leading: const Icon(Icons.lock),
-            title: const Text('Change Password'),
-            onTap: () {}, // Implement nice-to-have later
-          ),
-          ListTile(
-            leading: const Icon(Icons.help),
-            title: const Text('Help & Support'),
-            onTap: () {},
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              // Show confirmation dialog before logout
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: const Text("Logout"),
-                    content: const Text("Are you sure you want to logout?"),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Cancel"),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                           Navigator.pop(context); // Close dialog
-                           await _authService.signOut();
-                          
-                           if (mounted) {
-                             // Navigate to Welcome screen
-                             Navigator.pushAndRemoveUntil(
-                               context,
-                               MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-                               (route) => false,
-                             );
-                           }
-                        },
-                        child: const Text("Logout", style: TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildProfileRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
-        ],
-      ),
+  Widget _buildStatColumn(String value, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+        Text(label, style: const TextStyle(fontSize: 14, color: Colors.black)),
+      ],
     );
   }
 }

@@ -1,8 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:kita_agro/features/Home/Planting/planting_screen.dart';
 import 'package:kita_agro/features/Home/community/community_screen.dart';
+import 'package:kita_agro/features/community/create_post_screen.dart';
 import 'package:kita_agro/features/Home/Dictionary/dictionary_screen.dart';
+import 'package:kita_agro/features/community/community_service.dart';
+import 'package:kita_agro/features/Profile/single_post_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,6 +20,21 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTabIndex = 0;
+  final CommunityService _communityService = CommunityService();
+
+  Future<void> _pickImageAndNavigate(BuildContext context) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (pickedFile != null && context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CreatePostScreen(imageFile: pickedFile),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,11 +95,38 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: _buildTabNavigation(),
           ),
-          // Community Posts
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => _buildCommunityPost(index),
-              childCount: 10,
+          // Community Posts from Firebase
+          SliverToBoxAdapter(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _communityService.getPostsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(40.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text("Error loading posts: ${snapshot.error}"));
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(40.0),
+                    child: Center(child: Text("No posts yet. Be the first to share!")),
+                  );
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemCount: snapshot.data!.docs.length,
+                  itemBuilder: (context, index) {
+                    final postDoc = snapshot.data!.docs[index];
+                    return _buildRealCommunityPost(postDoc);
+                  },
+                );
+              }
             ),
           ),
         ],
@@ -342,13 +391,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12.0),
-                    child: Text(
-                      tabs[index],
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: _selectedTabIndex == index ? FontWeight.bold : FontWeight.normal,
-                        color: _selectedTabIndex == index ? Colors.teal : Colors.grey,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          tabs[index],
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: _selectedTabIndex == index ? FontWeight.bold : FontWeight.normal,
+                            color: _selectedTabIndex == index ? Colors.teal : Colors.grey,
+                          ),
+                        ),
+                        if (index == 0) ...[
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () => _pickImageAndNavigate(context),
+                            child: Icon(
+                              Icons.add_circle, 
+                              size: 18, 
+                              color: _selectedTabIndex == index ? Colors.teal : Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   if (_selectedTabIndex == index)
@@ -365,66 +430,35 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCommunityPost(int index) {
-    final users = [
-      {'name': 'David Miller', 'role': 'Urban Gardener', 'time': '2h ago'},
-      {'name': 'Sarah Jenkins', 'role': 'Expert Farmer', 'time': '5h ago'},
-      {'name': 'John Smith', 'role': 'Crop Specialist', 'time': '3h ago'},
-      {'name': 'Emma Wilson', 'role': 'Soil Expert', 'time': '1h ago'},
-      {'name': 'Robert Brown', 'role': 'Farmer', 'time': '4h ago'},
-    ];
+  Widget _buildRealCommunityPost(DocumentSnapshot postDoc) {
+    final data = postDoc.data() as Map<String, dynamic>;
+    final publisherId = data['publisherId'] as String?;
+    final username = data['publisherName'] ?? 'Unknown User';
+    final userProfilePic = data['publisherProfilePic'] ?? '?';
+    final caption = data['caption'] ?? '';
+    final imageUrl = data['imageUrl'] ?? '';
+    final likesCount = data['likesCount'] ?? 0;
+    final commentsCount = data['commentsCount'] ?? 0;
+    final likedBy = data['likedBy'] as List<dynamic>? ?? [];
+    
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isMyPost = publisherId == currentUserId;
+    final isLiked = currentUserId != null && likedBy.contains(currentUserId);
 
-    final posts = [
-      {
-        'title': 'First harvest of my hydroponic lettuce!',
-        'content': 'Look at these vibrant colors 🌱 #UrbanFarming #Hydroponics',
-        'hasImage': true,
-        'likes': 245,
-        'comments': 42,
-        'shares': 12,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SinglePostScreen(postDoc: postDoc),
+          ),
+        );
       },
-      {
-        'title': 'Tips for pest control this season',
-        'content': 'Tips for pest control this season without harmful chemicals. Check out my new guide!',
-        'hasImage': false,
-        'likes': 89,
-        'comments': 15,
-        'shares': 8,
-      },
-      {
-        'title': 'New greenhouse setup completed!',
-        'content': 'Finally completed my greenhouse. Super excited to start growing vegetables!',
-        'hasImage': true,
-        'likes': 156,
-        'comments': 28,
-        'shares': 10,
-      },
-      {
-        'title': 'Soil preparation tips',
-        'content': 'Best practices for preparing your soil before planting season starts.',
-        'hasImage': false,
-        'likes': 120,
-        'comments': 22,
-        'shares': 9,
-      },
-      {
-        'title': 'Composting guide for farmers',
-        'content': 'Learn how to make your own compost at home and improve soil quality.',
-        'hasImage': true,
-        'likes': 198,
-        'comments': 35,
-        'shares': 14,
-      },
-    ];
-
-    final user = users[index % users.length];
-    final post = posts[index % posts.length];
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // User Header
@@ -435,9 +469,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     CircleAvatar(
                       backgroundColor: Colors.teal[300],
-                      radius: 24,
+                      radius: 20,
                       child: Text(
-                        user['name']![0],
+                        userProfilePic.isNotEmpty ? userProfilePic[0].toUpperCase() : '?',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -450,13 +484,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user['name']!,
+                          username,
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          '${user['role']} • ${user['time']}',
+                          'Community Member',
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: Colors.grey,
                           ),
@@ -465,64 +499,106 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                Icon(Icons.more_vert, color: Colors.grey[400], size: 20),
+                if (isMyPost)
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'delete') {
+                        // Confirm deletion
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Delete Post'),
+                            content: const Text('Are you sure you want to delete this post?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context); // Close dialog
+                                  _communityService.deletePost(postDoc.id); // Delete the post
+                                },
+                                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete Post', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                    icon: Icon(Icons.more_vert, color: Colors.grey[400], size: 20),
+                  )
+                else
+                  Icon(Icons.more_vert, color: Colors.grey[400], size: 20),
               ],
             ),
             const SizedBox(height: 12),
 
-            // Post Title
-            Text(
-              post['title']! as String,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+            // Post Caption
+            if (caption.isNotEmpty) ...[
+              Text(
+                caption,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
-            ),
-            const SizedBox(height: 8),
-
-            // Post Content
-            Text(
-              post['content']! as String,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+            ],
 
             // Post Image (if available)
-            if (post['hasImage'] == true)
-              Container(
-                width: double.infinity,
-                height: 180,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/ArgiPic.jpg'),
-                      fit: BoxFit.cover,
-                    ),
+            if (imageUrl.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 250,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: double.infinity,
+                    height: 200,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.error_outline),
                   ),
                 ),
               ),
 
-            if (post['hasImage'] == true) const SizedBox(height: 12),
+            if (imageUrl.isNotEmpty) const SizedBox(height: 12),
 
             // Engagement Metrics
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildEngagementButton(
-                  icon: Icons.favorite_outline,
-                  count: post['likes']! as int,
+                  icon: isLiked ? Icons.favorite : Icons.favorite_border,
+                  iconColor: isLiked ? Colors.red : null,
+                  count: likesCount,
+                  onTap: () {
+                    if (currentUserId != null) {
+                      _communityService.toggleLike(postDoc.id, currentUserId, likedBy);
+                    }
+                  }
                 ),
                 _buildEngagementButton(
                   icon: Icons.comment_outlined,
-                  count: post['comments']! as int,
+                  count: commentsCount,
+                  onTap: () {
+                     // Since both should link to single view, we navigate here as well
+                     Navigator.push(
+                       context,
+                       MaterialPageRoute(
+                         builder: (context) => SinglePostScreen(postDoc: postDoc),
+                       ),
+                     );
+                  }
                 ),
                 _buildEngagementButton(
                   icon: Icons.share_outlined,
-                  count: post['shares']! as int,
+                  count: 0,
                 ),
               ],
             ),
@@ -535,18 +611,24 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildEngagementButton({
     required IconData icon,
     required int count,
+    Color? iconColor,
+    VoidCallback? onTap,
   }) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
-        const SizedBox(width: 6),
-        Text(
-          count.toString(),
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Colors.grey[600],
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: iconColor ?? Colors.grey[600]),
+          const SizedBox(width: 6),
+          Text(
+            count.toString(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

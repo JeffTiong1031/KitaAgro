@@ -12,6 +12,8 @@ class UserModel {
   final DateTime createdAt;
   final String bio;
   final String profilePicUrl;
+  final List<String> friends;
+  final List<String> friendRequests;
 
   UserModel({
     required this.uid,
@@ -27,6 +29,8 @@ class UserModel {
     required this.createdAt,
     this.bio = '',
     this.profilePicUrl = '',
+    this.friends = const [],
+    this.friendRequests = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -44,6 +48,8 @@ class UserModel {
       'createdAt': createdAt.toIso8601String(),
       'bio': bio,
       'profilePicUrl': profilePicUrl,
+      'friends': friends,
+      'friendRequests': friendRequests,
     };
   }
 
@@ -62,6 +68,8 @@ class UserModel {
       createdAt: DateTime.tryParse(map['createdAt'] ?? '') ?? DateTime.now(),
       bio: map['bio'] ?? '',
       profilePicUrl: map['profilePicUrl'] ?? '',
+      friends: List<String>.from(map['friends'] ?? []),
+      friendRequests: List<String>.from(map['friendRequests'] ?? []),
     );
   }
 }

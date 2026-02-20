@@ -16,8 +16,8 @@ class PlantingScreen extends StatelessWidget {
             const Text('Watering Schedule & Growth Journal'),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {}, 
-              child: const Text("Add New Plant")
+              onPressed: () {},
+              child: const Text("Add New Plant"),
             ),
           ],
         ),

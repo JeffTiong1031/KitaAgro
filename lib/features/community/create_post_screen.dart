@@ -29,15 +29,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     try {
       final authService = AuthService();
       final currentUser = authService.currentUser;
-      
+
       if (currentUser == null) {
         throw Exception("You must be logged in to post");
       }
-      
+
       final userData = await authService.getUserData(currentUser.uid);
-      final String currentUid = currentUser.uid; 
+      final String currentUid = currentUser.uid;
       final String username = userData?.username ?? "New User";
-      final String userProfilePic = username.isNotEmpty ? username[0].toUpperCase() : "?";
+      final String userProfilePic = username.isNotEmpty
+          ? username[0].toUpperCase()
+          : "?";
 
       await _communityService.createPost(
         uid: currentUid,
@@ -52,9 +54,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating post: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error creating post: $e')));
       }
     } finally {
       if (mounted) {
@@ -80,10 +82,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         elevation: 0,
         title: const Text(
           "New Post",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.black),
         actions: [
@@ -106,7 +105,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   child: Text(
                     "Share",
                     style: TextStyle(
-                      color: Colors.blueAccent[400], // Instagram uses a distinct blue for 'Share'
+                      color: Colors
+                          .blueAccent[400], // Instagram uses a distinct blue for 'Share'
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -125,7 +125,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: kIsWeb 
+                    child: kIsWeb
                         ? Image.network(
                             widget.imageFile.path,
                             width: 80,
@@ -160,44 +160,77 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
             ),
             const Divider(height: 1, thickness: 0.5),
-            
+
             // Tag people
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              leading: const Icon(Icons.person_add_alt_1_outlined, color: Colors.black87),
-              title: const Text("Tag people", style: TextStyle(color: Colors.black87, fontSize: 16)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              leading: const Icon(
+                Icons.person_add_alt_1_outlined,
+                color: Colors.black87,
+              ),
+              title: const Text(
+                "Tag people",
+                style: TextStyle(color: Colors.black87, fontSize: 16),
+              ),
               trailing: const Icon(Icons.chevron_right, color: Colors.grey),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tag people feature coming soon!')),
+                  const SnackBar(
+                    content: Text('Tag people feature coming soon!'),
+                  ),
                 );
               },
             ),
             const Divider(height: 1, thickness: 0.5),
-            
+
             // Add location
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              leading: const Icon(Icons.location_on_outlined, color: Colors.black87),
-              title: const Text("Add location", style: TextStyle(color: Colors.black87, fontSize: 16)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              leading: const Icon(
+                Icons.location_on_outlined,
+                color: Colors.black87,
+              ),
+              title: const Text(
+                "Add location",
+                style: TextStyle(color: Colors.black87, fontSize: 16),
+              ),
               trailing: const Icon(Icons.chevron_right, color: Colors.grey),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Add location feature coming soon!')),
+                  const SnackBar(
+                    content: Text('Add location feature coming soon!'),
+                  ),
                 );
               },
             ),
             const Divider(height: 1, thickness: 0.5),
-            
+
             // Add music / audio
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              leading: const Icon(Icons.music_note_outlined, color: Colors.black87),
-              title: const Text("Add audio", style: TextStyle(color: Colors.black87, fontSize: 16)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              leading: const Icon(
+                Icons.music_note_outlined,
+                color: Colors.black87,
+              ),
+              title: const Text(
+                "Add audio",
+                style: TextStyle(color: Colors.black87, fontSize: 16),
+              ),
               trailing: const Icon(Icons.chevron_right, color: Colors.grey),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Add audio feature coming soon!')),
+                  const SnackBar(
+                    content: Text('Add audio feature coming soon!'),
+                  ),
                 );
               },
             ),

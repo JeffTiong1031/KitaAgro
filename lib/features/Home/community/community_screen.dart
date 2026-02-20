@@ -9,7 +9,7 @@ class CommunityScreen extends StatelessWidget {
   Future<void> _pickImageAndNavigate(BuildContext context) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    
+
     if (pickedFile != null && context.mounted) {
       Navigator.push(
         context,
@@ -28,8 +28,14 @@ class CommunityScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         children: [
           _buildPost("Leaf turning yellow?", "Asked by Ahmad • 2 mins ago"),
-          _buildPost("Best fertilizer for Chilies?", "Asked by Sarah • 1 hour ago"),
-          _buildPost("Spider Mites spotted in KL!", "Asked by Tan • 3 hours ago"),
+          _buildPost(
+            "Best fertilizer for Chilies?",
+            "Asked by Sarah • 1 hour ago",
+          ),
+          _buildPost(
+            "Spider Mites spotted in KL!",
+            "Asked by Tan • 3 hours ago",
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(

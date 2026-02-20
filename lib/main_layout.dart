@@ -6,6 +6,7 @@ import 'features/Farmer/farmer_screen.dart';
 import 'features/Diagnostic/scan_feature.dart'; // Import the new ScanFeature
 import 'features/Message/message_screen.dart';
 import 'features/Profile/profile_screen.dart';
+import 'services/chat_service.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key, this.initialIndex = 0});
@@ -22,11 +23,11 @@ class _MainLayoutState extends State<MainLayout> {
 
   // The list of pages matching the icons below
   final List<Widget> _screens = [
-    const HomeScreen(),        // 0 - Home (Planting + Community)
-    const FarmerScreen(),      // 1 - Farmer (Rental + Map)
-    const ScanFeature(),       // 2 - Scan
-    const MessageScreen(),     // 3 - Message
-    const ProfileScreen(),     // 4 - Profile
+    const HomeScreen(), // 0 - Home (Planting + Community)
+    const FarmerScreen(), // 1 - Farmer (Rental + Map)
+    const ScanFeature(), // 2 - Scan
+    const MessageScreen(), // 3 - Message
+    const ProfileScreen(), // 4 - Profile
   ];
 
   // Helper to ensure the index stays within bounds
@@ -64,35 +65,56 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
         indicatorColor: Colors.green.shade100,
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Home',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.agriculture_outlined),
             selectedIcon: Icon(Icons.agriculture),
             label: 'Farmer',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.qr_code_scanner),
             label: 'Scan',
           ),
           NavigationDestination(
-            icon: Icon(Icons.mail_outlined),
-            selectedIcon: Icon(Icons.mail),
+            icon: StreamBuilder<int>(
+              stream: ChatService().getUnreadChatsCountStream(),
+              builder: (context, snapshot) {
+                final count = snapshot.data ?? 0;
+                if (count > 0) {
+                  return Badge(
+                    label: Text(count.toString()),
+                    child: const Icon(Icons.mail_outlined),
+                  );
+                }
+                return const Icon(Icons.mail_outlined);
+              },
+            ),
+            selectedIcon: StreamBuilder<int>(
+              stream: ChatService().getUnreadChatsCountStream(),
+              builder: (context, snapshot) {
+                final count = snapshot.data ?? 0;
+                if (count > 0) {
+                  return Badge(
+                    label: Text(count.toString()),
+                    child: const Icon(Icons.mail),
+                  );
+                }
+                return const Icon(Icons.mail);
+              },
+            ),
             label: 'Message',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.person_outlined),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',

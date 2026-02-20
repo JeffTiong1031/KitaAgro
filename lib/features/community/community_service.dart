@@ -2,10 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart'; // Run 'flutter pub add uuid' if you don't have this
 import 'package:image_picker/image_picker.dart';
+import '../../services/notification_service.dart';
 
 class CommunityService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  final NotificationService _notificationService = NotificationService();
 
   // Collection References
   CollectionReference get _postsRef => _db.collection('posts');
@@ -15,7 +17,7 @@ class CommunityService {
   Future<String?> uploadImage(XFile imageFile) async {
     try {
       // Create a unique filename (e.g., "post_images/abc-123.jpg")
-      String fileName = const Uuid().v4(); 
+      String fileName = const Uuid().v4();
       Reference ref = _storage.ref().child('post_images/$fileName.jpg');
 
       // Upload the file using bytes for web compatibility
@@ -82,6 +84,26 @@ class CommunityService {
         'likesCount': FieldValue.increment(1),
         'likedBy': FieldValue.arrayUnion([uid]),
       });
+
+      try {
+        final postDoc = await _postsRef.doc(postId).get();
+        final data = postDoc.data() as Map<String, dynamic>?;
+        if (data != null) {
+          final publisherId = data['publisherId'];
+          if (publisherId != uid) {
+            final likerDoc = await _db.collection('users').doc(uid).get();
+            final likerName = likerDoc.data()?['fullName'] ?? 'Someone';
+            await _notificationService.sendNotification(
+              targetUserId: publisherId,
+              title: 'New Like',
+              body: '$likerName liked your post.',
+              type: 'like',
+            );
+          }
+        }
+      } catch (e) {
+        print("Error sending notification: $e");
+      }
     }
   }
 

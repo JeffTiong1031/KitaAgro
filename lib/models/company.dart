@@ -19,7 +19,9 @@ class Company {
   final double latitude;
   final double longitude;
 
-  factory Company.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot) {
+  factory Company.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> snapshot,
+  ) {
     final data = snapshot.data();
     if (data == null) {
       throw StateError('Company ${snapshot.id} missing data');

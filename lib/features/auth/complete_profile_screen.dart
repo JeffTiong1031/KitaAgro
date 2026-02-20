@@ -18,7 +18,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final TextEditingController _townController = TextEditingController();
   final TextEditingController _stateController = TextEditingController();
   final TextEditingController _countryController = TextEditingController();
-  
+
   String _selectedGender = 'Male';
   String _selectedRole = 'Farmer';
   bool _isLoading = false;
@@ -28,9 +28,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     super.initState();
     // Initialize with existing data if any
     if (widget.user.age > 0) _ageController.text = widget.user.age.toString();
-    if (widget.user.town != 'Not Specified') _townController.text = widget.user.town;
-    if (widget.user.state != 'Not Specified') _stateController.text = widget.user.state;
-    if (widget.user.country != 'Not Specified') _countryController.text = widget.user.country;
+    if (widget.user.town != 'Not Specified')
+      _townController.text = widget.user.town;
+    if (widget.user.state != 'Not Specified')
+      _stateController.text = widget.user.state;
+    if (widget.user.country != 'Not Specified')
+      _countryController.text = widget.user.country;
   }
 
   Future<void> _saveProfile() async {
@@ -64,12 +67,15 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error updating profile: $e")),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Error updating profile: $e")));
         }
       } finally {
-        if (mounted) setState(() { _isLoading = false; });
+        if (mounted)
+          setState(() {
+            _isLoading = false;
+          });
       }
     }
   }
@@ -86,19 +92,21 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             children: [
               const Text("Please complete your profile to continue."),
               const SizedBox(height: 20),
-              
+
               TextFormField(
                 controller: _ageController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: "Age"),
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Please enter your age';
-                  if (int.tryParse(value) == null) return 'Please enter a valid number';
+                  if (value == null || value.isEmpty)
+                    return 'Please enter your age';
+                  if (int.tryParse(value) == null)
+                    return 'Please enter a valid number';
                   return null;
                 },
               ),
               const SizedBox(height: 10),
-              
+
               DropdownButtonFormField<String>(
                 value: _selectedGender,
                 items: ['Male', 'Female', 'Other'].map((String value) {
@@ -108,7 +116,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   );
                 }).toList(),
                 onChanged: (newValue) {
-                  setState(() { _selectedGender = newValue!; });
+                  setState(() {
+                    _selectedGender = newValue!;
+                  });
                 },
                 decoration: const InputDecoration(labelText: "Gender"),
               ),
@@ -118,8 +128,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 controller: _townController,
                 decoration: const InputDecoration(labelText: "Town"),
                 validator: (value) {
-                   if (value == null || value.isEmpty) return 'Please enter your town';
-                   return null;
+                  if (value == null || value.isEmpty)
+                    return 'Please enter your town';
+                  return null;
                 },
               ),
               const SizedBox(height: 10),
@@ -128,43 +139,49 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 controller: _stateController,
                 decoration: const InputDecoration(labelText: "State"),
                 validator: (value) {
-                   if (value == null || value.isEmpty) return 'Please enter your state';
-                   return null;
+                  if (value == null || value.isEmpty)
+                    return 'Please enter your state';
+                  return null;
                 },
               ),
               const SizedBox(height: 10),
-              
+
               TextFormField(
                 controller: _countryController,
                 decoration: const InputDecoration(labelText: "Country"),
                 validator: (value) {
-                   if (value == null || value.isEmpty) return 'Please enter your country';
-                   return null;
+                  if (value == null || value.isEmpty)
+                    return 'Please enter your country';
+                  return null;
                 },
               ),
               const SizedBox(height: 10),
 
               DropdownButtonFormField<String>(
                 value: _selectedRole,
-                items: ['Farmer', 'Buyer', 'Investor', 'Researcher'].map((String value) {
+                items: ['Farmer', 'Buyer', 'Investor', 'Researcher'].map((
+                  String value,
+                ) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(value),
                   );
                 }).toList(),
                 onChanged: (newValue) {
-                   setState(() { _selectedRole = newValue!; });
+                  setState(() {
+                    _selectedRole = newValue!;
+                  });
                 },
                 decoration: const InputDecoration(labelText: "Role"),
               ),
               const SizedBox(height: 20),
 
-              _isLoading 
-               ? const CircularProgressIndicator()
-               : ElevatedButton(
-                  onPressed: _saveProfile,
-                  child: const Text("Save & Continue"),
-                ),
+              _isLoading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                      onPressed: _saveProfile,
+                      child: const Text("Save & Continue"),
+                    ),
             ],
           ),
         ),

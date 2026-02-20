@@ -8,10 +8,7 @@ class FarmerScreen extends StatelessWidget {
   const FarmerScreen({super.key});
 
   void _navigateTo(BuildContext context, Widget screen) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => screen),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
   }
 
   @override
@@ -29,40 +26,29 @@ class FarmerScreen extends StatelessWidget {
             icon: Icons.school,
             title: 'Agropreneur\nGuideline',
             color: Colors.blue,
-            onTap: () => _navigateTo(
-              context,
-              const GrantIntroScreen(),
-            ),
+            onTap: () => _navigateTo(context, const GrantIntroScreen()),
           ),
           _buildFunctionCard(
             context,
             icon: Icons.agriculture,
             title: 'Farm Land\nRental',
             color: Colors.green,
-            onTap: () => _navigateTo(
-              context,
-              const LandListingScreen(),
-            ),
+            onTap: () => _navigateTo(context, const LandListingScreen()),
           ),
           _buildFunctionCard(
             context,
             icon: Icons.shopping_bag,
             title: 'Marketplace &\nMap',
             color: Colors.orange,
-            onTap: () => _navigateTo(
-              context,
-              const MapMarketMainScreen(),
-            ),
+            onTap: () => _navigateTo(context, const MapMarketMainScreen()),
           ),
           _buildFunctionCard(
             context,
             icon: Icons.bug_report,
             title: 'Pest\nDistribution',
             color: Colors.red,
-            onTap: () => _navigateTo(
-              context,
-              const PestDistributionMapScreen(),
-            ),
+            onTap: () =>
+                _navigateTo(context, const PestDistributionMapScreen()),
           ),
         ],
       ),
@@ -78,9 +64,7 @@ class FarmerScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),

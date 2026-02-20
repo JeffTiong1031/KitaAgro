@@ -6,12 +6,14 @@ class PestDistributionMapScreen extends StatefulWidget {
   const PestDistributionMapScreen({super.key});
 
   @override
-  State<PestDistributionMapScreen> createState() => _PestDistributionMapScreenState();
+  State<PestDistributionMapScreen> createState() =>
+      _PestDistributionMapScreenState();
 }
 
 class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
-  final Stream<QuerySnapshot> _pestStream =
-      FirebaseFirestore.instance.collection('pest_reports').snapshots();
+  final Stream<QuerySnapshot> _pestStream = FirebaseFirestore.instance
+      .collection('pest_reports')
+      .snapshots();
 
   GoogleMapController? _mapController;
 
@@ -26,7 +28,7 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
 
   // Default view centered on Malaysia
   static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(4.2105, 101.9758), 
+    target: LatLng(4.2105, 101.9758),
     zoom: 6,
   );
 
@@ -48,12 +50,30 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
-                  height: 200, 
+                  height: 200,
                   child: ListView(
                     children: [
-                      _buildPestAlert('Fall Armyworm', 'Selangor, Perak', 'High', Colors.red, Icons.bug_report),
-                      _buildPestAlert('Brown Planthopper', 'Kedah, Perlis', 'Medium', Colors.orange, Icons.pest_control),
-                      _buildPestAlert('Citrus Leaf Miner', 'Johor, Pahang', 'Low', Colors.yellow, Icons.nature),
+                      _buildPestAlert(
+                        'Fall Armyworm',
+                        'Selangor, Perak',
+                        'High',
+                        Colors.red,
+                        Icons.bug_report,
+                      ),
+                      _buildPestAlert(
+                        'Brown Planthopper',
+                        'Kedah, Perlis',
+                        'Medium',
+                        Colors.orange,
+                        Icons.pest_control,
+                      ),
+                      _buildPestAlert(
+                        'Citrus Leaf Miner',
+                        'Johor, Pahang',
+                        'Low',
+                        Colors.yellow,
+                        Icons.nature,
+                      ),
                     ],
                   ),
                 ),
@@ -69,7 +89,7 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: ClipRRect( 
+              child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: StreamBuilder<QuerySnapshot>(
                   stream: _pestStream,
@@ -80,44 +100,50 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
 
                     // 2. BUILD THE GRADIENT CIRCLES
                     Set<Circle> circles = {};
-                    
+
                     if (snapshot.hasData) {
                       for (var doc in snapshot.data!.docs) {
                         try {
                           var data = doc.data() as Map<String, dynamic>;
                           GeoPoint? loc = data['location'];
-                          
+
                           if (loc != null) {
                             LatLng center = LatLng(loc.latitude, loc.longitude);
                             String docId = doc.id;
 
                             // LAYER 1: Outer Green Circle (Safe Zone - 20km)
-                            circles.add(Circle(
-                              circleId: CircleId("${docId}_outer"),
-                              center: center,
-                              radius: 20000, 
-                              strokeWidth: 0,
-                              fillColor: Colors.green.withOpacity(0.3), 
-                            ));
+                            circles.add(
+                              Circle(
+                                circleId: CircleId("${docId}_outer"),
+                                center: center,
+                                radius: 20000,
+                                strokeWidth: 0,
+                                fillColor: Colors.green.withOpacity(0.3),
+                              ),
+                            );
 
                             // LAYER 2: Middle Yellow Circle (Warning Zone - 10km)
-                            circles.add(Circle(
-                              circleId: CircleId("${docId}_middle"),
-                              center: center,
-                              radius: 10000, 
-                              strokeWidth: 0,
-                              fillColor: Colors.yellow.withOpacity(0.4), 
-                            ));
+                            circles.add(
+                              Circle(
+                                circleId: CircleId("${docId}_middle"),
+                                center: center,
+                                radius: 10000,
+                                strokeWidth: 0,
+                                fillColor: Colors.yellow.withOpacity(0.4),
+                              ),
+                            );
 
                             // LAYER 3: Inner Red Circle (Outbreak Center - 5km)
-                            circles.add(Circle(
-                              circleId: CircleId("${docId}_inner"),
-                              center: center,
-                              radius: 5000, 
-                              strokeWidth: 1,
-                              strokeColor: Colors.red,
-                              fillColor: Colors.red.withOpacity(0.6), 
-                            ));
+                            circles.add(
+                              Circle(
+                                circleId: CircleId("${docId}_inner"),
+                                center: center,
+                                radius: 5000,
+                                strokeWidth: 1,
+                                strokeColor: Colors.red,
+                                fillColor: Colors.red.withOpacity(0.6),
+                              ),
+                            );
                           }
                         } catch (e) {
                           print("Error parsing: $e");
@@ -128,12 +154,15 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                     return GoogleMap(
                       initialCameraPosition: _initialPosition,
                       circles: circles,
-                      
+
                       // 3. APPLY MALAYSIA CONSTRAINTS
-                      cameraTargetBounds: _malaysiaBounds, 
-                      minMaxZoomPreference: const MinMaxZoomPreference(5, 18), // Prevent zooming out to world view
-                      
-                      myLocationEnabled: true, 
+                      cameraTargetBounds: _malaysiaBounds,
+                      minMaxZoomPreference: const MinMaxZoomPreference(
+                        5,
+                        18,
+                      ), // Prevent zooming out to world view
+
+                      myLocationEnabled: true,
                       myLocationButtonEnabled: true,
                       onMapCreated: (controller) {
                         _mapController = controller;
@@ -149,7 +178,13 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
     );
   }
 
-  Widget _buildPestAlert(String name, String region, String severity, Color color, IconData icon) {
+  Widget _buildPestAlert(
+    String name,
+    String region,
+    String severity,
+    Color color,
+    IconData icon,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(

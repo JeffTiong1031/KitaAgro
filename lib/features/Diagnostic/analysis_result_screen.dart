@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 // 1. Import your new service
-import 'package:kita_agro/core/services/pest_report_service.dart'; 
+import 'package:kita_agro/core/services/pest_report_service.dart';
 
 class AnalysisResultScreen extends StatefulWidget {
   final File imageFile;
@@ -45,9 +45,12 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
     try {
       final pestName = _extractPestName(widget.analysisText);
       final PestReportService _reportService = PestReportService();
-      
+
       // Call the service we created in Phase 2
-      await _reportService.reportPestOutbreak(pestName, "High"); // Defaulting to High for now
+      await _reportService.reportPestOutbreak(
+        pestName,
+        "High",
+      ); // Defaulting to High for now
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -79,7 +82,11 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isPestMode ? "Pest Analysis Result" : "Nutrient Analysis Result"),
+        title: Text(
+          widget.isPestMode
+              ? "Pest Analysis Result"
+              : "Nutrient Analysis Result",
+        ),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
@@ -109,17 +116,28 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                   children: [
                     const Text(
                       'Diagnosis Report:',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
                     ),
                     const Divider(thickness: 1.5),
                     const SizedBox(height: 10),
-                    
+
                     MarkdownBody(
                       data: widget.analysisText,
-                      styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-                        h2: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 18),
-                        p: const TextStyle(fontSize: 16, height: 1.5),
-                      ),
+                      styleSheet:
+                          MarkdownStyleSheet.fromTheme(
+                            Theme.of(context),
+                          ).copyWith(
+                            h2: const TextStyle(
+                              color: Colors.teal,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                            p: const TextStyle(fontSize: 16, height: 1.5),
+                          ),
                     ),
                   ],
                 ),
@@ -129,11 +147,17 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
               if (widget.isPestMode) ...[
                 const Divider(),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 10,
+                  ),
                   child: const Text(
                     "Is this a serious outbreak? Help other farmers by reporting it.",
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ),
                 Padding(
@@ -148,10 +172,21 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    icon: _isReporting 
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    icon: _isReporting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
                         : const Icon(Icons.warning_amber_rounded),
-                    label: Text(_isReporting ? "Reporting Location..." : "REPORT OUTBREAK 🚨"),
+                    label: Text(
+                      _isReporting
+                          ? "Reporting Location..."
+                          : "REPORT OUTBREAK 🚨",
+                    ),
                   ),
                 ),
               ],

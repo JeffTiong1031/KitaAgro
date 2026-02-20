@@ -140,7 +140,7 @@ class _GrantTutorialScreenState extends State<GrantTutorialScreen> {
   Widget _buildStyledDescription(String text) {
     // Split by newline to handle sections
     final lines = text.split('\n\n');
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: lines.map((line) {
@@ -232,9 +232,7 @@ class _GrantTutorialScreenState extends State<GrantTutorialScreen> {
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
               color: Colors.green[50],
-              border: Border(
-                bottom: BorderSide(color: Colors.green[200]!),
-              ),
+              border: Border(bottom: BorderSide(color: Colors.green[200]!)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -314,7 +312,8 @@ class _GrantTutorialScreenState extends State<GrantTutorialScreen> {
                                         vertical: 32,
                                       ),
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Icon(
                                             Icons.image_outlined,
@@ -364,7 +363,10 @@ class _GrantTutorialScreenState extends State<GrantTutorialScreen> {
                             // Link Button (if available)
                             if (step.link != null) ...[
                               const SizedBox(height: 16),
-                              _buildLinkButton(step.link!, step.linkLabel ?? 'Open Link'),
+                              _buildLinkButton(
+                                step.link!,
+                                step.linkLabel ?? 'Open Link',
+                              ),
                             ],
                           ],
                         ),
@@ -451,9 +453,7 @@ class _GrantTutorialScreenState extends State<GrantTutorialScreen> {
               children: [
                 const Icon(Icons.error_outline, color: Colors.white),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Text('Could not open link: $url'),
-                ),
+                Expanded(child: Text('Could not open link: $url')),
               ],
             ),
             backgroundColor: Colors.red[700],

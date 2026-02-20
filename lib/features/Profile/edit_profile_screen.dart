@@ -40,9 +40,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _stateController = TextEditingController(text: widget.user.state);
     _countryController = TextEditingController(text: widget.user.country);
 
-    _selectedRole = widget.user.role.isNotEmpty &&
-            ["Farmer", "Home Grower", "Agronomist", "Business Company"]
-                .contains(widget.user.role)
+    _selectedRole =
+        widget.user.role.isNotEmpty &&
+            [
+              "Farmer",
+              "Home Grower",
+              "Agronomist",
+              "Business Company",
+            ].contains(widget.user.role)
         ? widget.user.role
         : "Farmer";
   }
@@ -78,7 +83,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       // Upload new image if chosen
       if (_newProfileImage != null) {
-        final uploadedUrl = await _communityService.uploadImage(_newProfileImage!);
+        final uploadedUrl = await _communityService.uploadImage(
+          _newProfileImage!,
+        );
         if (uploadedUrl != null) {
           finalProfilePicUrl = uploadedUrl;
         }
@@ -109,9 +116,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving profile: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving profile: $e')));
       }
     } finally {
       if (mounted) {
@@ -189,17 +196,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     backgroundColor: Colors.grey[800],
                     backgroundImage: _newProfileImage != null
                         ? (kIsWeb
-                            ? NetworkImage(_newProfileImage!.path)
-                            : FileImage(File(_newProfileImage!.path))) as ImageProvider
+                                  ? NetworkImage(_newProfileImage!.path)
+                                  : FileImage(File(_newProfileImage!.path)))
+                              as ImageProvider
                         : (widget.user.profilePicUrl.isNotEmpty
-                            ? NetworkImage(widget.user.profilePicUrl)
-                            : null),
-                    child: _newProfileImage == null && widget.user.profilePicUrl.isEmpty
+                              ? NetworkImage(widget.user.profilePicUrl)
+                              : null),
+                    child:
+                        _newProfileImage == null &&
+                            widget.user.profilePicUrl.isEmpty
                         ? Text(
                             widget.user.fullName.isNotEmpty
                                 ? widget.user.fullName[0].toUpperCase()
                                 : '?',
-                            style: const TextStyle(fontSize: 28, color: Colors.white),
+                            style: const TextStyle(
+                              fontSize: 28,
+                              color: Colors.white,
+                            ),
                           )
                         : null,
                   ),
@@ -211,11 +224,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         Text(
                           widget.user.username,
                           style: const TextStyle(
-                              color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                            color: textColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         Text(
                           widget.user.fullName,
-                          style: const TextStyle(color: subTextColor, fontSize: 14),
+                          style: const TextStyle(
+                            color: subTextColor,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
@@ -228,9 +247,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                     ),
-                    child: const Text("Change photo", style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      "Change photo",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),
@@ -297,7 +322,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             // Role Field
             _buildSectionLabel("Role"),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 4.0,
+              ),
               decoration: BoxDecoration(
                 color: cardColor,
                 borderRadius: BorderRadius.circular(12),
@@ -307,7 +335,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   value: _selectedRole,
                   isExpanded: true,
                   dropdownColor: cardColor,
-                  icon: const Icon(Icons.keyboard_arrow_down, color: subTextColor),
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down,
+                    color: subTextColor,
+                  ),
                   style: const TextStyle(color: textColor, fontSize: 16),
                   onChanged: (val) {
                     if (val != null) {
@@ -316,9 +347,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       });
                     }
                   },
-                  items: ["Farmer", "Home Grower", "Agronomist", "Business Company"]
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
+                  items:
+                      [
+                            "Farmer",
+                            "Home Grower",
+                            "Agronomist",
+                            "Business Company",
+                          ]
+                          .map(
+                            (e) => DropdownMenuItem(value: e, child: Text(e)),
+                          )
+                          .toList(),
                 ),
               ),
             ),
@@ -366,8 +405,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.grey),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          counterStyle: const TextStyle(color: Colors.grey), // For max length text color
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+          counterStyle: const TextStyle(
+            color: Colors.grey,
+          ), // For max length text color
         ),
       ),
     );

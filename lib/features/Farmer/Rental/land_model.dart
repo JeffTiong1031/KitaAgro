@@ -52,7 +52,9 @@ class Land {
       location: parseString(data['location']),
       price: parseDouble(data['price']),
       sizeDisplay: parseString(
-        data.containsKey('sizeDisplay') ? data['sizeDisplay'] : data['size_display'],
+        data.containsKey('sizeDisplay')
+            ? data['sizeDisplay']
+            : data['size_display'],
       ),
       sizeValue: parseDouble(
         data.containsKey('sizeValue') ? data['sizeValue'] : data['size_value'],

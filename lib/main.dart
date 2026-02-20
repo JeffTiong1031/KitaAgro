@@ -5,21 +5,19 @@ import 'firebase_options.dart';
 
 // Import necessary screens
 import 'features/auth/login_screen.dart';
-import 'main_layout.dart'; 
+import 'main_layout.dart';
 import 'core/widgets/auth_wrapper.dart';
 
 // import 'package:flutter_dotenv/flutter_dotenv.dart'; // Reverted: Team convenience
 
-Future <void> main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Load environment variables
   // await dotenv.load(fileName: ".env"); // Reverted: Team convenience
-  
+
   // Cleanly initialized Firebase without conflict markers
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const KitaAgroApp());
 }
@@ -42,5 +40,5 @@ class KitaAgroApp extends StatelessWidget {
       // 4. The Magic Switcher
       home: const AuthWrapper(),
     );
-  } 
+  }
 }

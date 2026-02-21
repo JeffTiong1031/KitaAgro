@@ -245,11 +245,7 @@ class GrantIntroScreen extends StatelessWidget {
     );
   }
 
-  Widget _outlinedText(
-    String text,
-    TextStyle style, {
-    double strokeWidth = 2,
-  }) {
+  Widget _outlinedText(String text, TextStyle style, {double strokeWidth = 2}) {
     return Stack(
       children: [
         Text(

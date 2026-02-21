@@ -56,9 +56,7 @@ class _MapScreenState extends State<MapScreen> {
       );
       final response = await http.get(
         uri,
-        headers: const {
-          'User-Agent': 'KitaAgroApp/1.0',
-        },
+        headers: const {'User-Agent': 'KitaAgroApp/1.0'},
       );
 
       if (response.statusCode == 200) {
@@ -108,7 +106,9 @@ class _MapScreenState extends State<MapScreen> {
       return null;
     }
 
-    return Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    return Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
   }
 
   Future<void> _goToCurrentLocation() async {
@@ -128,9 +128,7 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final response = await http.get(
         uri,
-        headers: const {
-          'User-Agent': 'KitaAgroApp/1.0',
-        },
+        headers: const {'User-Agent': 'KitaAgroApp/1.0'},
       );
       if (response.statusCode != 200) {
         return null;
@@ -165,10 +163,9 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               Text(
                 farmer.name,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(farmer.description),
@@ -222,10 +219,9 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               Text(
                 company.name,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text('Type: ${company.type}'),
@@ -266,10 +262,9 @@ class _MapScreenState extends State<MapScreen> {
                   Expanded(
                     child: Text(
                       product.cropName,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -322,9 +317,8 @@ class _MapScreenState extends State<MapScreen> {
                   height: 48,
                   alignment: Alignment.center,
                   child: GestureDetector(
-                    onTap: () => _showFarmerDetails(
-                      FarmerProfile.fromFirestore(doc),
-                    ),
+                    onTap: () =>
+                        _showFarmerDetails(FarmerProfile.fromFirestore(doc)),
                     child: const _MarkerIcon(
                       color: Colors.green,
                       icon: Icons.agriculture,
@@ -348,9 +342,8 @@ class _MapScreenState extends State<MapScreen> {
                   height: 48,
                   alignment: Alignment.center,
                   child: GestureDetector(
-                    onTap: () => _showCompanyDetails(
-                      Company.fromFirestore(doc),
-                    ),
+                    onTap: () =>
+                        _showCompanyDetails(Company.fromFirestore(doc)),
                     child: const _MarkerIcon(
                       color: Colors.red,
                       icon: Icons.business,
@@ -457,7 +450,9 @@ class _MapScreenState extends State<MapScreen> {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: farmer.name);
     final phoneController = TextEditingController(text: farmer.phone);
-    final descriptionController = TextEditingController(text: farmer.description);
+    final descriptionController = TextEditingController(
+      text: farmer.description,
+    );
     final addressController = TextEditingController(text: farmer.address);
     bool saving = false;
     bool fetchingLocation = false;
@@ -471,9 +466,7 @@ class _MapScreenState extends State<MapScreen> {
       );
       final response = await http.get(
         uri,
-        headers: const {
-          'User-Agent': 'KitaAgroApp/1.0',
-        },
+        headers: const {'User-Agent': 'KitaAgroApp/1.0'},
       );
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -497,7 +490,8 @@ class _MapScreenState extends State<MapScreen> {
           resolvedAddress = fetchedAddress;
           latitude = position.latitude;
           longitude = position.longitude;
-          addressController.text = fetchedAddress ??
+          addressController.text =
+              fetchedAddress ??
               'Lat: ${position.latitude.toStringAsFixed(5)}, '
                   'Lng: ${position.longitude.toStringAsFixed(5)}';
           fetchingLocation = false;
@@ -549,7 +543,8 @@ class _MapScreenState extends State<MapScreen> {
 
                 final double latToStore = latValue;
                 final double lonToStore = lonValue;
-                final addressToStore = finalAddress ??
+                final addressToStore =
+                    finalAddress ??
                     'Lat: ${latToStore.toStringAsFixed(5)}, '
                         'Lng: ${lonToStore.toStringAsFixed(5)}';
 
@@ -592,8 +587,9 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     TextFormField(
                       controller: phoneController,
-                      decoration:
-                          const InputDecoration(labelText: 'Contact Number'),
+                      decoration: const InputDecoration(
+                        labelText: 'Contact Number',
+                      ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Enter contact number';
@@ -603,8 +599,9 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     TextFormField(
                       controller: descriptionController,
-                      decoration:
-                          const InputDecoration(labelText: 'Description'),
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                      ),
                       maxLines: 2,
                     ),
                     const SizedBox(height: 12),
@@ -637,7 +634,9 @@ class _MapScreenState extends State<MapScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.my_location),
                         label: const Text('Use current location'),
@@ -648,7 +647,9 @@ class _MapScreenState extends State<MapScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: saving ? null : () => Navigator.of(context).pop(false),
+                  onPressed: saving
+                      ? null
+                      : () => Navigator.of(context).pop(false),
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
@@ -691,9 +692,7 @@ class _MapScreenState extends State<MapScreen> {
       );
       final response = await http.get(
         uri,
-        headers: const {
-          'User-Agent': 'KitaAgroApp/1.0',
-        },
+        headers: const {'User-Agent': 'KitaAgroApp/1.0'},
       );
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -717,7 +716,8 @@ class _MapScreenState extends State<MapScreen> {
           resolvedAddress = fetchedAddress;
           latitude = position.latitude;
           longitude = position.longitude;
-          addressController.text = fetchedAddress ??
+          addressController.text =
+              fetchedAddress ??
               'Lat: ${position.latitude.toStringAsFixed(5)}, '
                   'Lng: ${position.longitude.toStringAsFixed(5)}';
           fetchingLocation = false;
@@ -769,7 +769,8 @@ class _MapScreenState extends State<MapScreen> {
 
                 final double latToStore = latValue;
                 final double lonToStore = lonValue;
-                final addressToStore = finalAddress ??
+                final addressToStore =
+                    finalAddress ??
                     'Lat: ${latToStore.toStringAsFixed(5)}, '
                         'Lng: ${lonToStore.toStringAsFixed(5)}';
 
@@ -814,8 +815,9 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     TextFormField(
                       controller: phoneController,
-                      decoration:
-                          const InputDecoration(labelText: 'Contact Number'),
+                      decoration: const InputDecoration(
+                        labelText: 'Contact Number',
+                      ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Enter contact number';
@@ -825,8 +827,9 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     TextFormField(
                       controller: descriptionController,
-                      decoration:
-                          const InputDecoration(labelText: 'Description'),
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                      ),
                       maxLines: 2,
                     ),
                     const SizedBox(height: 12),
@@ -859,7 +862,9 @@ class _MapScreenState extends State<MapScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.my_location),
                         label: const Text('Use current location'),
@@ -870,7 +875,9 @@ class _MapScreenState extends State<MapScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: saving ? null : () => Navigator.of(context).pop(false),
+                  onPressed: saving
+                      ? null
+                      : () => Navigator.of(context).pop(false),
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
@@ -897,9 +904,9 @@ class _MapScreenState extends State<MapScreen> {
 
   void _showSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -925,8 +932,7 @@ class _MapScreenState extends State<MapScreen> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.kita.agro',
                 ),
                 markerLayer,
@@ -971,7 +977,9 @@ class _MapScreenState extends State<MapScreen> {
                                       child: SizedBox(
                                         width: 16,
                                         height: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
                                       ),
                                     )
                                   : IconButton(
@@ -994,8 +1002,10 @@ class _MapScreenState extends State<MapScreen> {
                 const SizedBox(height: 12),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
@@ -1070,11 +1080,7 @@ class _MarkerIcon extends StatelessWidget {
         color: color,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
+          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
         ],
       ),
       padding: const EdgeInsets.all(8),
@@ -1098,11 +1104,7 @@ class _ProductMarkerIcon extends StatelessWidget {
         shape: BoxShape.circle,
         color: color.withOpacity(0.9),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
+          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
         ],
       ),
       alignment: Alignment.center,

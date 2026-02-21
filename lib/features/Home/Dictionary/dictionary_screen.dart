@@ -27,7 +27,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.circle,
       'color': Color(0xFFE53935),
-      'description': 'A popular garden vegetable rich in vitamins A and C. Tomatoes are used in salads, sauces, and many cuisines worldwide.',
+      'description':
+          'A popular garden vegetable rich in vitamins A and C. Tomatoes are used in salads, sauces, and many cuisines worldwide.',
       'growthTime': '60-80 days',
       'difficulty': 'Easy',
       'sunlight': 'Full sun (6-8 hours)',
@@ -40,7 +41,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.local_fire_department,
       'color': Color(0xFFD32F2F),
-      'description': 'Spicy fruit used in many cuisines worldwide. Contains capsaicin which gives the heat.',
+      'description':
+          'Spicy fruit used in many cuisines worldwide. Contains capsaicin which gives the heat.',
       'growthTime': '60-90 days',
       'difficulty': 'Easy',
       'sunlight': 'Full sun',
@@ -53,7 +55,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.grass,
       'color': Color(0xFF43A047),
-      'description': 'Water spinach, a popular leafy vegetable in Southeast Asia. Fast-growing and nutritious.',
+      'description':
+          'Water spinach, a popular leafy vegetable in Southeast Asia. Fast-growing and nutritious.',
       'growthTime': '30-45 days',
       'difficulty': 'Easy',
       'sunlight': 'Partial to full sun',
@@ -66,7 +69,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.spa,
       'color': Color(0xFF66BB6A),
-      'description': 'Refreshing vegetable with high water content. Great for salads and pickles.',
+      'description':
+          'Refreshing vegetable with high water content. Great for salads and pickles.',
       'growthTime': '50-70 days',
       'difficulty': 'Easy',
       'sunlight': 'Full sun',
@@ -79,7 +83,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.egg,
       'color': Color(0xFF7B1FA2),
-      'description': 'Also known as aubergine. Versatile vegetable used in many Asian and Mediterranean dishes.',
+      'description':
+          'Also known as aubergine. Versatile vegetable used in many Asian and Mediterranean dishes.',
       'growthTime': '70-85 days',
       'difficulty': 'Medium',
       'sunlight': 'Full sun',
@@ -92,7 +97,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.eco,
       'color': Color(0xFFFF7043),
-      'description': 'Root vegetable rich in beta-carotene. Sweet and crunchy, great raw or cooked.',
+      'description':
+          'Root vegetable rich in beta-carotene. Sweet and crunchy, great raw or cooked.',
       'growthTime': '70-80 days',
       'difficulty': 'Medium',
       'sunlight': 'Full sun to partial shade',
@@ -105,7 +111,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.circle,
       'color': Color(0xFF81C784),
-      'description': 'Leafy green vegetable forming a compact head. Used in salads, stir-fries, and fermented foods.',
+      'description':
+          'Leafy green vegetable forming a compact head. Used in salads, stir-fries, and fermented foods.',
       'growthTime': '70-100 days',
       'difficulty': 'Medium',
       'sunlight': 'Full sun',
@@ -118,7 +125,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.local_florist,
       'color': Color(0xFF2E7D32),
-      'description': 'Nutrient-dense leafy green packed with iron and vitamins. Quick to grow.',
+      'description':
+          'Nutrient-dense leafy green packed with iron and vitamins. Quick to grow.',
       'growthTime': '40-50 days',
       'difficulty': 'Easy',
       'sunlight': 'Partial shade to full sun',
@@ -131,7 +139,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.circle,
       'color': Color(0xFFFFB74D),
-      'description': 'Essential bulb vegetable used as base flavor in countless dishes worldwide.',
+      'description':
+          'Essential bulb vegetable used as base flavor in countless dishes worldwide.',
       'growthTime': '90-120 days',
       'difficulty': 'Medium',
       'sunlight': 'Full sun',
@@ -144,7 +153,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.circle,
       'color': Color(0xFF8D6E63),
-      'description': 'Starchy tuber and staple food. Extremely versatile in cooking methods.',
+      'description':
+          'Starchy tuber and staple food. Extremely versatile in cooking methods.',
       'growthTime': '70-120 days',
       'difficulty': 'Easy',
       'sunlight': 'Full sun',
@@ -159,7 +169,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.spa,
       'color': Color(0xFFFFB300),
-      'description': 'Tropical fruit with sweet orange flesh. Rich in enzymes and vitamins.',
+      'description':
+          'Tropical fruit with sweet orange flesh. Rich in enzymes and vitamins.',
       'growthTime': '9-11 months',
       'difficulty': 'Medium',
       'sunlight': 'Full sun',
@@ -172,7 +183,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.nature,
       'color': Color(0xFFFFEB3B),
-      'description': 'Popular tropical fruit rich in potassium. Grows in bunches on tall plants.',
+      'description':
+          'Popular tropical fruit rich in potassium. Grows in bunches on tall plants.',
       'growthTime': '9-12 months',
       'difficulty': 'Easy',
       'sunlight': 'Full sun',
@@ -185,7 +197,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.nature,
       'color': Color(0xFFFF8F00),
-      'description': 'King of fruits with sweet, juicy flesh. Popular in tropical regions.',
+      'description':
+          'King of fruits with sweet, juicy flesh. Popular in tropical regions.',
       'growthTime': '3-6 years to fruit',
       'difficulty': 'Hard',
       'sunlight': 'Full sun',
@@ -198,7 +211,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.circle,
       'color': Color(0xFF4CAF50),
-      'description': 'Large fruit with sweet red flesh and high water content. Perfect for hot days.',
+      'description':
+          'Large fruit with sweet red flesh and high water content. Perfect for hot days.',
       'growthTime': '70-90 days',
       'difficulty': 'Medium',
       'sunlight': 'Full sun',
@@ -211,7 +225,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.spa,
       'color': Color(0xFFFFC107),
-      'description': 'Tropical fruit with spiky exterior and sweet-tart flesh. Takes long to mature.',
+      'description':
+          'Tropical fruit with spiky exterior and sweet-tart flesh. Takes long to mature.',
       'growthTime': '18-24 months',
       'difficulty': 'Medium',
       'sunlight': 'Full sun',
@@ -224,7 +239,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.favorite,
       'color': Color(0xFFE91E63),
-      'description': 'Sweet red berries loved worldwide. Compact plants suitable for containers.',
+      'description':
+          'Sweet red berries loved worldwide. Compact plants suitable for containers.',
       'growthTime': '4-6 weeks after flowering',
       'difficulty': 'Medium',
       'sunlight': 'Full sun',
@@ -250,7 +266,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.circle,
       'color': Color(0xFF795548),
-      'description': 'Versatile tropical palm fruit providing water, milk, oil, and flesh.',
+      'description':
+          'Versatile tropical palm fruit providing water, milk, oil, and flesh.',
       'growthTime': '5-6 years to fruit',
       'difficulty': 'Hard',
       'sunlight': 'Full sun',
@@ -265,7 +282,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Herbs',
       'icon': Icons.local_florist,
       'color': Color(0xFF4CAF50),
-      'description': 'Aromatic herb essential in Italian and Thai cuisine. Easy to grow indoors.',
+      'description':
+          'Aromatic herb essential in Italian and Thai cuisine. Easy to grow indoors.',
       'growthTime': '50-75 days',
       'difficulty': 'Easy',
       'sunlight': 'Full sun',
@@ -278,7 +296,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Herbs',
       'icon': Icons.yard,
       'color': Color(0xFFC5E1A5),
-      'description': 'Fragrant herb used in Asian cuisine and tea. Also repels mosquitoes.',
+      'description':
+          'Fragrant herb used in Asian cuisine and tea. Also repels mosquitoes.',
       'growthTime': '75-100 days',
       'difficulty': 'Easy',
       'sunlight': 'Full sun',
@@ -291,7 +310,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Herbs',
       'icon': Icons.spa,
       'color': Color(0xFF26A69A),
-      'description': 'Refreshing herb used in drinks, desserts, and savory dishes. Spreads quickly.',
+      'description':
+          'Refreshing herb used in drinks, desserts, and savory dishes. Spreads quickly.',
       'growthTime': '30-40 days',
       'difficulty': 'Easy',
       'sunlight': 'Partial shade',
@@ -304,7 +324,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Herbs',
       'icon': Icons.eco,
       'color': Color(0xFF66BB6A),
-      'description': 'Versatile herb with edible leaves and seeds. Essential in Asian cooking.',
+      'description':
+          'Versatile herb with edible leaves and seeds. Essential in Asian cooking.',
       'growthTime': '45-70 days',
       'difficulty': 'Easy',
       'sunlight': 'Partial to full sun',
@@ -317,7 +338,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Herbs',
       'icon': Icons.grass,
       'color': Color(0xFF388E3C),
-      'description': 'Fragrant leaves used in Southeast Asian desserts and rice dishes.',
+      'description':
+          'Fragrant leaves used in Southeast Asian desserts and rice dishes.',
       'growthTime': '6-12 months',
       'difficulty': 'Easy',
       'sunlight': 'Partial shade',
@@ -330,7 +352,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Herbs',
       'icon': Icons.circle,
       'color': Color(0xFFFF9800),
-      'description': 'Golden spice with anti-inflammatory properties. Used in curries.',
+      'description':
+          'Golden spice with anti-inflammatory properties. Used in curries.',
       'growthTime': '8-10 months',
       'difficulty': 'Medium',
       'sunlight': 'Partial shade',
@@ -343,7 +366,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Herbs',
       'icon': Icons.spa,
       'color': Color(0xFFFFCC80),
-      'description': 'Spicy rhizome used in cooking and traditional medicine worldwide.',
+      'description':
+          'Spicy rhizome used in cooking and traditional medicine worldwide.',
       'growthTime': '8-10 months',
       'difficulty': 'Medium',
       'sunlight': 'Partial shade',
@@ -358,7 +382,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Grains',
       'icon': Icons.grain,
       'color': Color(0xFFE0E0E0),
-      'description': 'Staple food for over half of world population. Grown in paddies.',
+      'description':
+          'Staple food for over half of world population. Grown in paddies.',
       'growthTime': '120-150 days',
       'difficulty': 'Medium',
       'sunlight': 'Full sun',
@@ -371,7 +396,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Grains',
       'icon': Icons.grain,
       'color': Color(0xFFFDD835),
-      'description': 'Versatile grain used for food, feed, and industrial products.',
+      'description':
+          'Versatile grain used for food, feed, and industrial products.',
       'growthTime': '60-100 days',
       'difficulty': 'Easy',
       'sunlight': 'Full sun',
@@ -384,7 +410,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Grains',
       'icon': Icons.grass,
       'color': Color(0xFFD4A574),
-      'description': 'Major cereal grain for bread and pasta. Cool season crop.',
+      'description':
+          'Major cereal grain for bread and pasta. Cool season crop.',
       'growthTime': '120-180 days',
       'difficulty': 'Medium',
       'sunlight': 'Full sun',
@@ -399,7 +426,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Flowers',
       'icon': Icons.filter_vintage,
       'color': Color(0xFFAB47BC),
-      'description': 'Beautiful flowering plant with diverse varieties. Popular ornamental.',
+      'description':
+          'Beautiful flowering plant with diverse varieties. Popular ornamental.',
       'growthTime': 'Varies by species',
       'difficulty': 'Hard',
       'sunlight': 'Indirect light',
@@ -412,7 +440,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Flowers',
       'icon': Icons.wb_sunny,
       'color': Color(0xFFFFEB3B),
-      'description': 'Tall flowering plant that tracks the sun. Seeds are edible.',
+      'description':
+          'Tall flowering plant that tracks the sun. Seeds are edible.',
       'growthTime': '70-100 days',
       'difficulty': 'Easy',
       'sunlight': 'Full sun',
@@ -425,7 +454,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Flowers',
       'icon': Icons.local_florist,
       'color': Color(0xFFE91E63),
-      'description': 'Classic flowering plant symbolizing love. Many varieties available.',
+      'description':
+          'Classic flowering plant symbolizing love. Many varieties available.',
       'growthTime': '6-8 weeks to bloom',
       'difficulty': 'Medium',
       'sunlight': 'Full sun',
@@ -451,7 +481,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Flowers',
       'icon': Icons.local_florist,
       'color': Color(0xFFF44336),
-      'description': 'Tropical flower with large colorful blooms. Malaysia\'s national flower.',
+      'description':
+          'Tropical flower with large colorful blooms. Malaysia\'s national flower.',
       'growthTime': '3-4 months to bloom',
       'difficulty': 'Easy',
       'sunlight': 'Full sun',
@@ -464,7 +495,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
     if (_selectedCategory == 'All') {
       return _plants;
     }
-    return _plants.where((plant) => plant['category'] == _selectedCategory).toList();
+    return _plants
+        .where((plant) => plant['category'] == _selectedCategory)
+        .toList();
   }
 
   @override
@@ -502,7 +535,10 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                         });
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: isSelected ? Colors.white : Colors.white24,
                           borderRadius: BorderRadius.circular(20),
@@ -510,8 +546,12 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                         child: Text(
                           category,
                           style: TextStyle(
-                            color: isSelected ? Color(0xFF2E7D32) : Colors.white,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? Color(0xFF2E7D32)
+                                : Colors.white,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -532,10 +572,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                 const SizedBox(width: 8),
                 Text(
                   '${_filteredPlants.length} Plants',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
@@ -576,10 +613,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
         decoration: BoxDecoration(
           color: Color(0xFF388E3C),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Color(0xFF4CAF50),
-            width: 2,
-          ),
+          border: Border.all(color: Color(0xFF4CAF50), width: 2),
           boxShadow: [
             BoxShadow(
               color: Colors.black26,
@@ -676,7 +710,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: (plant['color'] as Color).withOpacity(0.4),
+                                color: (plant['color'] as Color).withOpacity(
+                                  0.4,
+                                ),
                                 blurRadius: 12,
                                 offset: Offset(0, 4),
                               ),
@@ -712,7 +748,10 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                               ),
                               const SizedBox(height: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Color(0xFFE8F5E9),
                                   borderRadius: BorderRadius.circular(12),
@@ -766,9 +805,21 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    _buildInfoCard(Icons.schedule, 'Growth Time', plant['growthTime']),
-                    _buildInfoCard(Icons.trending_up, 'Difficulty', plant['difficulty']),
-                    _buildInfoCard(Icons.wb_sunny, 'Sunlight', plant['sunlight']),
+                    _buildInfoCard(
+                      Icons.schedule,
+                      'Growth Time',
+                      plant['growthTime'],
+                    ),
+                    _buildInfoCard(
+                      Icons.trending_up,
+                      'Difficulty',
+                      plant['difficulty'],
+                    ),
+                    _buildInfoCard(
+                      Icons.wb_sunny,
+                      'Sunlight',
+                      plant['sunlight'],
+                    ),
                     _buildInfoCard(Icons.water_drop, 'Water', plant['water']),
                     _buildInfoCard(Icons.landscape, 'Soil', plant['soil']),
 
@@ -782,7 +833,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('${plant['name']} added to your garden!'),
+                              content: Text(
+                                '${plant['name']} added to your garden!',
+                              ),
                               backgroundColor: Color(0xFF2E7D32),
                               behavior: SnackBarBehavior.floating,
                             ),
@@ -835,10 +888,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
                 Text(
                   value,

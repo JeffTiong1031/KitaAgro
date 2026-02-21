@@ -82,11 +82,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            height: 180,
-            width: double.infinity,
-            child: image,
-          ),
+          SizedBox(height: 180, width: double.infinity, child: image),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -108,9 +104,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     Expanded(
                       child: Text(
                         product.cropName,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
+                        style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),

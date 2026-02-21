@@ -11,12 +11,14 @@ class PestDistributionMapScreen extends StatefulWidget {
   const PestDistributionMapScreen({super.key});
 
   @override
-  State<PestDistributionMapScreen> createState() => _PestDistributionMapScreenState();
+  State<PestDistributionMapScreen> createState() =>
+      _PestDistributionMapScreenState();
 }
 
 class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
-  final Stream<QuerySnapshot> _pestStream =
-      FirebaseFirestore.instance.collection('pest_reports').snapshots();
+  final Stream<QuerySnapshot> _pestStream = FirebaseFirestore.instance
+      .collection('pest_reports')
+      .snapshots();
 
   GoogleMapController? _mapController;
   bool _hasLocationPermission = false;
@@ -147,9 +149,27 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                   height: 200,
                   child: ListView(
                     children: [
-                      _buildPestAlert('Fall Armyworm', 'Selangor, Perak', 'High', Colors.red, Icons.bug_report),
-                      _buildPestAlert('Brown Planthopper', 'Kedah, Perlis', 'Medium', Colors.orange, Icons.pest_control),
-                      _buildPestAlert('Citrus Leaf Miner', 'Johor, Pahang', 'Low', Colors.yellow, Icons.nature),
+                      _buildPestAlert(
+                        'Fall Armyworm',
+                        'Selangor, Perak',
+                        'High',
+                        Colors.red,
+                        Icons.bug_report,
+                      ),
+                      _buildPestAlert(
+                        'Brown Planthopper',
+                        'Kedah, Perlis',
+                        'Medium',
+                        Colors.orange,
+                        Icons.pest_control,
+                      ),
+                      _buildPestAlert(
+                        'Citrus Leaf Miner',
+                        'Johor, Pahang',
+                        'Low',
+                        Colors.yellow,
+                        Icons.nature,
+                      ),
                     ],
                   ),
                 ),
@@ -277,7 +297,13 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
     );
   }
 
-  Widget _buildPestAlert(String name, String region, String severity, Color color, IconData icon) {
+  Widget _buildPestAlert(
+    String name,
+    String region,
+    String severity,
+    Color color,
+    IconData icon,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(

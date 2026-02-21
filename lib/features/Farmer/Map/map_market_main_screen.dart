@@ -21,10 +21,7 @@ class _MapMarketMainScreenState extends State<MapMarketMainScreen> {
   ];
 
   static const List<BottomNavigationBarItem> _navItems = [
-    BottomNavigationBarItem(
-      icon: Icon(Icons.map_outlined),
-      label: 'Map',
-    ),
+    BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Map'),
     BottomNavigationBarItem(
       icon: Icon(Icons.storefront_outlined),
       label: 'Marketplace',
@@ -38,10 +35,7 @@ class _MapMarketMainScreenState extends State<MapMarketMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         items: _navItems,

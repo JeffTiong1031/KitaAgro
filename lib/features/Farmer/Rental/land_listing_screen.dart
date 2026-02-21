@@ -58,6 +58,7 @@ class _LandListingScreenState extends State<LandListingScreen> {
         .collection('lands')
         .snapshots(includeMetadataChanges: true);
   }
+
   String _searchText = '';
   String _selectedState = _allStatesLabel;
   String _selectedPrice = _anyPriceLabel;
@@ -107,20 +108,14 @@ class _LandListingScreenState extends State<LandListingScreen> {
           children: [
             const Text(
               'Contact owner for further information',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 16),
             const Text('Owner Phone Number:'),
             const SizedBox(height: 12),
             Text(
               ownerPhone,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -137,10 +132,7 @@ class _LandListingScreenState extends State<LandListingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Farm Land Rental'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Farm Land Rental'), elevation: 0),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _landsStream,
         builder: (context, snapshot) {
@@ -148,10 +140,9 @@ class _LandListingScreenState extends State<LandListingScreen> {
             return Center(
               child: Text(
                 'Unable to load land listings right now.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(color: Colors.grey[600]),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
               ),
             );
           }
@@ -160,7 +151,9 @@ class _LandListingScreenState extends State<LandListingScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final docs = snapshot.data?.docs ?? <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+          final docs =
+              snapshot.data?.docs ??
+              <QueryDocumentSnapshot<Map<String, dynamic>>>[];
           final lands = docs.map(Land.fromFirestore).toList();
           final stateOptions = _buildStateOptions(lands);
           final filteredLands = _filterLands(lands);
@@ -287,9 +280,7 @@ class _LandListingScreenState extends State<LandListingScreen> {
                             const SizedBox(height: 16),
                             Text(
                               'No lands found',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(color: Colors.grey[600]),
                             ),
                           ],
@@ -524,10 +515,7 @@ class _LandListingScreenState extends State<LandListingScreen> {
                     Expanded(
                       child: Text(
                         '${land.location}, ${land.state}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -561,10 +549,7 @@ class _LandListingScreenState extends State<LandListingScreen> {
                   SizedBox(width: 8),
                   Text(
                     'Contact Owner',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

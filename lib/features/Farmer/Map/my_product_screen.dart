@@ -28,8 +28,10 @@ class _MyProductScreenState extends State<MyProductScreen> {
 
   Stream<QuerySnapshot<Map<String, dynamic>>> _productsStream() {
     final user = FirebaseAuth.instance.currentUser;
-    Query<Map<String, dynamic>> query =
-        _productsCollection.orderBy('harvestDate', descending: true);
+    Query<Map<String, dynamic>> query = _productsCollection.orderBy(
+      'harvestDate',
+      descending: true,
+    );
 
     if (user != null) {
       query = query.where('ownerId', isEqualTo: user.uid);
@@ -88,9 +90,9 @@ class _MyProductScreenState extends State<MyProductScreen> {
     if (confirm == true) {
       await snapshot.reference.delete();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Product deleted')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Product deleted')));
       }
     }
   }
@@ -111,10 +113,7 @@ class _MyProductScreenState extends State<MyProductScreen> {
       try {
         final uriData = UriData.parse(imageUrl);
         final bytes = uriData.contentAsBytes();
-        return Image.memory(
-          bytes,
-          fit: BoxFit.cover,
-        );
+        return Image.memory(bytes, fit: BoxFit.cover);
       } catch (_) {
         return placeholder;
       }
@@ -200,16 +199,16 @@ class _MyProductScreenState extends State<MyProductScreen> {
                               Expanded(
                                 child: Text(
                                   product.cropName,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
+                                  style: Theme.of(context).textTheme.titleMedium
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Text('Weight: ${product.weight.toStringAsFixed(2)} kg'),
+                          Text(
+                            'Weight: ${product.weight.toStringAsFixed(2)} kg',
+                          ),
                           Text('Harvested: $dateLabel'),
                           Text('Contact: ${product.contactNumber}'),
                           const SizedBox(height: 8),
@@ -378,7 +377,10 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
       return;
     }
 
-    final pickedFile = await _imagePicker.pickImage(source: source, imageQuality: 85);
+    final pickedFile = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 85,
+    );
     if (pickedFile == null) {
       return;
     }
@@ -444,16 +446,17 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
       setState(() {
         _latitude = position.latitude;
         _longitude = position.longitude;
-        _address = displayAddress ??
+        _address =
+            displayAddress ??
             'Lat: ${position.latitude.toStringAsFixed(5)}, '
                 'Lng: ${position.longitude.toStringAsFixed(5)}';
         _addressController.text = _address ?? '';
       });
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
       }
     } finally {
       if (mounted) {
@@ -473,9 +476,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     );
     final response = await http.get(
       url,
-      headers: const {
-        'User-Agent': 'KitaAgroApp/1.0',
-      },
+      headers: const {'User-Agent': 'KitaAgroApp/1.0'},
     );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -491,23 +492,23 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
 
     final selectedPlant = _selectedPlant;
     if (selectedPlant == null && widget.initialProduct == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select a crop.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Select a crop.')));
       return;
     }
 
     if (_harvestDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick harvest date.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pick harvest date.')));
       return;
     }
 
     if (_latitude == null || _longitude == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fetch location.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Fetch location.')));
       return;
     }
 
@@ -517,10 +518,14 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
 
     try {
       final ownerId = FirebaseAuth.instance.currentUser?.uid;
-      final colorValue = _colorValue ??
-          (selectedPlant != null ? (selectedPlant['color'] as Color).value : null) ??
+      final colorValue =
+          _colorValue ??
+          (selectedPlant != null
+              ? (selectedPlant['color'] as Color).value
+              : null) ??
           Colors.green.value;
-      final iconCodePoint = _iconCodePoint ??
+      final iconCodePoint =
+          _iconCodePoint ??
           (selectedPlant != null
               ? (selectedPlant['icon'] as IconData).codePoint
               : Icons.spa.codePoint);
@@ -532,7 +537,9 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
       final harvestDate = _harvestDate!;
       final contactNumber = _contactController.text.trim();
       final parsedWeight = double.tryParse(_weightController.text.trim()) ?? 0;
-      final imageUrl = _imageDataUrl ?? widget.initialProduct?.imageUrl ??
+      final imageUrl =
+          _imageDataUrl ??
+          widget.initialProduct?.imageUrl ??
           widget.placeholderImageUrl;
 
       final payload = {
@@ -557,15 +564,15 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
 
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Product saved')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Product saved')));
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save: $error')));
       }
     } finally {
       if (mounted) {
@@ -602,10 +609,9 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
               ),
               Text(
                 widget.initialProduct == null ? 'Add Product' : 'Edit Product',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               DropdownButtonFormField<Map<String, dynamic>>(
@@ -615,23 +621,25 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                 ),
                 value: _selectedPlant,
                 items: PlantData.allPlants
-                    .map((plant) => DropdownMenuItem<Map<String, dynamic>>(
-                          value: plant,
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor:
-                                    (plant['color'] as Color).withOpacity(0.8),
-                                child: Icon(
-                                  plant['icon'] as IconData,
-                                  color: Colors.white,
-                                ),
+                    .map(
+                      (plant) => DropdownMenuItem<Map<String, dynamic>>(
+                        value: plant,
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: (plant['color'] as Color)
+                                  .withOpacity(0.8),
+                              child: Icon(
+                                plant['icon'] as IconData,
+                                color: Colors.white,
                               ),
-                              const SizedBox(width: 12),
-                              Text(plant['name'] as String),
-                            ],
-                          ),
-                        ))
+                            ),
+                            const SizedBox(width: 12),
+                            Text(plant['name'] as String),
+                          ],
+                        ),
+                      ),
+                    )
                     .toList(),
                 onChanged: (value) {
                   if (value == null) return;
@@ -660,27 +668,25 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                     child: _imagePreviewBytes != null
                         ? Image.memory(_imagePreviewBytes!, fit: BoxFit.cover)
                         : (widget.initialProduct?.imageUrl.startsWith('http') ??
-                                false)
-                            ? Image.network(
-                                widget.initialProduct!.imageUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _ImagePlaceholder(
-                                  label: 'Tap to add photo',
-                                ),
-                              )
-                            : _imageDataUrl != null
-                                ? _DataUrlImageView(dataUrl: _imageDataUrl!)
-                                : _ImagePlaceholder(
-                                    label: 'Tap to add photo',
-                                  ),
+                              false)
+                        ? Image.network(
+                            widget.initialProduct!.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                _ImagePlaceholder(label: 'Tap to add photo'),
+                          )
+                        : _imageDataUrl != null
+                        ? _DataUrlImageView(dataUrl: _imageDataUrl!)
+                        : _ImagePlaceholder(label: 'Tap to add photo'),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _weightController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(
                   labelText: 'Weight (kg)',
                   border: OutlineInputBorder(),
@@ -735,8 +741,9 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
-                    onPressed:
-                        _fetchingLocation ? null : () => _fetchCurrentLocation(),
+                    onPressed: _fetchingLocation
+                        ? null
+                        : () => _fetchCurrentLocation(),
                     icon: _fetchingLocation
                         ? const SizedBox(
                             width: 16,
@@ -767,8 +774,9 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text('Save Product'),
@@ -799,8 +807,11 @@ class _ImagePlaceholder extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.add_photo_alternate_outlined,
-              size: 36, color: Colors.grey.shade600),
+          Icon(
+            Icons.add_photo_alternate_outlined,
+            size: 36,
+            color: Colors.grey.shade600,
+          ),
           const SizedBox(height: 8),
           Text(label, style: TextStyle(color: Colors.grey.shade600)),
         ],

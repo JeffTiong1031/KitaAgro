@@ -26,11 +26,25 @@ class GeminiApiService {
     // 2. Set the Prompt
     String prompt;
     if (mode.contains("pest")) {
-      prompt =
-          "Analyze this plant image. Identify any pest or disease. Format output in Markdown with Diagnosis, Symptoms, and Solutions.";
+      prompt = '''Analyze this plant image for pests or diseases. 
+Provide a detailed, highly informative analysis using Markdown formatting (bullet points, bold text, paragraphs).
+You MUST include these exact headers:
+**Pest Name:** [Insert exact pest or disease name]
+**Symptoms:** [Provide detailed symptoms]
+**Solutions:** [Provide detailed treatment steps]
+
+At the VERY END of your response, on a new line, you MUST add this exact text:
+**Short Advice:** [Insert exactly ONE short sentence (max 10 words) of advice for a mobile push notification]''';
     } else {
-      prompt =
-          "Analyze this plant image. Identify nutrient deficiencies. Format output in Markdown with Diagnosis, Symptoms, and Fertilizer Recommendations.";
+      prompt = '''Analyze this plant image for nutrient deficiencies. 
+Provide a detailed, highly informative analysis using Markdown formatting (bullet points, bold text, paragraphs).
+You MUST include these exact headers:
+**Deficiency Name:** [Insert exact nutrient deficiency]
+**Symptoms:** [Provide detailed symptoms]
+**Solutions:** [Provide detailed fertilizer recommendations]
+
+At the VERY END of your response, on a new line, you MUST add this exact text:
+**Short Advice:** [Insert exactly ONE short sentence (max 10 words) of advice for a mobile push notification]''';
     }
 
     // 3. Build the JSON Body

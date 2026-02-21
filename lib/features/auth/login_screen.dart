@@ -7,7 +7,6 @@ import '../../features/auth/complete_profile_screen.dart';
 import '../../core/models/user_model.dart';
 import '../../features/auth/welcome_screen.dart'; // Add import
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -45,7 +44,8 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = false;
     });
 
-    if (error == null) { // Success
+    if (error == null) {
+      // Success
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
-    
+
     // Returns UserModel, allowing us to check if profile is complete
     UserModel? userModel = await _authService.signInWithGoogle();
 
@@ -72,14 +72,16 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = false;
     });
 
-    if (userModel != null) { 
+    if (userModel != null) {
       if (mounted) {
         // Check if important fields are missing (e.g. Town/Role which default to 'Not Specified' or 'Farmer')
         // Or checks if it was a new user (age == 0 usually indicates fresh Google sign up)
         if (userModel.town == 'Not Specified' || userModel.age == 0) {
-           Navigator.pushReplacement(
+          Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => CompleteProfileScreen(user: userModel)),
+            MaterialPageRoute(
+              builder: (context) => CompleteProfileScreen(user: userModel),
+            ),
           );
         } else {
           Navigator.pushReplacement(
@@ -122,8 +124,10 @@ class _LoginScreenState extends State<LoginScreen> {
             } else {
               // If we are at the root (e.g. after logout), go to WelcomeScreen
               Navigator.pushReplacement(
-                context, 
-                MaterialPageRoute(builder: (context) => const WelcomeScreen()) // Need to import WelcomeScreen
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const WelcomeScreen(),
+                ), // Need to import WelcomeScreen
               );
             }
           },
@@ -146,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 50),
-              
+
               // Email Field
               TextField(
                 controller: _emailController,
@@ -161,12 +165,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               // Password Field
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                textInputAction: TextInputAction.done, // Closes keyboard/triggers login
+                textInputAction:
+                    TextInputAction.done, // Closes keyboard/triggers login
                 onSubmitted: (_) => _login(), // Triggers login on Enter
                 decoration: InputDecoration(
                   labelText: "Password",
@@ -176,17 +181,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              
+
               if (_errorMessage != null) ...[
                 const SizedBox(height: 12),
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                ),
+                Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
               ],
-              
+
               const SizedBox(height: 30),
-              
+
               _isLoading
                   ? const CircularProgressIndicator()
                   : Column(
@@ -207,7 +209,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 15),
                         OutlinedButton.icon(
                           onPressed: _loginWithGoogle,
-                          icon: Image.asset('assets/images/google_logo.png', height: 24, errorBuilder: (context, error, stackTrace) => const Icon(Icons.public),), // Fallback icon if image missing
+                          icon: Image.asset(
+                            'assets/images/google_logo.png',
+                            height: 24,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.public),
+                          ), // Fallback icon if image missing
                           label: const Text("Sign in with Google"),
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size(double.infinity, 50),
@@ -225,7 +232,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const RegisterScreen(),
+                                  ),
                                 );
                               },
                               child: const Text("Register"),

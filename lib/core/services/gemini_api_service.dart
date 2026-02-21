@@ -10,9 +10,9 @@ class GeminiApiService {
   Future<String?> analyzeImage(String imagePath, String mode) async {
     // ⚠️ FIX: We found "gemini-2.5-flash" in your browser JSON list.
     // We must use that EXACT name.
-    final String urlString = 
+    final String urlString =
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey';
-    
+
     final Uri url = Uri.parse(urlString);
 
     // 1. Prepare the Image
@@ -26,9 +26,11 @@ class GeminiApiService {
     // 2. Set the Prompt
     String prompt;
     if (mode.contains("pest")) {
-      prompt = "Analyze this plant image. Identify any pest or disease. Format output in Markdown with Diagnosis, Symptoms, and Solutions.";
+      prompt =
+          "Analyze this plant image. Identify any pest or disease. Format output in Markdown with Diagnosis, Symptoms, and Solutions.";
     } else {
-      prompt = "Analyze this plant image. Identify nutrient deficiencies. Format output in Markdown with Diagnosis, Symptoms, and Fertilizer Recommendations.";
+      prompt =
+          "Analyze this plant image. Identify nutrient deficiencies. Format output in Markdown with Diagnosis, Symptoms, and Fertilizer Recommendations.";
     }
 
     // 3. Build the JSON Body
@@ -38,14 +40,11 @@ class GeminiApiService {
           "parts": [
             {"text": prompt},
             {
-              "inline_data": {
-                "mime_type": "image/jpeg",
-                "data": base64Image
-              }
-            }
-          ]
-        }
-      ]
+              "inline_data": {"mime_type": "image/jpeg", "data": base64Image},
+            },
+          ],
+        },
+      ],
     };
 
     // 4. Send Request
@@ -58,7 +57,8 @@ class GeminiApiService {
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
-        return jsonResponse['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? "Error: No text in response.";
+        return jsonResponse['candidates']?[0]?['content']?['parts']?[0]?['text'] ??
+            "Error: No text in response.";
       } else {
         return "Server Error ${response.statusCode}: ${response.body}";
       }

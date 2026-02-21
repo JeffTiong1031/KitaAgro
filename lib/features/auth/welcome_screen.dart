@@ -12,7 +12,10 @@ class WelcomeScreen extends StatelessWidget {
         // 核心修复：使用 SingleChildScrollView 包裹 Column，消灭 1.2 像素溢出
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 30.0,
+              vertical: 20.0,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -20,7 +23,11 @@ class WelcomeScreen extends StatelessWidget {
                 // Logo or Icon
                 const Hero(
                   tag: 'logo',
-                  child: Icon(Icons.agriculture, size: 100, color: Colors.green),
+                  child: Icon(
+                    Icons.agriculture,
+                    size: 100,
+                    color: Colors.green,
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -46,7 +53,9 @@ class WelcomeScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(

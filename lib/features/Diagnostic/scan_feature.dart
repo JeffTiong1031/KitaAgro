@@ -16,9 +16,11 @@ class _ScanFeatureState extends State<ScanFeature> {
   File? _selectedImage;
   bool _isAnalyzing = false;
   final ImagePicker _picker = ImagePicker();
-  
+
   // Initialize the service with your API Key
-  final GeminiApiService _apiService = GeminiApiService('AIzaSyAONXuYRzzHalWMopx82Zalefaa2-w5lmU');
+  final GeminiApiService _apiService = GeminiApiService(
+    'AIzaSyAONXuYRzzHalWMopx82Zalefaa2-w5lmU',
+  );
 
   Future<void> _pickImage(ImageSource source) async {
     final XFile? image = await _picker.pickImage(source: source);
@@ -29,7 +31,10 @@ class _ScanFeatureState extends State<ScanFeature> {
     }
   }
 
-  void _processImageForAnalysis(File pickedFile, bool userWantsPestDetection) async {
+  void _processImageForAnalysis(
+    File pickedFile,
+    bool userWantsPestDetection,
+  ) async {
     setState(() {
       _isAnalyzing = true;
     });
@@ -37,10 +42,7 @@ class _ScanFeatureState extends State<ScanFeature> {
     String mode = userWantsPestDetection ? "pest" : "nutrient";
 
     // Call the API
-    String? result = await _apiService.analyzeImage(
-      pickedFile.path, 
-      mode,
-    );
+    String? result = await _apiService.analyzeImage(pickedFile.path, mode);
 
     setState(() {
       _isAnalyzing = false;
@@ -49,9 +51,9 @@ class _ScanFeatureState extends State<ScanFeature> {
     if (result != null && mounted) {
       // If result starts with "Error", show a Snackbar instead of the new screen
       if (result.startsWith("Error")) {
-         ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result), 
+            content: Text(result),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -99,10 +101,14 @@ class _ScanFeatureState extends State<ScanFeature> {
                       fit: BoxFit.cover,
                     )
                   else
-                    const Icon(Icons.image_not_supported, size: 100, color: Colors.grey),
-                  
+                    const Icon(
+                      Icons.image_not_supported,
+                      size: 100,
+                      color: Colors.grey,
+                    ),
+
                   const SizedBox(height: 20),
-                  
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -119,22 +125,30 @@ class _ScanFeatureState extends State<ScanFeature> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   if (_selectedImage != null) ...[
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-                      onPressed: () => _processImageForAnalysis(_selectedImage!, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () =>
+                          _processImageForAnalysis(_selectedImage!, true),
                       child: const Text('Identify Pests 🐞'),
                     ),
                     const SizedBox(height: 10),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                      onPressed: () => _processImageForAnalysis(_selectedImage!, false),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () =>
+                          _processImageForAnalysis(_selectedImage!, false),
                       child: const Text('Identify Nutrients 🍃'),
                     ),
-                  ]
+                  ],
                 ],
               ),
             ),

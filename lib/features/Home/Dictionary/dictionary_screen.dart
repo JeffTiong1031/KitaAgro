@@ -90,7 +90,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
     if (_selectedCategory == 'All') {
       return _plants;
     }
-    return _plants.where((plant) => plant['category'] == _selectedCategory).toList();
+    return _plants
+        .where((plant) => plant['category'] == _selectedCategory)
+        .toList();
   }
 
   @override
@@ -216,7 +218,10 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                         });
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: isSelected ? Colors.white : Colors.white24,
                           borderRadius: BorderRadius.circular(20),
@@ -224,8 +229,12 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                         child: Text(
                           category,
                           style: TextStyle(
-                            color: isSelected ? Color(0xFF2E7D32) : Colors.white,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? Color(0xFF2E7D32)
+                                : Colors.white,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -246,10 +255,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                 const SizedBox(width: 8),
                 Text(
                   '${_filteredPlants.length} Plants',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
@@ -292,10 +298,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
         decoration: BoxDecoration(
           color: Color(0xFF388E3C),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Color(0xFF4CAF50),
-            width: 2,
-          ),
+          border: Border.all(color: Color(0xFF4CAF50), width: 2),
           boxShadow: [
             BoxShadow(
               color: Colors.black26,

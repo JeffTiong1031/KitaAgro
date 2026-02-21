@@ -12,9 +12,7 @@ class GrantRequirementsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Program Requirements',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.green[700],
         foregroundColor: Colors.white,
@@ -66,10 +64,7 @@ class GrantRequirementsScreen extends StatelessWidget {
                   SizedBox(height: 8),
                   Text(
                     'Review the criteria below to ensure you qualify',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.white70),
                   ),
                 ],
               ),
@@ -157,17 +152,11 @@ class GrantRequirementsScreen extends StatelessWidget {
                 child: ExpansionTile(
                   leading: CircleAvatar(
                     backgroundColor: Colors.green[100],
-                    child: Icon(
-                      Icons.person_outline,
-                      color: Colors.green[700],
-                    ),
+                    child: Icon(Icons.person_outline, color: Colors.green[700]),
                   ),
                   title: const Text(
                     'Basic Requirements',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                   subtitle: const Text(
                     'General eligibility criteria',
@@ -218,10 +207,7 @@ class GrantRequirementsScreen extends StatelessWidget {
                   ),
                   title: const Text(
                     'Start-up Requirements',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                   subtitle: const Text(
                     'Additional criteria for new ventures',
@@ -245,8 +231,7 @@ class GrantRequirementsScreen extends StatelessWidget {
                           const SizedBox(height: 12),
                           _buildRequirementItem(
                             number: '3',
-                            text:
-                                'Net income less than RM5,000 per month',
+                            text: 'Net income less than RM5,000 per month',
                           ),
                         ],
                       ),
@@ -309,11 +294,7 @@ class GrantRequirementsScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Colors.green[600],
-        ),
+        Icon(icon, size: 20, color: Colors.green[600]),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
@@ -329,10 +310,7 @@ class GrantRequirementsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRequirementItem({
-    required String number,
-    required String text,
-  }) {
+  Widget _buildRequirementItem({required String number, required String text}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

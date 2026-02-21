@@ -12,7 +12,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final PageController _pageController = PageController();
   final AuthService _authService = AuthService();
-  
+
   int _currentStep = 0;
   final int _totalSteps = 4;
   bool _isLoading = false;
@@ -21,7 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
-  
+
   // step 2: Personal
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
@@ -29,9 +29,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // step 3: Location
   final TextEditingController _townController = TextEditingController();
-  final TextEditingController _stateController = TextEditingController(); // Or dropdown
+  final TextEditingController _stateController =
+      TextEditingController(); // Or dropdown
   final TextEditingController _countryController = TextEditingController();
-  
+
   // step 4: Role
   String? _selectedRole;
 
@@ -51,7 +52,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Regex for basic email validation
   bool _isValidEmail(String email) {
-    return RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(email);
+    return RegExp(
+      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+    ).hasMatch(email);
   }
 
   Future<void> _nextPage() async {
@@ -66,14 +69,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return;
       }
       if (!_isValidEmail(email)) {
-         _showError("Please enter a valid email address");
-         return;
+        _showError("Please enter a valid email address");
+        return;
       }
       if (password.length < 6) {
-         _showError("Password must be at least 6 characters");
-         return;
+        _showError("Password must be at least 6 characters");
+        return;
       }
-      
+
       // Check username uniqueness (Optional UX improvement: show loading indicator here)
       bool isAvailable = await _authService.isUsernameAvailable(username);
       if (!isAvailable) {
@@ -81,12 +84,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return;
       }
     } else if (_currentStep == 1) {
-      if (_nameController.text.isEmpty || _ageController.text.isEmpty || _selectedGender == null) {
+      if (_nameController.text.isEmpty ||
+          _ageController.text.isEmpty ||
+          _selectedGender == null) {
         _showError("Please fill in all fields");
         return;
       }
     } else if (_currentStep == 2) {
-      if (_townController.text.isEmpty || _stateController.text.isEmpty || _countryController.text.isEmpty) {
+      if (_townController.text.isEmpty ||
+          _stateController.text.isEmpty ||
+          _countryController.text.isEmpty) {
         _showError("Please fill in all fields");
         return;
       }
@@ -143,11 +150,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (errors.isEmpty) {
       // Success
       if (mounted) {
-         // Navigate to dashboard and remove history
-         Navigator.pushReplacement(
-           context,
-           MaterialPageRoute(builder: (context) => const MainLayout()),
-         );
+        // Navigate to dashboard and remove history
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainLayout()),
+        );
       }
     } else {
       _showError(errors.join("\n"));
@@ -197,21 +204,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
-          child: _isLoading 
-            ? const Center(child: CircularProgressIndicator())
-            : ElevatedButton(
-              onPressed: _nextPage,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              ),
-              child: Text(
-                _currentStep == _totalSteps - 1 ? "Finish" : "Next",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ElevatedButton(
+                  onPressed: _nextPage,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 55),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  child: Text(
+                    _currentStep == _totalSteps - 1 ? "Finish" : "Next",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
         ),
       ),
     );
@@ -220,7 +232,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildStepTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+      style: const TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
     );
   }
 
@@ -233,24 +249,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _buildStepTitle("Create your account"),
           const SizedBox(height: 30),
           _buildTextField(
-            controller: _emailController, 
-            label: "Email", 
-            icon: Icons.email, 
+            controller: _emailController,
+            label: "Email",
+            icon: Icons.email,
             type: TextInputType.emailAddress,
             action: TextInputAction.next,
           ),
           const SizedBox(height: 20),
           _buildTextField(
-            controller: _usernameController, 
-            label: "Username", 
+            controller: _usernameController,
+            label: "Username",
             icon: Icons.person,
             action: TextInputAction.next,
           ),
           const SizedBox(height: 20),
           _buildTextField(
-            controller: _passwordController, 
-            label: "Password", 
-            icon: Icons.lock, 
+            controller: _passwordController,
+            label: "Password",
+            icon: Icons.lock,
             obscure: true,
             action: TextInputAction.done,
             onSubmitted: (_) => _nextPage(),
@@ -269,19 +285,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _buildStepTitle("Tell us about yourself"),
           const SizedBox(height: 30),
           _buildTextField(
-            controller: _nameController, 
-            label: "Full Name", 
+            controller: _nameController,
+            label: "Full Name",
             icon: Icons.badge,
             action: TextInputAction.next,
           ),
           const SizedBox(height: 20),
           _buildTextField(
-            controller: _ageController, 
-            label: "Age", 
-            icon: Icons.calendar_today, 
+            controller: _ageController,
+            label: "Age",
+            icon: Icons.calendar_today,
             type: TextInputType.number,
             action: TextInputAction.done,
-             // Not calling _nextPage() here because gender dropdown is next
+            // Not calling _nextPage() here because gender dropdown is next
           ),
           const SizedBox(height: 20),
           _buildDropdown(
@@ -312,15 +328,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(height: 20),
           _buildTextField(
-            controller: _stateController, 
-            label: "State", 
+            controller: _stateController,
+            label: "State",
             icon: Icons.map,
             action: TextInputAction.next,
           ),
           const SizedBox(height: 20),
           _buildTextField(
-            controller: _countryController, 
-            label: "Country", 
+            controller: _countryController,
+            label: "Country",
             icon: Icons.flag,
             action: TextInputAction.done,
             onSubmitted: (_) => _nextPage(),
@@ -351,9 +367,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildTextField({
-    required TextEditingController controller, 
-    required String label, 
-    required IconData icon, 
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
     bool obscure = false,
     TextInputType type = TextInputType.text,
     TextInputAction action = TextInputAction.done,
@@ -396,7 +412,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 value: value,
                 isExpanded: true,
                 hint: Text(hint),
-                items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                items: items
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
                 onChanged: onChanged,
               ),
             ),

@@ -39,7 +39,9 @@ class ProductListing {
     final longitude = (data['longitude'] as num?)?.toDouble();
     final weight = (data['weight'] as num?)?.toDouble();
     if (latitude == null || longitude == null || weight == null) {
-      throw StateError('ProductListing ${snapshot.id} has invalid numeric fields');
+      throw StateError(
+        'ProductListing ${snapshot.id} has invalid numeric fields',
+      );
     }
 
     final rawHarvestDate = data['harvestDate'];

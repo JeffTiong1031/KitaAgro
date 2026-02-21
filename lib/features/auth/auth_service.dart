@@ -9,14 +9,18 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: '437822465539-unodc8ggt8habhhh1hoh6n09bp4ljjda.apps.googleusercontent.com',
+    clientId:
+        '437822465539-unodc8ggt8habhhh1hoh6n09bp4ljjda.apps.googleusercontent.com',
   );
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
 
   // Sign in with Email/Password
-  Future<String?> signIn({required String email, required String password}) async {
+  Future<String?> signIn({
+    required String email,
+    required String password,
+  }) async {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
       return null;
@@ -62,7 +66,8 @@ class AuthService {
       }
 
       // 2. Create Auth User
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
       User? user = userCredential.user;
 
       if (user != null) {
@@ -83,7 +88,7 @@ class AuthService {
 
         // 4. Save to Firestore
         await _firestore.collection('users').doc(user.uid).set(newUser.toMap());
-        
+
         // 5. Update Display Name
         await user.updateDisplayName(fullName);
       }
@@ -100,12 +105,15 @@ class AuthService {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null; // Cancelled
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(
+        credential,
+      );
       User? user = userCredential.user;
       if (user != null) {
         return await _saveGoogleUserToFirestore(user);
@@ -120,14 +128,19 @@ class AuthService {
   // Save/Retrieve Google User
   Future<UserModel?> _saveGoogleUserToFirestore(User user) async {
     try {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(user.uid).get();
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
       if (doc.exists) {
         return UserModel.fromMap(doc.data() as Map<String, dynamic>);
       } else {
         UserModel newUser = UserModel(
           uid: user.uid,
           email: user.email!,
-          username: user.displayName?.replaceAll(' ', '').toLowerCase() ?? 'user${user.uid.substring(0, 5)}',
+          username:
+              user.displayName?.replaceAll(' ', '').toLowerCase() ??
+              'user${user.uid.substring(0, 5)}',
           fullName: user.displayName ?? '',
           age: 0, // Incomplete
           gender: 'Not Specified',
@@ -149,7 +162,10 @@ class AuthService {
   // Get User Data
   Future<UserModel?> getUserData(String uid) async {
     try {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get();
       if (doc.exists) {
         return UserModel.fromMap(doc.data() as Map<String, dynamic>);
       }

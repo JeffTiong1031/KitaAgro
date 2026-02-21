@@ -23,20 +23,40 @@ class AnalysisResultScreen extends StatefulWidget {
 class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
   bool _isReporting = false;
 
-  // Helper to extract the pest name from the AI text (Simple logic)
+  // 👉 FIXED: Bulletproof parser for the exact "Name:" line
   String _extractPestName(String text) {
-    // We look for the line starting with "## Diagnosis" or similar
-    // This is a basic parser; you can make it smarter later.
-    final lines = text.split('\n');
-    for (var line in lines) {
-      if (line.contains("Diagnosis") || line.contains("##")) {
-        return line.replaceAll("#", "").replaceAll("Diagnosis:", "").trim();
+    try {
+      final lines = text.split('\n');
+      for (var line in lines) {
+        // Look for the line containing "Name:"
+        if (line.toLowerCase().contains("name:")) {
+          // Strip out the Markdown bolding and the prefix label
+          return line.replaceAll(RegExp(r'\*\*|\*|Pest Name:|Deficiency Name:', caseSensitive: false), '').trim();
+        }
       }
+    } catch (e) {
+      print("Parsing error: $e");
     }
-    return "Unknown Pest";
+    return "Unknown Issue"; // Fallback
   }
 
-  // The function to handle the button click
+  // 👉 FIXED: Grabs our custom-generated 10-word notification string!
+  String _extractShortAdvice(String text) {
+    try {
+      final lines = text.split('\n');
+      for (var line in lines) {
+        // Look for our exact "Short Advice:" line
+        if (line.toLowerCase().contains("short advice:")) {
+          return line.replaceAll(RegExp(r'\*\*|\*|Short Advice:', caseSensitive: false), '').trim();
+        }
+      }
+    } catch (e) {
+      print("Parsing error: $e");
+    }
+    return "Take standard precautionary measures."; // Fallback
+  }
+
+  // Update your submit handler to use the new extraction function
   void _handleReportOutbreak() async {
     setState(() {
       _isReporting = true;
@@ -44,21 +64,24 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
 
     try {
       final pestName = _extractPestName(widget.analysisText);
+      // 👉 UPDATED: Use the new short advice extractor
+      final shortAiAdvice = _extractShortAdvice(widget.analysisText); 
       final PestReportService _reportService = PestReportService();
 
-      // Call the service we created in Phase 2
       await _reportService.reportPestOutbreak(
         pestName,
         "High",
-      ); // Defaulting to High for now
+        shortAiAdvice, // Push the 10-word summary to Firebase
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("✅ Outbreak Reported! location added to Heatmap."),
+            content: Text("✅ Outbreak Reported! Alerting nearby farmers..."),
             backgroundColor: Colors.green,
           ),
         );
+        Navigator.pop(context); 
       }
     } catch (e) {
       if (mounted) {
@@ -76,6 +99,24 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
         });
       }
     }
+  }
+
+  // 👉 NEW: This hides the "Short Advice" line from the screen UI
+  String _getVisibleAnalysisText(String fullText) {
+    // Look for the "Short Advice" marker
+    int cutIndex = fullText.toLowerCase().indexOf('short advice:');
+    
+    if (cutIndex != -1) {
+      // Find the start of the line so we don't leave lingering ** marks
+      int lineStart = fullText.lastIndexOf('\n', cutIndex);
+      if (lineStart != -1) {
+        return fullText.substring(0, lineStart).trim();
+      } else {
+        // If it's on the very first line (unlikely, but safe)
+        return fullText.substring(0, cutIndex).replaceAll('**', '').trim();
+      }
+    }
+    return fullText; // If not found, return the whole text
   }
 
   @override
@@ -126,7 +167,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                     const SizedBox(height: 10),
 
                     MarkdownBody(
-                      data: widget.analysisText,
+                      data: _getVisibleAnalysisText(widget.analysisText),
                       styleSheet:
                           MarkdownStyleSheet.fromTheme(
                             Theme.of(context),

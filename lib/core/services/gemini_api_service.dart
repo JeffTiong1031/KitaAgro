@@ -84,27 +84,26 @@ class GeminiApiService {
 
     // Build comprehensive prompt for location-aware advice
     final String prompt = '''
-Analyze growing conditions for $plantName ($scientificName) in $location.
+Growing conditions for $plantName ($scientificName) in $location. Temp: $temperature°C, Weather: $weatherCondition, Category: $category.
 
-Current conditions:
-- Temperature: $temperature°C
-- Weather: $weatherCondition
-- Location: $location
-- Category: $category
-
-Provide ONLY a valid JSON response with exactly these 4 fields:
+Return ONLY valid JSON with these fields (be VERY concise, max 8 words per field):
 {
-  "localMatchScore": <integer 0-100 representing how well this plant matches local climate>,
-  "growingContext": "<2-3 sentences about how local $location climate (humidity, rainfall, temperature) specifically affects this plant. Be specific about the location. Example: 'In Kluang's humid tropical climate, this plant thrives with 15% faster growth due to consistent rainfall patterns.'>",
-  "growingTips": {
-    "sunlight": "<Location-specific sunlight advice. Example: 'In your tropical climate, provide 6 hours morning sun to avoid afternoon heat stress.'>",
-    "watering": "<Location-specific watering advice based on current $weatherCondition. Example: 'During rainy season, reduce watering to twice weekly.'>",
-    "soil": "<Location-specific soil recommendation. Example: 'Add more drainage in $location due to high rainfall.'>"
-  },
-  "carbonReduction": "<1 sentence calculating CO2 reduction. Example: 'Growing this saves approximately 2.3 kg CO2/month compared to store-bought produce.'>"
+  "localMatchScore": <0-100>,
+  "growingContext": "<suitable or not, 1 short sentence>",
+  "growthTime": "<e.g. 60-75 days>",
+  "difficulty": "<e.g. Easy - tropical>",
+  "sunlight": "<e.g. Full sun 6-8 hours>",
+  "watering": "<e.g. Water daily in heat>",
+  "soil": "<e.g. Well-drained loamy soil>",
+  "carbonReduction": "<1 short phrase about CO2 benefit>",
+  "materialsNeeded": [{"item": "<material name>", "purpose": "<3-5 words>"}],
+  "growthStages": [{"stage": "<name>", "startDay": <int>, "endDay": <int>, "description": "<under 6 words>"}]
 }
 
-Keep responses concise and actionable. Focus on $location-specific advice.
+Rules:
+- materialsNeeded: 4-8 essential items (seeds, fertilizer, tools, pots, etc.).
+- growthStages: 4-7 contiguous stages from day 1 to total growth days.
+- ALL text fields: max 8 words. Be direct.
 ''';
 
     final requestBody = {
@@ -119,12 +118,13 @@ Keep responses concise and actionable. Focus on $location-specific advice.
         "temperature": 0.7,
         "topK": 40,
         "topP": 0.95,
-        "maxOutputTokens": 1024,
+        "maxOutputTokens": 2048,
       }
     };
 
     try {
       print('📡 Sending request to Gemini API...');
+      print('🌿 Plant: ${plantName} | 📍 Location: ${location} | 🌡️ Temp: ${temperature}°C');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -134,51 +134,265 @@ Keep responses concise and actionable. Focus on $location-specific advice.
       print('📥 Response status: ${response.statusCode}');
       
       if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-        final text = jsonResponse['candidates']?[0]?['content']?['parts']?[0]?['text'];
-        
-        if (text == null) {
-          print('⚠️ No text in Gemini response');
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          final text = jsonResponse['candidates']?[0]?['content']?['parts']?[0]?['text'];
+          
+          if (text == null) {
+            print('⚠️ No text in Gemini response');
+            print('📊 Full response structure: ${jsonResponse.toString()}');
+            return null;
+          }
+
+          print('📝 Raw AI response length: ${text.length} characters');
+          print('📝 First 300 chars: ${text.substring(0, text.length > 300 ? 300 : text.length)}');
+
+          // Extract JSON from response (handle markdown code blocks)
+          String jsonText = text.trim();
+          if (jsonText.startsWith('```json')) {
+            jsonText = jsonText.substring(7);
+          } else if (jsonText.startsWith('```')) {
+            jsonText = jsonText.substring(3);
+          }
+          if (jsonText.endsWith('```')) {
+            jsonText = jsonText.substring(0, jsonText.length - 3);
+          }
+          jsonText = jsonText.trim();
+
+          print('🔍 Extracted JSON length: ${jsonText.length} characters');
+
+          // Parse the AI response
+          final aiData = jsonDecode(jsonText);
+          
+          print('✅ Successfully parsed AI data');
+          print('🎯 Match Score: ${aiData['localMatchScore']}');
+          print('📖 Growth Time: ${aiData['growthTime']}');
+          print('💪 Difficulty: ${aiData['difficulty']}');
+          
+          // Return ONLY what AI provides - no defaults, no fallbacks
+          return {
+            'localMatchScore': aiData['localMatchScore'],
+            'growingContext': aiData['growingContext'],
+            'growthTime': aiData['growthTime'],
+            'difficulty': aiData['difficulty'],
+            'sunlight': aiData['sunlight'],
+            'watering': aiData['watering'],
+            'soil': aiData['soil'],
+            'carbonReduction': aiData['carbonReduction'],
+            'materialsNeeded': aiData['materialsNeeded'],
+            'growthStages': aiData['growthStages'],
+          };
+        } catch (parseError) {
+          print('❌ JSON parsing error: $parseError');
+          print('📊 Failed to parse text: ${response.body}');
           return null;
         }
-
-        print('📝 Raw AI response: ${text.substring(0, text.length > 200 ? 200 : text.length)}...');
-
-        // Extract JSON from response (handle markdown code blocks)
-        String jsonText = text.trim();
-        if (jsonText.startsWith('```json')) {
-          jsonText = jsonText.substring(7);
-        } else if (jsonText.startsWith('```')) {
-          jsonText = jsonText.substring(3);
-        }
-        if (jsonText.endsWith('```')) {
-          jsonText = jsonText.substring(0, jsonText.length - 3);
-        }
-        jsonText = jsonText.trim();
-
-        print('🔍 Parsing JSON...');
-        // Parse the AI response
-        final aiData = jsonDecode(jsonText);
-        final growingTipsData = aiData['growingTips'] as Map<String, dynamic>?;
-        
-        print('✅ Successfully parsed AI data');
-        return {
-          'localMatchScore': aiData['localMatchScore'] ?? 75,
-          'growingContext': aiData['growingContext'] ?? 'This plant adapts well to local conditions.',
-          'growingTips': {
-            'sunlight': growingTipsData?['sunlight'] ?? 'Provide adequate sunlight as needed.',
-            'watering': growingTipsData?['watering'] ?? 'Water regularly.',
-            'soil': growingTipsData?['soil'] ?? 'Use well-draining soil.',
-          },
-          'carbonReduction': aiData['carbonReduction'] ?? 
-              'Growing this plant helps reduce your carbon footprint.',
-        };
       } else {
-        print('❌ Gemini API Error ${response.statusCode}: ${response.body}');
+        print('❌ Gemini API Error ${response.statusCode}');
+        print('📋 Response body: ${response.body}');
         return null;
       }
     } catch (e) {
       print('❌ AI Advice Error: $e');
+      return null;
+    }
+  }
+  /// Generate today's suggested tasks for a specific plant based on its growth stage
+  Future<List<Map<String, String>>?> generateDailyTasks({
+    required String plantName,
+    required String scientificName,
+    required String category,
+    required int daysPlanted,
+    required int totalDays,
+    required String location,
+    required double temperature,
+    required String weatherCondition,
+  }) async {
+    final String urlString =
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey';
+
+    final Uri url = Uri.parse(urlString);
+
+    final String prompt = '''
+You are a smart farming assistant. Generate 3-5 practical daily tasks for TODAY for a user growing $plantName ($scientificName).
+
+Context:
+- Category: $category
+- Day $daysPlanted of $totalDays total growing days
+- Location: $location
+- Temperature: $temperature°C
+- Weather: $weatherCondition
+
+Respond ONLY with a valid JSON array. Each task object has "task" (under 10 words) and "icon" (one of: water, sun, fertilizer, prune, inspect, harvest, protect, soil).
+
+Example: [{"task":"Water in the morning","icon":"water"},{"task":"Check for pests","icon":"inspect"}]
+
+Keep it SHORT. Return ONLY the JSON array.
+''';
+
+    final requestBody = {
+      "contents": [
+        {
+          "parts": [
+            {"text": prompt}
+          ]
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.8,
+        "topK": 40,
+        "topP": 0.95,
+        "maxOutputTokens": 2048,
+      }
+    };
+
+    try {
+      print('📋 Generating daily tasks for $plantName (day $daysPlanted/$totalDays)...');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          final text = jsonResponse['candidates']?[0]?['content']?['parts']?[0]?['text'];
+
+          if (text == null) return null;
+
+          String jsonText = text.trim();
+          if (jsonText.startsWith('```json')) {
+            jsonText = jsonText.substring(7);
+          } else if (jsonText.startsWith('```')) {
+            jsonText = jsonText.substring(3);
+          }
+          if (jsonText.endsWith('```')) {
+            jsonText = jsonText.substring(0, jsonText.length - 3);
+          }
+          jsonText = jsonText.trim();
+
+          // Try to repair truncated JSON — close unclosed array
+          if (!jsonText.endsWith(']')) {
+            // Find last complete object (ends with })
+            final lastBrace = jsonText.lastIndexOf('}');
+            if (lastBrace > 0) {
+              jsonText = '${jsonText.substring(0, lastBrace + 1)}]';
+            } else {
+              print('❌ Could not repair truncated JSON');
+              return null;
+            }
+          }
+
+          final List<dynamic> tasks = jsonDecode(jsonText);
+          print('✅ Generated ${tasks.length} daily tasks');
+          return tasks
+              .where((t) => t is Map && t['task'] != null)
+              .map<Map<String, String>>((t) => {
+                    'task': (t['task'] as String?) ?? '',
+                    'icon': (t['icon'] as String?) ?? 'inspect',
+                  })
+              .toList();
+        } catch (parseError) {
+          print('❌ Task parsing error: $parseError');
+          return null;
+        }
+      } else {
+        print('❌ Task API Error ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Task generation error: $e');
+      return null;
+    }
+  }
+
+  /// Analyze a plant photo and return a diagnosis + concise task suggestions
+  Future<Map<String, dynamic>?> analyzeAndSuggestTasks({
+    required String imagePath,
+    required String plantName,
+    required int daysPlanted,
+    required int totalDays,
+  }) async {
+    final String urlString =
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey';
+
+    final Uri url = Uri.parse(urlString);
+
+    final File imageFile = File(imagePath);
+    if (!await imageFile.exists()) return null;
+    final bytes = await imageFile.readAsBytes();
+    final base64Image = base64Encode(bytes);
+
+    final String prompt = '''
+You are a plant doctor. Analyze the photo of this $plantName (day $daysPlanted of $totalDays).
+
+Return ONLY valid JSON:
+{
+  "status": "<Healthy / Needs Attention / Critical>",
+  "diagnosis": "<1 sentence, max 15 words, what you see>",
+  "tasks": [{"task":"<under 10 words>","icon":"<water|sun|fertilizer|prune|inspect|harvest|protect|soil>"}]
+}
+
+Rules:
+- Give 2-4 tasks based on what you SEE in the photo.
+- Be specific to the visual condition (yellowing, wilting, pests, healthy growth, etc.).
+- Return ONLY the JSON.
+''';
+
+    final requestBody = {
+      "contents": [
+        {
+          "parts": [
+            {"text": prompt},
+            {
+              "inline_data": {
+                "mime_type": "image/jpeg",
+                "data": base64Image,
+              }
+            }
+          ]
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 2048,
+      }
+    };
+
+    try {
+      print('📸 Analyzing plant photo for $plantName...');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          final text = jsonResponse['candidates']?[0]?['content']?['parts']?[0]?['text'];
+          if (text == null) return null;
+
+          String jsonText = text.trim();
+          if (jsonText.startsWith('```json')) jsonText = jsonText.substring(7);
+          else if (jsonText.startsWith('```')) jsonText = jsonText.substring(3);
+          if (jsonText.endsWith('```')) jsonText = jsonText.substring(0, jsonText.length - 3);
+          jsonText = jsonText.trim();
+
+          final data = jsonDecode(jsonText) as Map<String, dynamic>;
+          print('✅ Photo analysis: ${data['status']}');
+          return data;
+        } catch (parseError) {
+          print('❌ Photo analysis parse error: $parseError');
+          return null;
+        }
+      } else {
+        print('❌ Photo analysis API error: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Photo analysis error: $e');
       return null;
     }
   }

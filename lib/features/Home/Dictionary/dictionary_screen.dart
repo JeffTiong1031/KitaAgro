@@ -15,7 +15,7 @@ class DictionaryScreen extends StatefulWidget {
 class _DictionaryScreenState extends State<DictionaryScreen> {
   String _selectedCategory = 'All';
   final ScrollController _gridController = ScrollController();
-  final GeminiApiService _geminiService = GeminiApiService('AIzaSyAONXuYRzzHalWMopx82Zalefaa2-w5lmU');
+  final GeminiApiService _geminiService = GeminiApiService('AIzaSyBkgljGd-zVO4lV5Cqpfipo0Br8pKwBe-k');
 
   final List<String> _categories = [
     'All',
@@ -33,11 +33,6 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'icon': Icons.circle,
       'color': Color(0xFFE53935),
       'description': 'A popular garden vegetable rich in vitamins A and C. Tomatoes are used in salads, sauces, and many cuisines worldwide.',
-      'growthTime': '60-80 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun (6-8 hours)',
-      'water': 'Regular watering',
-      'soil': 'Well-drained, fertile soil',
     },
     {
       'name': 'Chili',
@@ -46,11 +41,6 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'icon': Icons.local_fire_department,
       'color': Color(0xFFD32F2F),
       'description': 'Spicy fruit used in many cuisines worldwide. Contains capsaicin which gives the heat.',
-      'growthTime': '60-90 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'Moderate',
-      'soil': 'Sandy loam',
     },
     // Fruits
     {
@@ -60,11 +50,6 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'icon': Icons.spa,
       'color': Color(0xFFFFB300),
       'description': 'Tropical fruit with sweet orange flesh. Rich in enzymes and vitamins.',
-      'growthTime': '9-11 months',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Well-drained, rich',
     },
     {
       'name': 'Banana',
@@ -72,12 +57,23 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.nature,
       'color': Color(0xFFFFEB3B),
-      'description': 'Popular tropical fruit rich in potassium. Grows in bunches on tall plants.',
-      'growthTime': '9-12 months',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'High',
-      'soil': 'Rich, well-drained',
+      'description': 'Tropical fruit rich in potassium. Requires warm frost-free climate (above 10°C year-round). Dies at 0°C. NOT suitable for temperate zones with winter frost.',
+    },
+    {
+      'name': 'Strawberry',
+      'scientificName': 'Fragaria × ananassa',
+      'category': 'Fruits',
+      'icon': Icons.local_florist,
+      'color': Color(0xFFE91E63),
+      'description': 'Sweet red fruit rich in vitamin C and antioxidants. Best with good drainage and regular care.',
+    },
+    {
+      'name': 'Apple',
+      'scientificName': 'Malus domestica',
+      'category': 'Fruits',
+      'icon': Icons.apple,
+      'color': Color(0xFFEF5350),
+      'description': 'Temperate fruit tree requiring 800-1000 chill hours (below 7°C). NOT suitable for tropical lowlands. Best in highland areas above 1000m elevation.',
     },
     // Herbs
     {
@@ -87,11 +83,6 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'icon': Icons.grass,
       'color': Color(0xFF388E3C),
       'description': 'Fragrant leaves used in Southeast Asian desserts and rice dishes.',
-      'growthTime': '6-12 months',
-      'difficulty': 'Easy',
-      'sunlight': 'Partial shade',
-      'water': 'High',
-      'soil': 'Moist, rich',
     },
   ];
 
@@ -154,16 +145,19 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
 
   int _parseGrowthDays(String? growthTime) {
     if (growthTime == null || growthTime.trim().isEmpty) {
-      return 60;
+      return 90; // Default 90 days if no data available
     }
     final String lower = growthTime.toLowerCase();
     final match = RegExp(r'(\d+)').firstMatch(lower);
     if (match == null) {
-      return 60;
+      return 90;
     }
-    final int value = int.tryParse(match.group(1) ?? '') ?? 60;
+    final int value = int.tryParse(match.group(1) ?? '') ?? 90;
     if (lower.contains('month')) {
       return value * 30;
+    }
+    if (lower.contains('year')) {
+      return value * 365;
     }
     return value;
   }
@@ -369,52 +363,6 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       ),
     );
   }
-
-  Widget _buildInfoCard(IconData icon, String label, String value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Color(0xFFF1F8E9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Color(0xFF2E7D32),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B5E20),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ========== AI-POWERED PLANT DETAIL SHEET ==========
@@ -435,12 +383,18 @@ class _PlantDetailSheet extends StatefulWidget {
 }
 
 class _PlantDetailSheetState extends State<_PlantDetailSheet> {
+  // Static cache to prevent duplicate API calls
+  static final Map<String, Map<String, dynamic>> _aiCache = {};
+  
   Map<String, dynamic>? _aiAdvice;
   bool _isLoadingAI = true;
   String _locationName = 'Unknown';
   double _temperature = 25.0;
   String _weatherCondition = 'Clear';
-  String _debugError = '';
+  String _debugError = ''; 
+  
+  // Track which cards are expanded
+  final Set<String> _expandedCards = {};
 
   @override
   void initState() {
@@ -499,14 +453,28 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
 
   Future<void> _fetchAIAdvice() async {
     try {
-      print('🤖 Calling Gemini AI for ${widget.plant['name']}...');
+      final plantName = widget.plant['name'];
+      final cacheKey = '$plantName-$_locationName';
+      
+      // Check cache first
+      if (_aiCache.containsKey(cacheKey)) {
+        print('💾 Using cached data for $plantName in $_locationName');
+        setState(() {
+          _aiAdvice = _aiCache[cacheKey];
+          _isLoadingAI = false;
+          _debugError = 'Data: Cached ✓';
+        });
+        return;
+      }
+      
+      print('🤖 Calling Gemini AI for $plantName...');
       print('📍 Location: $_locationName');
       print('🌡️ Temperature: $_temperature°C');
       print('🌤️ Weather: $_weatherCondition');
       
       // Fetch AI advice
       final advice = await widget.geminiService.getLocalizedAdvice(
-        plantName: widget.plant['name'],
+        plantName: plantName,
         scientificName: widget.plant['scientificName'],
         category: widget.plant['category'],
         location: _locationName,
@@ -517,22 +485,18 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
       print('✅ AI Response received: ${advice != null}');
       if (advice != null) {
         print('📊 Local Match Score: ${advice['localMatchScore']}');
-        print('🌱 Growing Tips: ${advice['growingTips'] != null}');
+        print('🌱 Growth Time: ${advice['growthTime']}');
+        print('☀️ Sunlight: ${advice['sunlight']}');
+        
+        // Cache the result
+        _aiCache[cacheKey] = advice;
+        _debugError = 'Data: OK ✓';
       } else {
-        print('⚠️ AI returned null - using fallback data');
-        _debugError = 'API returned null - check console';
-        // Provide fallback data for testing
+        print('⚠️ AI returned null - no fallback provided');
+        print('❌ Check Gemini API logs above for details');
+        _debugError = 'API quota exceeded. Try again in 1 minute.';
         setState(() {
-          _aiAdvice = {
-            'localMatchScore': 80,
-            'growingContext': 'In $_locationName\'s tropical climate (${_temperature.toStringAsFixed(1)}°C, $_weatherCondition), this ${widget.plant['name']} adapts well with proper care. The consistent warmth and humidity provide excellent growing conditions.',
-            'growingTips': {
-              'sunlight': 'In your tropical climate, provide morning sun (6-8 hours) to avoid afternoon heat stress. Consider partial shade during peak hours.',
-              'watering': 'During $_weatherCondition weather, adjust watering frequency. Check soil moisture before watering to prevent root rot in humid conditions.',
-              'soil': 'Use well-draining soil mixed with organic compost. In $_locationName, add extra drainage materials due to high rainfall.',
-            },
-            'carbonReduction': 'Growing this ${widget.plant['name']} saves approximately 2.5 kg CO₂/month compared to store-bought produce, while reducing food miles.',
-          };
+          _aiAdvice = null;
           _isLoadingAI = false;
         });
         return;
@@ -558,6 +522,41 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
     if (code <= 79) return 'Snowy';
     if (code <= 84) return 'Showers';
     return 'Stormy';
+  }
+
+  String _getDetailedInfo(String key) {
+    final plantName = widget.plant['name'];
+    final location = _locationName;
+    
+    switch (key) {
+      case 'growthTime':
+        return 'Growth time varies based on your local climate conditions in $location. '
+               'Factors like temperature (${_temperature.toStringAsFixed(1)}°C), daylight hours, '
+               'and seasonal patterns all affect how quickly $plantName matures.';
+               
+      case 'difficulty':
+        return 'Difficulty rating considers climate compatibility, maintenance requirements, '
+               'pest resistance, and how well $plantName adapts to $location conditions. '
+               'Beginners should start with "Easy" rated plants.';
+               
+      case 'sunlight':
+        return 'Sunlight requirements are crucial for photosynthesis and healthy growth. '
+               'In $location, consider seasonal variations and provide shade during extremely hot periods. '
+               'Morning sun is generally gentler than harsh afternoon sun.';
+               
+      case 'watering':
+        return 'Current weather: $_weatherCondition at ${_temperature.toStringAsFixed(1)}°C. '
+               'Adjust watering frequency based on rainfall, humidity, and soil moisture. '
+               'Overwatering is a common mistake - check soil before watering.';
+               
+      case 'soil':
+        return 'Soil quality directly impacts nutrient availability and root health. '
+               'In $location, amend soil based on local conditions. Good drainage prevents root rot, '
+               'while organic matter improves fertility and water retention.';
+               
+      default:
+        return '';
+    }
   }
 
   @override
@@ -686,6 +685,18 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                   // AI SECTION 3: AI-Enhanced Growing Guide
                   _buildAIGrowingGuide(),
                   const SizedBox(height: 24),
+
+                  // AI SECTION 3.5: Growth Stages Timeline
+                  if (_aiAdvice != null && _aiAdvice!['growthStages'] != null)
+                    _buildGrowthStagesTimeline(_aiAdvice!['growthStages']),
+                  if (_aiAdvice != null && _aiAdvice!['growthStages'] != null)
+                    const SizedBox(height: 24),
+
+                  // AI SECTION 3.6: Materials Needed
+                  if (_aiAdvice != null && _aiAdvice!['materialsNeeded'] != null)
+                    _buildMaterialsNeeded(_aiAdvice!['materialsNeeded']),
+                  if (_aiAdvice != null && _aiAdvice!['materialsNeeded'] != null)
+                    const SizedBox(height: 24),
 
                   // AI SECTION 4: Carbon Reduction
                   if (_aiAdvice != null) ...[
@@ -999,7 +1010,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                 color: Color(0xFF1B5E20),
               ),
             ),
-            if (_aiAdvice != null) ...[
+            if (_aiAdvice != null) ...[ 
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1013,7 +1024,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                     Icon(Icons.auto_awesome, color: Colors.white, size: 12),
                     const SizedBox(width: 4),
                     const Text(
-                      'AI Enhanced',
+                      'AI Powered',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
@@ -1028,45 +1039,389 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
         ),
         const SizedBox(height: 12),
         
-        // Growth Time (static)
-        _buildInfoCard(Icons.schedule, 'Growth Time', widget.plant['growthTime']),
-        
-        // Difficulty (static)
-        _buildInfoCard(Icons.trending_up, 'Difficulty', widget.plant['difficulty']),
-        
-        // Sunlight - AI Enhanced or Static
-        if (_aiAdvice != null && _aiAdvice!['growingTips'] != null)
-          _buildAIInfoCard(
-            Icons.wb_sunny,
-            'Sunlight',
-            widget.plant['sunlight'],
-            _aiAdvice!['growingTips']['sunlight'],
-          )
-        else
-          _buildInfoCard(Icons.wb_sunny, 'Sunlight', widget.plant['sunlight']),
-        
-        // Water - AI Enhanced or Static
-        if (_aiAdvice != null && _aiAdvice!['growingTips'] != null)
-          _buildAIInfoCard(
-            Icons.water_drop,
-            'Water',
-            widget.plant['water'],
-            _aiAdvice!['growingTips']['watering'],
-          )
-        else
-          _buildInfoCard(Icons.water_drop, 'Water', widget.plant['water']),
-        
-        // Soil - AI Enhanced or Static
-        if (_aiAdvice != null && _aiAdvice!['growingTips'] != null)
-          _buildAIInfoCard(
-            Icons.landscape,
-            'Soil',
-            widget.plant['soil'],
-            _aiAdvice!['growingTips']['soil'],
-          )
-        else
-          _buildInfoCard(Icons.landscape, 'Soil', widget.plant['soil']),
+        _buildInfoCard(
+          Icons.schedule, 
+          'Growth Time',
+          'growthTime',
+          _aiAdvice?['growthTime'] ?? '',
+        ),
+        _buildInfoCard(
+          Icons.trending_up, 
+          'Difficulty',
+          'difficulty',
+          _aiAdvice?['difficulty'] ?? '',
+        ),
+        _buildInfoCard(
+          Icons.wb_sunny, 
+          'Sunlight',
+          'sunlight',
+          _aiAdvice?['sunlight'] ?? '',
+        ),
+        _buildInfoCard(
+          Icons.water_drop, 
+          'Water',
+          'watering',
+          _aiAdvice?['watering'] ?? '',
+        ),
+        _buildInfoCard(
+          Icons.landscape, 
+          'Soil',
+          'soil',
+          _aiAdvice?['soil'] ?? '',
+        ),
       ],
+    );
+  }
+
+  // AI SECTION 3.5: Growth Stages Timeline
+  Widget _buildGrowthStagesTimeline(dynamic rawStages) {
+    final List<Map<String, dynamic>> stages = [];
+    if (rawStages is List) {
+      for (final item in rawStages) {
+        if (item is Map<String, dynamic>) {
+          final int? start = item['startDay'] is int
+              ? item['startDay'] as int
+              : int.tryParse('${item['startDay']}');
+          final int? end = item['endDay'] is int
+              ? item['endDay'] as int
+              : int.tryParse('${item['endDay']}');
+          final String stage = (item['stage'] ?? '').toString().trim();
+          final String desc = (item['description'] ?? '').toString().trim();
+          if (start != null && end != null && stage.isNotEmpty) {
+            stages.add({
+              'stage': stage,
+              'startDay': start,
+              'endDay': end,
+              'description': desc,
+            });
+          }
+        }
+      }
+    }
+
+    if (stages.isEmpty) return const SizedBox.shrink();
+
+    stages.sort((a, b) => (a['startDay'] as int).compareTo(b['startDay'] as int));
+
+    final int totalDays = stages.last['endDay'] as int;
+
+    const List<Color> stageColors = [
+      Color(0xFF8D6E63), // brown - seed
+      Color(0xFF66BB6A), // light green - sprout
+      Color(0xFF43A047), // green - vegetative
+      Color(0xFFFFB300), // amber - flowering
+      Color(0xFFEF5350), // red - fruiting
+      Color(0xFFAB47BC), // purple - ripening
+      Color(0xFF26A69A), // teal - harvest
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.timeline, color: Color(0xFF2E7D32), size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Growth Stages',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1B5E20),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Color(0xFF2E7D32),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome, color: Colors.white, size: 12),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'AI Powered',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Total: $totalDays days',
+          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+        ),
+        const SizedBox(height: 16),
+
+        // Proportional color bar
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            height: 14,
+            child: Row(
+              children: List.generate(stages.length, (i) {
+                final s = stages[i];
+                final int days = (s['endDay'] as int) - (s['startDay'] as int) + 1;
+                final double fraction = days / totalDays;
+                return Expanded(
+                  flex: (fraction * 1000).round().clamp(1, 1000),
+                  child: Container(color: stageColors[i % stageColors.length]),
+                );
+              }),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Stage timeline cards
+        ...List.generate(stages.length, (i) {
+          final s = stages[i];
+          final color = stageColors[i % stageColors.length];
+          final int startDay = s['startDay'] as int;
+          final int endDay = s['endDay'] as int;
+          final int days = endDay - startDay + 1;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left: dot + vertical line
+                SizedBox(
+                  width: 24,
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withOpacity(0.4),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (i < stages.length - 1)
+                        Container(
+                          width: 2,
+                          height: 40,
+                          color: Colors.grey[300],
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Right: card
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: color.withOpacity(0.25)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                s['stage'] as String,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: color,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Day $startDay\u2013$endDay',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: color,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if ((s['description'] as String).isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            s['description'] as String,
+                            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                          ),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          '$days days',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[500],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  // AI SECTION 3.6: Materials Needed
+  Widget _buildMaterialsNeeded(dynamic rawMaterials) {
+    if (rawMaterials == null || rawMaterials is! List || rawMaterials.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final materials = rawMaterials.cast<Map<String, dynamic>>();
+
+    IconData _materialIcon(String item) {
+      final lower = item.toLowerCase();
+      if (lower.contains('seed')) return Icons.grain;
+      if (lower.contains('fertiliz') || lower.contains('compost') || lower.contains('manure')) return Icons.science;
+      if (lower.contains('pot') || lower.contains('container') || lower.contains('tray')) return Icons.inventory_2;
+      if (lower.contains('water') || lower.contains('hose') || lower.contains('can')) return Icons.water_drop;
+      if (lower.contains('soil') || lower.contains('mulch') || lower.contains('peat')) return Icons.terrain;
+      if (lower.contains('trellis') || lower.contains('stake') || lower.contains('support')) return Icons.vertical_align_top;
+      if (lower.contains('net') || lower.contains('cover') || lower.contains('shade')) return Icons.shield;
+      if (lower.contains('prun') || lower.contains('scissor') || lower.contains('shear')) return Icons.content_cut;
+      if (lower.contains('pesticide') || lower.contains('spray') || lower.contains('insect')) return Icons.bug_report;
+      if (lower.contains('shovel') || lower.contains('spade') || lower.contains('tool') || lower.contains('hoe')) return Icons.handyman;
+      return Icons.check_circle_outline;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.shopping_bag, color: Colors.amber[800], size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Materials Needed',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1B5E20),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome, size: 12, color: Colors.amber[800]),
+                    const SizedBox(width: 4),
+                    Text(
+                      'AI Powered',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber[800],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: materials.map<Widget>((m) {
+              final item = (m['item'] as String?) ?? '';
+              final purpose = (m['purpose'] as String?) ?? '';
+              return Tooltip(
+                message: purpose,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.amber.shade100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.withOpacity(0.08),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(_materialIcon(item), size: 16, color: Colors.amber[700]),
+                      const SizedBox(width: 6),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1B5E20),
+                            ),
+                          ),
+                          if (purpose.isNotEmpty)
+                            Text(
+                              purpose,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1139,20 +1494,40 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
     );
   }
 
-  // AI-Enhanced Info Card with expandable AI tip
-  Widget _buildAIInfoCard(IconData icon, String label, String baseValue, String aiTip) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Color(0xFFF1F8E9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(0xFF2E7D32).withOpacity(0.3), width: 1.5),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
+  Widget _buildInfoCard(IconData icon, String label, String key, String? value) {
+    // Only show card if value exists and is not empty
+    if (value == null || value.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    final isExpanded = _expandedCards.contains(key);
+    final detailedInfo = _getDetailedInfo(key);
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedCards.remove(key);
+          } else {
+            _expandedCards.add(key);
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isExpanded ? Color(0xFFE8F5E9) : Color(0xFFF1F8E9),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isExpanded ? Color(0xFF2E7D32) : Colors.transparent,
+            width: isExpanded ? 2 : 0,
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -1175,7 +1550,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                         ),
                       ),
                       Text(
-                        baseValue,
+                        value,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -1185,94 +1560,35 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Color(0xFF2E7D32).withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.auto_awesome, color: Color(0xFF2E7D32), size: 16),
+                Icon(
+                  isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  color: Color(0xFF2E7D32),
+                  size: 24,
                 ),
               ],
             ),
-          ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.lightbulb_outline, color: Color(0xFF2E7D32), size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    aiTip,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[700],
-                      fontStyle: FontStyle.italic,
-                      height: 1.4,
-                    ),
-                  ),
+            if (isExpanded && detailedInfo.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoCard(IconData icon, String label, String value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Color(0xFFF1F8E9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Color(0xFF2E7D32),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
+                child: Text(
+                  detailedInfo,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+                    fontSize: 13,
+                    color: Colors.grey[800],
+                    height: 1.5,
                   ),
                 ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B5E20),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 }
+

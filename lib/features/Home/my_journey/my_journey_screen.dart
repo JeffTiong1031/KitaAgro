@@ -1,11 +1,15 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:kita_agro/core/services/gemini_api_service.dart';
 
 class MyJourneyScreen extends StatefulWidget {
   const MyJourneyScreen({super.key});
@@ -20,6 +24,8 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     defaultValue: '',
   );
 
+  final GeminiApiService _geminiApi = GeminiApiService('AIzaSyBkgljGd-zVO4lV5Cqpfipo0Br8pKwBe-k');
+
   String _sortBy = 'name'; // 'name', 'daysPlanted', 'health'
   bool _gardenLocationLoading = false;
   String? _gardenAddress;
@@ -27,10 +33,27 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   double? _gardenLongitude;
   String? _gardenPlaceId;
 
+  // Expandable task dropdown state
+  String? _expandedPlantId;
+  final Map<String, List<Map<String, String>>> _plantTasks = {};
+  final Map<String, Set<int>> _completedTasks = {};
+  final Map<String, bool> _taskLoading = {};
+  // Cache key: plantId + date string to avoid re-fetching same day
+  final Map<String, String> _taskCacheDate = {};
+
+  // Photo analysis state
+  final ImagePicker _imagePicker = ImagePicker();
+  final Map<String, Map<String, dynamic>> _photoAnalysis = {};
+  final Map<String, bool> _photoAnalyzing = {};
+
+  // Photo timeline state: plantId -> list of {url, day, date, status, diagnosis}
+  final Map<String, List<Map<String, dynamic>>> _photoTimeline = {};
+
   @override
   void initState() {
     super.initState();
     _loadGardenLocation();
+    _loadCompletedTasks();
   }
 
   DocumentReference<Map<String, dynamic>>? _userDocRef() {
@@ -39,6 +62,629 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       return null;
     }
     return FirebaseFirestore.instance.collection('users').doc(user.uid);
+  }
+
+  String get _todayKey {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Load completed tasks from Firestore for today
+  Future<void> _loadCompletedTasks() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations')
+          .get();
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final todayTasks = data['dailyTasks'] as Map<String, dynamic>?;
+        if (todayTasks != null) {
+          final todayData = todayTasks[_todayKey] as Map<String, dynamic>?;
+          if (todayData != null) {
+            final completed = (todayData['completed'] as List<dynamic>?) ?? [];
+            _completedTasks[doc.id] = completed.map<int>((e) => e as int).toSet();
+
+            // Also restore cached tasks if available
+            final cachedTasks = (todayData['tasks'] as List<dynamic>?);
+            if (cachedTasks != null) {
+              _plantTasks[doc.id] = cachedTasks
+                  .map<Map<String, String>>((t) => {
+                        'task': (t['task'] as String?) ?? '',
+                        'icon': (t['icon'] as String?) ?? 'inspect',
+                      })
+                  .toList();
+              _taskCacheDate[doc.id] = _todayKey;
+            }
+          }
+        }
+      }
+      if (mounted) setState(() {});
+    } catch (e) {
+      print('Error loading completed tasks: $e');
+    }
+  }
+
+  /// Take a photo or pick from gallery and analyze the plant condition
+  Future<void> _takePhotoAndAnalyze(Map<String, dynamic> plant) async {
+    final plantId = plant['id'] as String;
+
+    // Show bottom sheet to choose camera or gallery
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Analyze Plant Photo',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Color(0xFF2E7D32)),
+                title: const Text('Take Photo'),
+                subtitle: const Text('Use camera to capture plant'),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Color(0xFF2E7D32)),
+                title: const Text('Choose from Gallery'),
+                subtitle: const Text('Upload an existing photo'),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return; // User cancelled
+
+    final XFile? image = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 1024,
+    );
+
+    if (image == null) return; // User cancelled
+
+    // Ensure plant is expanded
+    if (_expandedPlantId != plantId) {
+      setState(() => _expandedPlantId = plantId);
+    }
+
+    setState(() => _photoAnalyzing[plantId] = true);
+
+    try {
+      final result = await _geminiApi.analyzeAndSuggestTasks(
+        imagePath: image.path,
+        plantName: plant['name'] as String,
+        daysPlanted: plant['daysPlanted'] as int,
+        totalDays: plant['totalDays'] as int,
+      );
+
+      if (!mounted) return;
+
+      if (result != null) {
+        // Show result immediately (don't wait for upload)
+        setState(() {
+          _photoAnalysis[plantId] = result;
+          _photoAnalyzing[plantId] = false;
+        });
+
+        // Upload photo in the background (non-blocking)
+        _uploadAndSavePhoto(
+          plantId: plantId,
+          imagePath: image.path,
+          daysPlanted: plant['daysPlanted'] as int,
+          status: (result['status'] as String?) ?? 'Unknown',
+          diagnosis: (result['diagnosis'] as String?) ?? '',
+        );
+      } else {
+        setState(() => _photoAnalyzing[plantId] = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not analyze photo. Try again.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _photoAnalyzing[plantId] = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Analysis error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Build the analysis result card
+  Widget _buildAnalysisCard(Map<String, dynamic> analysis) {
+    final status = (analysis['status'] as String?) ?? 'Unknown';
+    final diagnosis = (analysis['diagnosis'] as String?) ?? '';
+
+    Color statusColor;
+    IconData statusIcon;
+    if (status.toLowerCase().contains('healthy')) {
+      statusColor = const Color(0xFF2E7D32);
+      statusIcon = Icons.check_circle;
+    } else if (status.toLowerCase().contains('critical')) {
+      statusColor = Colors.red;
+      statusIcon = Icons.error;
+    } else {
+      statusColor = Colors.orange;
+      statusIcon = Icons.warning_amber_rounded;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [statusColor.withOpacity(0.08), statusColor.withOpacity(0.04)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: statusColor.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.camera_alt, size: 14, color: statusColor),
+                const SizedBox(width: 6),
+                Text(
+                  'Photo Analysis',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+                const Spacer(),
+                Icon(statusIcon, size: 16, color: statusColor),
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (diagnosis.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                diagnosis,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[800],
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Upload photo to Firebase Storage and save metadata to Firestore
+  Future<void> _uploadAndSavePhoto({
+    required String plantId,
+    required String imagePath,
+    required int daysPlanted,
+    required String status,
+    required String diagnosis,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Immediately add to local cache with local file path so gallery works right away
+    _photoTimeline.putIfAbsent(plantId, () => []);
+    final localEntry = {
+      'url': imagePath, // Use local path first
+      'day': daysPlanted,
+      'date': _todayKey,
+      'status': status,
+      'diagnosis': diagnosis,
+      'isLocal': true,
+    };
+    _photoTimeline[plantId]!.add(localEntry);
+    _photoTimeline[plantId]!.sort((a, b) => (a['day'] as int).compareTo(b['day'] as int));
+
+    try {
+      final file = File(imagePath);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final storagePath = 'users/${user.uid}/plants/$plantId/photos/$timestamp.jpg';
+
+      // Upload to Firebase Storage
+      final ref = FirebaseStorage.instance.ref().child(storagePath);
+      await ref.putFile(file);
+      final downloadUrl = await ref.getDownloadURL();
+
+      // Save metadata to Firestore
+      final photoData = {
+        'url': downloadUrl,
+        'day': daysPlanted,
+        'date': _todayKey,
+        'timestamp': FieldValue.serverTimestamp(),
+        'status': status,
+        'diagnosis': diagnosis,
+      };
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations')
+          .doc(plantId)
+          .collection('photos')
+          .add(photoData);
+
+      // Update the local entry with the remote URL
+      localEntry['url'] = downloadUrl;
+      localEntry['isLocal'] = false;
+
+      print('\u2705 Photo saved: day $daysPlanted, $status');
+    } catch (e) {
+      print('\u274c Photo upload error: $e');
+    }
+  }
+
+  /// Restore the latest photo analysis from Firestore (so it persists across restarts)
+  Future<void> _restoreLatestAnalysis(String plantId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations')
+          .doc(plantId)
+          .collection('photos')
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) return;
+
+      final data = snapshot.docs.first.data();
+      final status = data['status'] as String? ?? 'Unknown';
+      final diagnosis = data['diagnosis'] as String? ?? '';
+
+      if (mounted) {
+        setState(() {
+          _photoAnalysis[plantId] = {
+            'status': status,
+            'diagnosis': diagnosis,
+            'tasks': <Map<String, dynamic>>[],
+          };
+        });
+      }
+    } catch (e) {
+      print('Error restoring analysis: $e');
+    }
+  }
+
+  /// Load photo timeline for a plant
+  Future<List<Map<String, dynamic>>> _loadPhotoTimeline(String plantId) async {
+    // Return cached if available (includes photos just taken but not yet synced)
+    if (_photoTimeline.containsKey(plantId) && _photoTimeline[plantId]!.isNotEmpty) {
+      return _photoTimeline[plantId]!;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return [];
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations')
+          .doc(plantId)
+          .collection('photos')
+          .orderBy('day')
+          .get();
+
+      final photos = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'url': data['url'] as String? ?? '',
+          'day': data['day'] as int? ?? 0,
+          'date': data['date'] as String? ?? '',
+          'status': data['status'] as String? ?? 'Unknown',
+          'diagnosis': data['diagnosis'] as String? ?? '',
+        };
+      }).toList();
+
+      _photoTimeline[plantId] = photos;
+      return photos;
+    } catch (e) {
+      // If orderBy query fails (missing index), try without ordering
+      print('Error loading photo timeline: $e');
+      try {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('plantations')
+            .doc(plantId)
+            .collection('photos')
+            .get();
+
+        final photos = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'url': data['url'] as String? ?? '',
+            'day': data['day'] as int? ?? 0,
+            'date': data['date'] as String? ?? '',
+            'status': data['status'] as String? ?? 'Unknown',
+            'diagnosis': data['diagnosis'] as String? ?? '',
+          };
+        }).toList();
+
+        photos.sort((a, b) => (a['day'] as int).compareTo(b['day'] as int));
+        _photoTimeline[plantId] = photos;
+        return photos;
+      } catch (e2) {
+        print('Fallback photo load also failed: $e2');
+        return [];
+      }
+    }
+  }
+
+  /// Open photo timeline gallery
+  void _openPhotoTimeline(Map<String, dynamic> plant) async {
+    final plantId = plant['id'] as String;
+    final photos = await _loadPhotoTimeline(plantId);
+
+    if (!mounted) return;
+
+    if (photos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No photos yet. Take a photo to start your timeline!'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _PhotoTimelineScreen(
+          plantName: plant['name'] as String,
+          totalDays: plant['totalDays'] as int,
+          photos: photos,
+        ),
+      ),
+    );
+  }
+
+  /// Fetch weather data using Open-Meteo (same as dictionary)
+  Future<Map<String, dynamic>> _getWeatherData() async {
+    if (_gardenLatitude == null || _gardenLongitude == null) {
+      return {'temperature': 30.0, 'condition': 'Unknown'};
+    }
+    try {
+      final url = Uri.parse(
+        'https://api.open-meteo.com/v1/forecast?latitude=$_gardenLatitude&longitude=$_gardenLongitude&current_weather=true',
+      );
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final current = data['current_weather'];
+        return {
+          'temperature': (current['temperature'] as num).toDouble(),
+          'condition': _weatherCodeToString(current['weathercode'] as int),
+        };
+      }
+    } catch (_) {}
+    return {'temperature': 30.0, 'condition': 'Unknown'};
+  }
+
+  String _weatherCodeToString(int code) {
+    if (code == 0) return 'Clear sky';
+    if (code <= 3) return 'Partly cloudy';
+    if (code <= 48) return 'Foggy';
+    if (code <= 57) return 'Drizzle';
+    if (code <= 67) return 'Rain';
+    if (code <= 77) return 'Snow';
+    if (code <= 82) return 'Rain showers';
+    if (code <= 86) return 'Snow showers';
+    if (code >= 95) return 'Thunderstorm';
+    return 'Unknown';
+  }
+
+  /// Toggle expand on a plant block — load AI tasks if needed
+  Future<void> _togglePlantExpand(Map<String, dynamic> plant) async {
+    final plantId = plant['id'] as String;
+
+    // Collapse if already expanded
+    if (_expandedPlantId == plantId) {
+      setState(() => _expandedPlantId = null);
+      return;
+    }
+
+    // Expand this plant
+    setState(() => _expandedPlantId = plantId);
+
+    // Restore latest photo analysis from Firestore if not in memory
+    if (!_photoAnalysis.containsKey(plantId)) {
+      _restoreLatestAnalysis(plantId);
+    }
+
+    // Already have today's tasks cached
+    if (_taskCacheDate[plantId] == _todayKey && _plantTasks.containsKey(plantId)) {
+      return;
+    }
+
+    // Load tasks
+    setState(() => _taskLoading[plantId] = true);
+
+    try {
+      final weather = await _getWeatherData();
+      final location = _gardenAddress ?? 'Malaysia';
+      final temp = weather['temperature'] as double;
+      final condition = weather['condition'] as String;
+
+      final tasks = await _geminiApi.generateDailyTasks(
+        plantName: plant['name'] as String,
+        scientificName: plant['scientificName'] as String,
+        category: plant['category'] as String,
+        daysPlanted: plant['daysPlanted'] as int,
+        totalDays: plant['totalDays'] as int,
+        location: location,
+        temperature: temp,
+        weatherCondition: condition,
+      );
+
+      if (!mounted) return;
+
+      if (tasks != null && tasks.isNotEmpty) {
+        _plantTasks[plantId] = tasks;
+        _taskCacheDate[plantId] = _todayKey;
+        // Initialize completed set if absent
+        _completedTasks.putIfAbsent(plantId, () => <int>{});
+
+        // Persist generated tasks to Firestore
+        _saveTasksToFirestore(plantId, tasks);
+      }
+    } catch (e) {
+      print('Error loading tasks: $e');
+    }
+
+    if (mounted) {
+      setState(() => _taskLoading[plantId] = false);
+    }
+  }
+
+  /// Save tasks and completed state to Firestore
+  Future<void> _saveTasksToFirestore(String plantId, List<Map<String, String>> tasks) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations')
+          .doc(plantId)
+          .set({
+        'dailyTasks': {
+          _todayKey: {
+            'tasks': tasks,
+            'completed': (_completedTasks[plantId] ?? <int>{}).toList(),
+          }
+        }
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('Error saving tasks: $e');
+    }
+  }
+
+  /// Toggle task completion and persist
+  void _toggleTaskCompletion(String plantId, int taskIndex) {
+    setState(() {
+      _completedTasks.putIfAbsent(plantId, () => <int>{});
+      if (_completedTasks[plantId]!.contains(taskIndex)) {
+        _completedTasks[plantId]!.remove(taskIndex);
+      } else {
+        _completedTasks[plantId]!.add(taskIndex);
+      }
+    });
+
+    // Persist to Firestore
+    final tasks = _plantTasks[plantId];
+    if (tasks != null) {
+      _saveTasksToFirestore(plantId, tasks);
+    }
+  }
+
+  IconData _taskIconFromString(String icon) {
+    switch (icon) {
+      case 'water':
+        return Icons.water_drop;
+      case 'sun':
+        return Icons.wb_sunny;
+      case 'fertilizer':
+        return Icons.science;
+      case 'prune':
+        return Icons.content_cut;
+      case 'inspect':
+        return Icons.search;
+      case 'harvest':
+        return Icons.agriculture;
+      case 'protect':
+        return Icons.shield;
+      case 'soil':
+        return Icons.terrain;
+      default:
+        return Icons.task_alt;
+    }
+  }
+
+  Color _taskIconColor(String icon) {
+    switch (icon) {
+      case 'water':
+        return Colors.blue;
+      case 'sun':
+        return Colors.orange;
+      case 'fertilizer':
+        return Colors.brown;
+      case 'prune':
+        return Colors.purple;
+      case 'inspect':
+        return Colors.teal;
+      case 'harvest':
+        return Colors.amber[700]!;
+      case 'protect':
+        return Colors.red;
+      case 'soil':
+        return Colors.brown[400]!;
+      default:
+        return Colors.grey;
+    }
   }
 
   Future<void> _loadGardenLocation() async {
@@ -577,186 +1223,815 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     final healthStatus = _getHealthStatus(health);
     final healthColor = _getHealthColor(health);
     final daysRemaining = (plant['totalDays'] as int) - (plant['daysPlanted'] as int);
+    final plantId = plant['id'] as String;
+    final isExpanded = _expandedPlantId == plantId;
+    final tasks = _plantTasks[plantId] ?? [];
+    final completed = _completedTasks[plantId] ?? <int>{};
+    final isLoading = _taskLoading[plantId] == true;
+    final completedCount = completed.length;
+    final totalTasks = tasks.length;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: (plant['color'] as Color).withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () => _togglePlantExpand(plant),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isExpanded ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+            width: isExpanded ? 1.5 : 1,
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: isExpanded
+                  ? const Color(0xFF2E7D32).withOpacity(0.15)
+                  : (plant['color'] as Color).withOpacity(0.1),
+              blurRadius: isExpanded ? 12 : 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // ── Main plant info block ──
+            Stack(
               children: [
-                // Header with icon and name
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: plant['color'] as Color,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        plant['icon'] as IconData,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header with icon and name
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            plant['name'] as String,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1B5E20),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            plant['scientificName'] as String,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            width: 60,
+                            height: 60,
                             decoration: BoxDecoration(
-                              color: Color(0xFFE8F5E9),
-                              borderRadius: BorderRadius.circular(8),
+                              color: plant['color'] as Color,
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Text(
-                              plant['category'] as String,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF2E7D32),
-                                fontWeight: FontWeight.w600,
-                              ),
+                            child: Icon(
+                              plant['icon'] as IconData,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  plant['name'] as String,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1B5E20),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  plant['scientificName'] as String,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE8F5E9),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    plant['category'] as String,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF2E7D32),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
 
-                const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                // Health status and progress
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      healthStatus,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: healthColor,
+                      // Health status and progress
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            healthStatus,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: healthColor,
+                            ),
+                          ),
+                          Text(
+                            '${plant['daysPlanted']} / ${plant['totalDays']} days',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    Text(
-                      '${plant['daysPlanted']} / ${plant['totalDays']} days',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
+
+                      const SizedBox(height: 8),
+
+                      // Progress bar
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: health / 100,
+                          minHeight: 8,
+                          backgroundColor: Colors.grey[200],
+                          valueColor: AlwaysStoppedAnimation<Color>(healthColor),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
 
-                const SizedBox(height: 8),
+                      const SizedBox(height: 12),
 
-                // Progress bar
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: health / 100,
-                    minHeight: 8,
-                    backgroundColor: Colors.grey[200],
-                    valueColor: AlwaysStoppedAnimation<Color>(healthColor),
+                      // Days remaining + expand hint
+                      Row(
+                        children: [
+                          if (daysRemaining > 0) ...[
+                            Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                daysRemaining > 1
+                                    ? '$daysRemaining days until harvest'
+                                    : '$daysRemaining day until harvest',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            Icon(Icons.check_circle, size: 16, color: Colors.green),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Ready to harvest!',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                          // Task progress badge + chevron
+                          if (totalTasks > 0 && !isExpanded)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: completedCount == totalTasks
+                                    ? const Color(0xFFE8F5E9)
+                                    : Colors.orange[50],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '$completedCount/$totalTasks tasks',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: completedCount == totalTasks
+                                      ? const Color(0xFF2E7D32)
+                                      : Colors.orange[800],
+                                ),
+                              ),
+                            ),
+                          const SizedBox(width: 4),
+                          AnimatedRotation(
+                            turns: isExpanded ? 0.5 : 0,
+                            duration: const Duration(milliseconds: 300),
+                            child: Icon(
+                              Icons.keyboard_arrow_down,
+                              color: Colors.grey[500],
+                              size: 22,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-
-                const SizedBox(height: 12),
-
-                // Days remaining info
-                if (daysRemaining > 0)
-                  Row(
+                // Delete button - top right corner
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
+                      // Gallery timeline button
+                      GestureDetector(
+                        onTap: () => _openPhotoTimeline(plant),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green[200]!),
+                          ),
+                          child: Icon(
+                            Icons.photo_library,
+                            color: Colors.green[600],
+                            size: 18,
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: 6),
-                      Text(
-                        daysRemaining > 1
-                            ? '$daysRemaining days until harvest'
-                            : '$daysRemaining day until harvest',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                      // Camera button
+                      GestureDetector(
+                        onTap: () => _takePhotoAndAnalyze(plant),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: _photoAnalyzing[plantId] == true
+                                ? Colors.blue[100]
+                                : Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue[200]!),
+                          ),
+                          child: _photoAnalyzing[plantId] == true
+                              ? const Padding(
+                                  padding: EdgeInsets.all(8),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.blue,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.blue[600],
+                                  size: 18,
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      // Delete button
+                      GestureDetector(
+                        onTap: () => _showDeleteConfirmation(plant),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.red[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.red[200]!),
+                          ),
+                          child: Icon(
+                            Icons.delete_outline,
+                            color: Colors.red[600],
+                            size: 18,
+                          ),
                         ),
                       ),
                     ],
-                  )
-                else
-                  Row(
+                  ),
+                ),
+              ],
+            ),
+
+            // ── Expandable AI Tasks Dropdown ──
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: _buildTasksDropdown(plantId, tasks, completed, isLoading),
+              crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 300),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTasksDropdown(
+    String plantId,
+    List<Map<String, String>> tasks,
+    Set<int> completed,
+    bool isLoading,
+  ) {
+    final analysis = _photoAnalysis[plantId];
+    final isAnalyzing = _photoAnalyzing[plantId] == true;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8E9),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(11),
+          bottomRight: Radius.circular(11),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Divider(height: 1, color: Color(0xFFC8E6C9)),
+
+          // ── Photo Analysis Result (if available) ──
+          if (isAnalyzing)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.blue[100]!),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.blue[600],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Analyzing photo...',
+                      style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          if (analysis != null) ...[
+            _buildAnalysisCard(analysis),
+            // Photo-based tasks
+            if (analysis['tasks'] != null && (analysis['tasks'] as List).isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.camera_alt, size: 14, color: Colors.blue[600]),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Photo-Based Tasks',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[800],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ...List.generate((analysis['tasks'] as List).length, (index) {
+                final task = analysis['tasks'][index] as Map<String, dynamic>;
+                final taskStr = (task['task'] as String?) ?? '';
+                final iconStr = (task['icon'] as String?) ?? 'inspect';
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.blue[100]!),
+                  ),
+                  child: Row(
                     children: [
-                      Icon(Icons.check_circle, size: 16, color: Colors.green),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Ready to harvest!',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
+                      Icon(
+                        _taskIconFromString(iconStr),
+                        size: 16,
+                        color: Colors.blue[600],
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          taskStr,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.blue[900],
+                          ),
                         ),
                       ),
+                      Icon(Icons.auto_awesome, size: 12, color: Colors.blue[300]),
                     ],
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+            ],
+          ],
+
+          // ── Standard AI Tasks header ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Row(
+              children: [
+                const Icon(Icons.auto_awesome, size: 16, color: Color(0xFF2E7D32)),
+                const SizedBox(width: 6),
+                const Text(
+                  "Today's AI Tasks",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1B5E20),
+                  ),
+                ),
+                const Spacer(),
+                if (tasks.isNotEmpty)
+                  Text(
+                    '${completed.length}/${tasks.length} done',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: completed.length == tasks.length
+                          ? const Color(0xFF2E7D32)
+                          : Colors.grey[600],
+                    ),
                   ),
               ],
             ),
           ),
-          // Delete button - top right corner
-          Positioned(
-            top: 8,
-            right: 8,
-            child: GestureDetector(
-              onTap: () => _showDeleteConfirmation(plant),
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red[200]!),
-                ),
-                child: Icon(
-                  Icons.delete_outline,
-                  color: Colors.red[600],
-                  size: 18,
+          if (isLoading)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: const Color(0xFF2E7D32),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Generating tasks...',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ),
+            )
+          else if (tasks.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  'Could not load tasks. Tap to retry.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                ),
+              ),
+            )
+          else
+            ...List.generate(tasks.length, (index) {
+              final task = tasks[index];
+              final isDone = completed.contains(index);
+              final iconStr = task['icon'] ?? 'inspect';
+              return GestureDetector(
+                onTap: () => _toggleTaskCompletion(plantId, index),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDone ? Colors.white.withOpacity(0.6) : Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDone ? const Color(0xFFA5D6A7) : Colors.grey[200]!,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Checkbox
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: isDone ? const Color(0xFF2E7D32) : Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: isDone ? const Color(0xFF2E7D32) : Colors.grey[400]!,
+                            width: 2,
+                          ),
+                        ),
+                        child: isDone
+                            ? const Icon(Icons.check, size: 16, color: Colors.white)
+                            : null,
+                      ),
+                      const SizedBox(width: 10),
+                      // Task icon
+                      Icon(
+                        _taskIconFromString(iconStr),
+                        size: 18,
+                        color: isDone
+                            ? Colors.grey[400]
+                            : _taskIconColor(iconStr),
+                      ),
+                      const SizedBox(width: 10),
+                      // Task text
+                      Expanded(
+                        child: Text(
+                          task['task'] ?? '',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDone ? Colors.grey[400] : Colors.grey[800],
+                            decoration: isDone ? TextDecoration.lineThrough : null,
+                            fontWeight: isDone ? FontWeight.normal : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          const SizedBox(height: 12),
         ],
+      ),
+    );
+  }
+}
+
+/// Full-screen photo timeline viewer
+class _PhotoTimelineScreen extends StatelessWidget {
+  const _PhotoTimelineScreen({
+    required this.plantName,
+    required this.totalDays,
+    required this.photos,
+  });
+
+  final String plantName;
+  final int totalDays;
+  final List<Map<String, dynamic>> photos;
+
+  Color _statusColor(String status) {
+    final lower = status.toLowerCase();
+    if (lower.contains('healthy')) return const Color(0xFF2E7D32);
+    if (lower.contains('critical')) return Colors.red;
+    return Colors.orange;
+  }
+
+  IconData _statusIcon(String status) {
+    final lower = status.toLowerCase();
+    if (lower.contains('healthy')) return Icons.check_circle;
+    if (lower.contains('critical')) return Icons.error;
+    return Icons.warning_amber_rounded;
+  }
+
+  /// Build image widget that handles both local files and network URLs
+  Widget _buildImage(Map<String, dynamic> photo, {BoxFit fit = BoxFit.cover}) {
+    final url = photo['url'] as String;
+    final isLocal = photo['isLocal'] == true;
+
+    if (isLocal) {
+      return Image.file(
+        File(url),
+        fit: fit,
+        errorBuilder: (_, __, ___) => Container(
+          color: Colors.grey[200],
+          child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+        ),
+      );
+    }
+
+    return Image.network(
+      url,
+      fit: fit,
+      loadingBuilder: (_, child, progress) {
+        if (progress == null) return child;
+        return Container(
+          color: Colors.grey[200],
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        );
+      },
+      errorBuilder: (_, __, ___) => Container(
+        color: Colors.grey[200],
+        child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2E7D32),
+        foregroundColor: Colors.white,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(plantName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              '${photos.length} photos · $totalDays day journey',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            ),
+          ],
+        ),
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: photos.length,
+        itemBuilder: (context, index) {
+          final photo = photos[index];
+          final day = photo['day'] as int;
+          final date = photo['date'] as String;
+          final status = photo['status'] as String;
+          final diagnosis = photo['diagnosis'] as String;
+          final url = photo['url'] as String;
+          final color = _statusColor(status);
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Timeline rail ──
+              SizedBox(
+                width: 48,
+                child: Column(
+                  children: [
+                    if (index > 0)
+                      Container(width: 2, height: 16, color: Colors.grey[300]),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: color, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'D$day',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (index < photos.length - 1)
+                      Container(width: 2, height: 16, color: Colors.grey[300]),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // ── Photo card ──
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _openFullImage(context, photo, day, status, diagnosis),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Image
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                          child: AspectRatio(
+                            aspectRatio: 16 / 10,
+                            child: _buildImage(photo),
+                          ),
+                        ),
+                        // Info
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Icon(_statusIcon(status), size: 16, color: color),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  status,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: color,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                date,
+                                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (diagnosis.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                            child: Text(
+                              diagnosis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _openFullImage(BuildContext context, Map<String, dynamic> photo, int day, String status, String diagnosis) {
+    final color = _statusColor(status);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            title: Text('Day $day', style: const TextStyle(fontSize: 16)),
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: InteractiveViewer(
+                  child: Center(
+                    child: _buildImage(photo, fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                color: Colors.grey[900],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(_statusIcon(status), size: 16, color: color),
+                        const SizedBox(width: 6),
+                        Text(
+                          status,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (diagnosis.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        diagnosis,
+                        style: const TextStyle(fontSize: 13, color: Colors.white70, height: 1.4),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

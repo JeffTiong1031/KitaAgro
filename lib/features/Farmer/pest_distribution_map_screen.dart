@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart';
+import 'dart:typed_data';
 
 class PestDistributionMapScreen extends StatefulWidget {
   const PestDistributionMapScreen({super.key});
@@ -14,21 +19,113 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
       FirebaseFirestore.instance.collection('pest_reports').snapshots();
 
   GoogleMapController? _mapController;
+  bool _hasLocationPermission = false;
 
-  // 1. DEFINE MALAYSIA BOUNDS
-  // This box covers everything from Peninsular to Sabah/Sarawak
   static final CameraTargetBounds _malaysiaBounds = CameraTargetBounds(
     LatLngBounds(
-      southwest: const LatLng(0.8, 99.6), // Near Singapore/Indonesia
-      northeast: const LatLng(7.5, 119.3), // Tip of Sabah
+      southwest: const LatLng(0.8, 99.6),
+      northeast: const LatLng(7.5, 119.3),
     ),
   );
 
-  // Default view centered on Malaysia
   static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(4.2105, 101.9758), 
-    zoom: 6,
+    target: LatLng(4.2105, 101.9758),
+    zoom: 14,
   );
+
+  // Store raw bytes instead of BitmapDescriptor to avoid the type mismatch
+  Uint8List? customWindArrowBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWindArrow();
+    _requestPermissionOnLoad();
+  }
+
+  // The bulletproof image loader
+  Future<Uint8List> getBytesFromAsset(String path, int width) async {
+    ByteData data = await rootBundle.load(path);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(), targetWidth: width);
+    ui.FrameInfo fi = await codec.getNextFrame();
+    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+  }
+
+  Future<void> _loadWindArrow() async {
+    try {
+      final Uint8List markerIcon = await getBytesFromAsset('assets/images/wind_arrow.png', 200);
+      setState(() {
+        customWindArrowBytes = markerIcon;
+      });
+    } catch (e) {
+      print("Error loading custom arrow bytes: $e");
+    }
+  }
+
+  Future<void> _requestPermissionOnLoad() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+      if (mounted) {
+        setState(() {
+          _hasLocationPermission = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _goToCurrentLocation() async {
+    if (!_hasLocationPermission) return;
+    try {
+      Position position = await Geolocator.getCurrentPosition();
+      if (_mapController != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(position.latitude, position.longitude),
+              zoom: 14,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error getting location for map: $e");
+    }
+  }
+
+  List<LatLng> _createWindEllipse(LatLng center, double radiusY, double radiusX, double windAngleDegrees) {
+    List<LatLng> points = [];
+    const double earthRadius = 6378137.0;
+    final double radAngle = windAngleDegrees * (math.pi / 180);
+
+    for (int i = 0; i <= 360; i += 10) {
+      final double t = i * (math.pi / 180);
+      final double x = radiusX * math.cos(t);
+      final double y = radiusY * math.sin(t);
+      final double xRotated = x * math.cos(radAngle) - y * math.sin(radAngle);
+      final double yRotated = x * math.sin(radAngle) + y * math.cos(radAngle);
+      final double dLat = yRotated / earthRadius;
+      final double dLng = xRotated / (earthRadius * math.cos(math.pi * center.latitude / 180));
+      points.add(LatLng(
+          center.latitude + (dLat * 180 / math.pi),
+          center.longitude + (dLng * 180 / math.pi)));
+    }
+    return points;
+  }
+
+  LatLng _calculateArrowPosition(LatLng center, double distanceInMeters, double bearingDegrees) {
+    const double earthRadius = 6378137.0;
+    final double radBearing = bearingDegrees * (math.pi / 180.0);
+    final double dx = distanceInMeters * math.sin(radBearing);
+    final double dy = distanceInMeters * math.cos(radBearing);
+    final double dLat = dy / earthRadius;
+    final double dLng = dx / (earthRadius * math.cos(center.latitude * math.pi / 180.0));
+    return LatLng(
+        center.latitude + (dLat * 180.0 / math.pi),
+        center.longitude + (dLng * 180.0 / math.pi));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +133,6 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
       appBar: AppBar(title: const Text('Pest Distribution Map')),
       body: Column(
         children: [
-          // --- SECTION 1: Pest Alerts List (Unchanged) ---
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -48,7 +144,7 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
-                  height: 200, 
+                  height: 200,
                   child: ListView(
                     children: [
                       _buildPestAlert('Fall Armyworm', 'Selangor, Perak', 'High', Colors.red, Icons.bug_report),
@@ -60,8 +156,6 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
               ],
             ),
           ),
-
-          // --- SECTION 2: The Gradient Map ---
           Expanded(
             child: Container(
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -69,7 +163,7 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: ClipRRect( 
+              child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: StreamBuilder<QuerySnapshot>(
                   stream: _pestStream,
@@ -77,66 +171,100 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
+                    if (snapshot.hasError) {
+                      return const Center(
+                        child: Text("Network error.", style: TextStyle(color: Colors.red)),
+                      );
+                    }
 
-                    // 2. BUILD THE GRADIENT CIRCLES
-                    Set<Circle> circles = {};
-                    
+                    Set<Polygon> polygons = {};
+                    Set<Marker> markers = {};
+                    Set<GroundOverlay> groundOverlays = {};
+
                     if (snapshot.hasData) {
                       for (var doc in snapshot.data!.docs) {
                         try {
                           var data = doc.data() as Map<String, dynamic>;
                           GeoPoint? loc = data['location'];
-                          
+                          num windSpeedNum = data['windSpeed'] ?? 0;
+                          num windAngleNum = data['windAngle'] ?? 0;
+                          double windSpeed = windSpeedNum.toDouble();
+                          double windAngle = windAngleNum.toDouble();
+                          String pestName = data['pestName'] ?? 'Unknown Pest';
+
                           if (loc != null) {
                             LatLng center = LatLng(loc.latitude, loc.longitude);
                             String docId = doc.id;
+                            double windStretch = windSpeed * 20.0;
 
-                            // LAYER 1: Outer Green Circle (Safe Zone - 20km)
-                            circles.add(Circle(
-                              circleId: CircleId("${docId}_outer"),
-                              center: center,
-                              radius: 20000, 
+                            // 1. Draw Polygons
+                            polygons.add(Polygon(
+                              polygonId: PolygonId("${docId}_safe"),
+                              points: _createWindEllipse(center, 500 + windStretch, 500, windAngle),
                               strokeWidth: 0,
-                              fillColor: Colors.green.withOpacity(0.3), 
+                              fillColor: Colors.green.withOpacity(0.2),
                             ));
-
-                            // LAYER 2: Middle Yellow Circle (Warning Zone - 10km)
-                            circles.add(Circle(
-                              circleId: CircleId("${docId}_middle"),
-                              center: center,
-                              radius: 10000, 
+                            polygons.add(Polygon(
+                              polygonId: PolygonId("${docId}_warning"),
+                              points: _createWindEllipse(center, 200 + (windStretch * 0.5), 200, windAngle),
                               strokeWidth: 0,
-                              fillColor: Colors.yellow.withOpacity(0.4), 
+                              fillColor: Colors.orange.withOpacity(0.5),
+                            ));
+                            polygons.add(Polygon(
+                              polygonId: PolygonId("${docId}_danger"),
+                              points: _createWindEllipse(center, 50 + (windStretch * 0.1), 50, windAngle),
+                              strokeWidth: 0,
+                              fillColor: Colors.red.withOpacity(0.8),
                             ));
 
-                            // LAYER 3: Inner Red Circle (Outbreak Center - 5km)
-                            circles.add(Circle(
-                              circleId: CircleId("${docId}_inner"),
-                              center: center,
-                              radius: 5000, 
-                              strokeWidth: 1,
-                              strokeColor: Colors.red,
-                              fillColor: Colors.red.withOpacity(0.6), 
+                            // 2. Add Red Pin Marker
+                            markers.add(Marker(
+                              markerId: MarkerId("${docId}_pin"),
+                              position: center,
+                              infoWindow: InfoWindow(
+                                title: '🚨 $pestName',
+                                snippet: 'Reported Outbreak Center',
+                              ),
+                              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
                             ));
+
+                            // 👉 3. Add Wind Arrow as a GroundOverlay using BytesMapBitmap
+                            if (windSpeed > 0 && customWindArrowBytes != null) {
+                              LatLng arrowPosition = _calculateArrowPosition(center, 300, windAngle);
+
+                              groundOverlays.add(GroundOverlay.fromPosition(
+                                groundOverlayId: GroundOverlayId("${docId}_arrow_overlay"),
+                                image: BytesMapBitmap(
+                                  customWindArrowBytes!,
+                                  bitmapScaling: MapBitmapScaling.none, // Crucial for overlays that scale with width
+                                ), 
+                                position: arrowPosition,
+                                width: 600, 
+                                bearing: windAngle, 
+                                anchor: const Offset(0.5, 0.5), 
+                                transparency: 0.2, 
+                                zIndex: 1, // Forces the arrow to draw ON TOP of the polygons
+                              ));
+                            }
                           }
                         } catch (e) {
-                          print("Error parsing: $e");
+                          print("Error parsing data: $e");
                         }
                       }
                     }
 
                     return GoogleMap(
                       initialCameraPosition: _initialPosition,
-                      circles: circles,
-                      
-                      // 3. APPLY MALAYSIA CONSTRAINTS
-                      cameraTargetBounds: _malaysiaBounds, 
-                      minMaxZoomPreference: const MinMaxZoomPreference(5, 18), // Prevent zooming out to world view
-                      
-                      myLocationEnabled: true, 
-                      myLocationButtonEnabled: true,
+                      polygons: polygons,
+                      markers: markers,
+                      groundOverlays: groundOverlays,
+                      cameraTargetBounds: _malaysiaBounds,
+                      minMaxZoomPreference: const MinMaxZoomPreference(5, 18),
+                      myLocationEnabled: _hasLocationPermission,
+                      myLocationButtonEnabled: _hasLocationPermission,
                       onMapCreated: (controller) {
                         _mapController = controller;
+                        _goToCurrentLocation();
                       },
                     );
                   },

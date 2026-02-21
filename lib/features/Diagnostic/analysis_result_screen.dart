@@ -24,20 +24,36 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
   bool _isReporting = false;
 
   // 👉 FIXED: Bulletproof parser for the exact "Name:" line
+  // 👉 FIXED: Smarter Pest Name Extractor to cut off extra AI rambling
   String _extractPestName(String text) {
     try {
       final lines = text.split('\n');
       for (var line in lines) {
-        // Look for the line containing "Name:"
         if (line.toLowerCase().contains("name:")) {
-          // Strip out the Markdown bolding and the prefix label
-          return line.replaceAll(RegExp(r'\*\*|\*|Pest Name:|Deficiency Name:', caseSensitive: false), '').trim();
+          // Strip out the Markdown and label
+          String rawName = line.replaceAll(RegExp(r'\*\*|\*|Pest Name:|Deficiency Name:', caseSensitive: false), '').trim();
+          
+          // 👉 NEW: Chop off any extra details after a parenthesis or comma
+          if (rawName.contains('(')) {
+            rawName = rawName.split('(')[0].trim();
+          }
+          if (rawName.contains(',')) {
+            rawName = rawName.split(',')[0].trim();
+          }
+          
+          // Failsafe: If the AI still writes a long sentence, limit it to 4 words max
+          final words = rawName.split(' ');
+          if (words.length > 4) {
+            return words.sublist(0, 4).join(' ');
+          }
+          
+          return rawName;
         }
       }
     } catch (e) {
       print("Parsing error: $e");
     }
-    return "Unknown Issue"; // Fallback
+    return "Unknown Issue"; 
   }
 
   // 👉 FIXED: Grabs our custom-generated 10-word notification string!

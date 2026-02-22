@@ -6,7 +6,7 @@ class PestReportService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final WeatherService _weatherService = WeatherService();
 
-  Future<void> reportPestOutbreak(String pestName, String severity) async {
+  Future<void> reportPestOutbreak(String pestName, String severity, String aiAdvice) async {
     // 1. Get current GPS Location
     Position position = await _determinePosition();
 
@@ -20,6 +20,7 @@ class PestReportService {
     final report = {
       "pestName": pestName,
       "severity": severity, // e.g., "High", "Medium"
+      "aiAdvice": aiAdvice,
       "location": GeoPoint(position.latitude, position.longitude),
       "timestamp": FieldValue.serverTimestamp(),
       "windSpeed": windData['speed'],

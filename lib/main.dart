@@ -5,6 +5,10 @@ import 'firebase_options.dart';
 // Import necessary screens
 import 'core/widgets/auth_wrapper.dart';
 
+// 👉 NEW: Import the Pest Alert Service. 
+// (Note: Adjust this path if you saved pest_alert_service.dart inside a specific folder like 'core/services/')
+import 'core/services/pest_alert_service.dart'; 
+
 // import 'package:flutter_dotenv/flutter_dotenv.dart'; // Reverted: Team convenience
 
 Future<void> main() async {
@@ -15,6 +19,10 @@ Future<void> main() async {
 
   // Cleanly initialized Firebase without conflict markers
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 👉 NEW: Start the Alert Engine to listen for new pest reports globally
+  final pestAlertService = PestAlertService();
+  await pestAlertService.initialize();
 
   runApp(const KitaAgroApp());
 }

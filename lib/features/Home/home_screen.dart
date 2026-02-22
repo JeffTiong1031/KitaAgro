@@ -8,6 +8,10 @@ import 'package:http/http.dart' as http;
 import 'package:kita_agro/features/Home/Planting/planting_screen.dart';
 import 'package:kita_agro/features/Home/Dictionary/dictionary_screen.dart';
 import 'package:kita_agro/features/Home/my_journey/my_journey_screen.dart';
+import 'package:kita_agro/features/Home/search_users_screen.dart';
+import 'package:kita_agro/features/Profile/single_post_screen.dart';
+import 'package:kita_agro/services/notification_service.dart';
+import 'package:kita_agro/features/community/community_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<_WeatherData?>? _weatherFuture;
   String? _weatherLocationKey;
   DateTime? _weatherFetchedAt;
+  final NotificationService _notificationService = NotificationService();
+  final CommunityService _communityService = CommunityService();
 
   @override
   void dispose() {
@@ -61,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const SearchUsersScreen(),
+                            builder: (context) => SearchUsersScreen(),
                           ),
                         );
                       },
@@ -1405,6 +1411,30 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showNotificationsDialog(BuildContext context) {
+    // Placeholder for notifications dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Notifications'),
+        content: const Text('Notifications will appear here'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _pickImageAndNavigate(BuildContext context) {
+    // Placeholder for image picker and navigation
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Image picker will be implemented here')),
     );
   }
 }

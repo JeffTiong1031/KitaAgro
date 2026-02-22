@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:math' as math;
+import 'notification_storage.dart'; 
 
 class PestAlertService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -139,6 +140,15 @@ class PestAlertService {
     // Skip alerting if the farmer is miles away and totally clear
     if (zone == "CLEAR") return; 
 
+    // 👉 NEW: Define the text strings
+    final String title = '🚨 $pestName Outbreak Nearby!';
+    final String body = 'You are $distance km away ($zone).\nAdvice: $advice';
+
+    // 👉 NEW: Save a copy to the phone's local memory instantly
+    await NotificationStorage.saveNotification(
+      AppNotification(title: title, body: body, timestamp: DateTime.now())
+    );
+    
     await _notificationsPlugin.show(
       DateTime.now().millisecond, // Unique ID
       '🚨 $pestName Outbreak Nearby!',

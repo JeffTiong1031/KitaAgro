@@ -97,6 +97,7 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
     }
   }
 
+  // 👉 THE FIX: Adjusted the rotation math to spin Clockwise like a Map Compass!
   List<LatLng> _createWindEllipse(LatLng center, double radiusY, double radiusX, double windAngleDegrees) {
     List<LatLng> points = [];
     const double earthRadius = 6378137.0;
@@ -106,8 +107,11 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
       final double t = i * (math.pi / 180);
       final double x = radiusX * math.cos(t);
       final double y = radiusY * math.sin(t);
-      final double xRotated = x * math.cos(radAngle) - y * math.sin(radAngle);
-      final double yRotated = x * math.sin(radAngle) + y * math.cos(radAngle);
+      
+      // Clockwise rotation matrix to fix the crisscrossing shapes
+      final double xRotated = x * math.cos(radAngle) + y * math.sin(radAngle);
+      final double yRotated = -x * math.sin(radAngle) + y * math.cos(radAngle);
+      
       final double dLat = yRotated / earthRadius;
       final double dLng = xRotated / (earthRadius * math.cos(math.pi * center.latitude / 180));
       points.add(LatLng(
@@ -149,27 +153,9 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                   height: 200,
                   child: ListView(
                     children: [
-                      _buildPestAlert(
-                        'Fall Armyworm',
-                        'Selangor, Perak',
-                        'High',
-                        Colors.red,
-                        Icons.bug_report,
-                      ),
-                      _buildPestAlert(
-                        'Brown Planthopper',
-                        'Kedah, Perlis',
-                        'Medium',
-                        Colors.orange,
-                        Icons.pest_control,
-                      ),
-                      _buildPestAlert(
-                        'Citrus Leaf Miner',
-                        'Johor, Pahang',
-                        'Low',
-                        Colors.yellow,
-                        Icons.nature,
-                      ),
+                      _buildPestAlert('Fall Armyworm', 'Selangor, Perak', 'High', Colors.red, Icons.bug_report),
+                      _buildPestAlert('Brown Planthopper', 'Kedah, Perlis', 'Medium', Colors.orange, Icons.pest_control),
+                      _buildPestAlert('Citrus Leaf Miner', 'Johor, Pahang', 'Low', Colors.yellow, Icons.nature),
                     ],
                   ),
                 ),
@@ -217,22 +203,26 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                             String docId = doc.id;
                             double windStretch = windSpeed * 20.0;
 
-                            // 1. Draw Polygons
+                            // 👉 THE FIX: Weather APIs say where wind comes FROM. 
+                            // We flip it 180 degrees to show where pests are blowing TO.
+                            double downwindAngle = (windAngle + 180) % 360;
+
+                            // 1. Draw Polygons using downwindAngle
                             polygons.add(Polygon(
                               polygonId: PolygonId("${docId}_safe"),
-                              points: _createWindEllipse(center, 500 + windStretch, 500, windAngle),
+                              points: _createWindEllipse(center, 500 + windStretch, 500, downwindAngle),
                               strokeWidth: 0,
                               fillColor: Colors.green.withOpacity(0.2),
                             ));
                             polygons.add(Polygon(
                               polygonId: PolygonId("${docId}_warning"),
-                              points: _createWindEllipse(center, 200 + (windStretch * 0.5), 200, windAngle),
+                              points: _createWindEllipse(center, 200 + (windStretch * 0.5), 200, downwindAngle),
                               strokeWidth: 0,
                               fillColor: Colors.orange.withOpacity(0.5),
                             ));
                             polygons.add(Polygon(
                               polygonId: PolygonId("${docId}_danger"),
-                              points: _createWindEllipse(center, 50 + (windStretch * 0.1), 50, windAngle),
+                              points: _createWindEllipse(center, 50 + (windStretch * 0.1), 50, downwindAngle),
                               strokeWidth: 0,
                               fillColor: Colors.red.withOpacity(0.8),
                             ));
@@ -248,22 +238,22 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                               icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
                             ));
 
-                            // 👉 3. Add Wind Arrow as a GroundOverlay using BytesMapBitmap
+                            // 3. Add Wind Arrow using downwindAngle
                             if (windSpeed > 0 && customWindArrowBytes != null) {
-                              LatLng arrowPosition = _calculateArrowPosition(center, 300, windAngle);
+                              LatLng arrowPosition = _calculateArrowPosition(center, 300, downwindAngle);
 
                               groundOverlays.add(GroundOverlay.fromPosition(
                                 groundOverlayId: GroundOverlayId("${docId}_arrow_overlay"),
                                 image: BytesMapBitmap(
                                   customWindArrowBytes!,
-                                  bitmapScaling: MapBitmapScaling.none, // Crucial for overlays that scale with width
+                                  bitmapScaling: MapBitmapScaling.none, 
                                 ), 
                                 position: arrowPosition,
                                 width: 600, 
-                                bearing: windAngle, 
+                                bearing: downwindAngle, // Rotated properly to match the heatmap
                                 anchor: const Offset(0.5, 0.5), 
                                 transparency: 0.2, 
-                                zIndex: 1, // Forces the arrow to draw ON TOP of the polygons
+                                zIndex: 1, 
                               ));
                             }
                           }

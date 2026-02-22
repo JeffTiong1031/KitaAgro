@@ -6,7 +6,7 @@ import 'package:kita_agro/features/Diagnostic/analysis_result_screen.dart';
 import 'package:kita_agro/core/services/gemini_api_service.dart';
 
 class ScanFeature extends StatefulWidget {
-  const ScanFeature({Key? key}) : super(key: key);
+  const ScanFeature({super.key});
 
   @override
   State<ScanFeature> createState() => _ScanFeatureState();

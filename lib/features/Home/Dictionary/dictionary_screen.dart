@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:kita_agro/core/services/gemini_api_service.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class DictionaryScreen extends StatefulWidget {
   const DictionaryScreen({super.key});
@@ -9,14 +14,14 @@ class DictionaryScreen extends StatefulWidget {
 
 class _DictionaryScreenState extends State<DictionaryScreen> {
   String _selectedCategory = 'All';
+  final ScrollController _gridController = ScrollController();
+  final GeminiApiService _geminiService = GeminiApiService('AIzaSyBkgljGd-zVO4lV5Cqpfipo0Br8pKwBe-k');
 
   final List<String> _categories = [
     'All',
     'Vegetables',
     'Fruits',
     'Herbs',
-    'Grains',
-    'Flowers',
   ];
 
   final List<Map<String, dynamic>> _plants = [
@@ -27,13 +32,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.circle,
       'color': Color(0xFFE53935),
-      'description':
-          'A popular garden vegetable rich in vitamins A and C. Tomatoes are used in salads, sauces, and many cuisines worldwide.',
-      'growthTime': '60-80 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun (6-8 hours)',
-      'water': 'Regular watering',
-      'soil': 'Well-drained, fertile soil',
+      'description': 'A popular garden vegetable rich in vitamins A and C. Tomatoes are used in salads, sauces, and many cuisines worldwide.',
     },
     {
       'name': 'Chili',
@@ -41,127 +40,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.local_fire_department,
       'color': Color(0xFFD32F2F),
-      'description':
-          'Spicy fruit used in many cuisines worldwide. Contains capsaicin which gives the heat.',
-      'growthTime': '60-90 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'Moderate',
-      'soil': 'Sandy loam',
+      'description': 'Spicy fruit used in many cuisines worldwide. Contains capsaicin which gives the heat.',
     },
-    {
-      'name': 'Kangkung',
-      'scientificName': 'Ipomoea aquatica',
-      'category': 'Vegetables',
-      'icon': Icons.grass,
-      'color': Color(0xFF43A047),
-      'description':
-          'Water spinach, a popular leafy vegetable in Southeast Asia. Fast-growing and nutritious.',
-      'growthTime': '30-45 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Partial to full sun',
-      'water': 'High - loves wet soil',
-      'soil': 'Moist, rich soil',
-    },
-    {
-      'name': 'Cucumber',
-      'scientificName': 'Cucumis sativus',
-      'category': 'Vegetables',
-      'icon': Icons.spa,
-      'color': Color(0xFF66BB6A),
-      'description':
-          'Refreshing vegetable with high water content. Great for salads and pickles.',
-      'growthTime': '50-70 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'Regular, consistent',
-      'soil': 'Rich, well-drained',
-    },
-    {
-      'name': 'Eggplant',
-      'scientificName': 'Solanum melongena',
-      'category': 'Vegetables',
-      'icon': Icons.egg,
-      'color': Color(0xFF7B1FA2),
-      'description':
-          'Also known as aubergine. Versatile vegetable used in many Asian and Mediterranean dishes.',
-      'growthTime': '70-85 days',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Sandy loam, well-drained',
-    },
-    {
-      'name': 'Carrot',
-      'scientificName': 'Daucus carota',
-      'category': 'Vegetables',
-      'icon': Icons.eco,
-      'color': Color(0xFFFF7043),
-      'description':
-          'Root vegetable rich in beta-carotene. Sweet and crunchy, great raw or cooked.',
-      'growthTime': '70-80 days',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun to partial shade',
-      'water': 'Consistent moisture',
-      'soil': 'Loose, sandy soil',
-    },
-    {
-      'name': 'Cabbage',
-      'scientificName': 'Brassica oleracea',
-      'category': 'Vegetables',
-      'icon': Icons.circle,
-      'color': Color(0xFF81C784),
-      'description':
-          'Leafy green vegetable forming a compact head. Used in salads, stir-fries, and fermented foods.',
-      'growthTime': '70-100 days',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Rich, well-drained',
-    },
-    {
-      'name': 'Spinach',
-      'scientificName': 'Spinacia oleracea',
-      'category': 'Vegetables',
-      'icon': Icons.local_florist,
-      'color': Color(0xFF2E7D32),
-      'description':
-          'Nutrient-dense leafy green packed with iron and vitamins. Quick to grow.',
-      'growthTime': '40-50 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Partial shade to full sun',
-      'water': 'Consistent moisture',
-      'soil': 'Rich, well-drained',
-    },
-    {
-      'name': 'Onion',
-      'scientificName': 'Allium cepa',
-      'category': 'Vegetables',
-      'icon': Icons.circle,
-      'color': Color(0xFFFFB74D),
-      'description':
-          'Essential bulb vegetable used as base flavor in countless dishes worldwide.',
-      'growthTime': '90-120 days',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun',
-      'water': 'Moderate',
-      'soil': 'Well-drained, fertile',
-    },
-    {
-      'name': 'Potato',
-      'scientificName': 'Solanum tuberosum',
-      'category': 'Vegetables',
-      'icon': Icons.circle,
-      'color': Color(0xFF8D6E63),
-      'description':
-          'Starchy tuber and staple food. Extremely versatile in cooking methods.',
-      'growthTime': '70-120 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Loose, well-drained',
-    },
-
     // Fruits
     {
       'name': 'Papaya',
@@ -169,13 +49,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.spa,
       'color': Color(0xFFFFB300),
-      'description':
-          'Tropical fruit with sweet orange flesh. Rich in enzymes and vitamins.',
-      'growthTime': '9-11 months',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Well-drained, rich',
+      'description': 'Tropical fruit with sweet orange flesh. Rich in enzymes and vitamins.',
     },
     {
       'name': 'Banana',
@@ -183,311 +57,32 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.nature,
       'color': Color(0xFFFFEB3B),
-      'description':
-          'Popular tropical fruit rich in potassium. Grows in bunches on tall plants.',
-      'growthTime': '9-12 months',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'High',
-      'soil': 'Rich, well-drained',
-    },
-    {
-      'name': 'Mango',
-      'scientificName': 'Mangifera indica',
-      'category': 'Fruits',
-      'icon': Icons.nature,
-      'color': Color(0xFFFF8F00),
-      'description':
-          'King of fruits with sweet, juicy flesh. Popular in tropical regions.',
-      'growthTime': '3-6 years to fruit',
-      'difficulty': 'Hard',
-      'sunlight': 'Full sun',
-      'water': 'Moderate',
-      'soil': 'Deep, well-drained',
-    },
-    {
-      'name': 'Watermelon',
-      'scientificName': 'Citrullus lanatus',
-      'category': 'Fruits',
-      'icon': Icons.circle,
-      'color': Color(0xFF4CAF50),
-      'description':
-          'Large fruit with sweet red flesh and high water content. Perfect for hot days.',
-      'growthTime': '70-90 days',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Sandy, well-drained',
-    },
-    {
-      'name': 'Pineapple',
-      'scientificName': 'Ananas comosus',
-      'category': 'Fruits',
-      'icon': Icons.spa,
-      'color': Color(0xFFFFC107),
-      'description':
-          'Tropical fruit with spiky exterior and sweet-tart flesh. Takes long to mature.',
-      'growthTime': '18-24 months',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun',
-      'water': 'Moderate',
-      'soil': 'Sandy, acidic',
+      'description': 'Tropical fruit rich in potassium. Requires warm frost-free climate (above 10°C year-round). Dies at 0°C. NOT suitable for temperate zones with winter frost.',
     },
     {
       'name': 'Strawberry',
       'scientificName': 'Fragaria × ananassa',
       'category': 'Fruits',
-      'icon': Icons.favorite,
-      'color': Color(0xFFE91E63),
-      'description':
-          'Sweet red berries loved worldwide. Compact plants suitable for containers.',
-      'growthTime': '4-6 weeks after flowering',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Rich, slightly acidic',
-    },
-    {
-      'name': 'Guava',
-      'scientificName': 'Psidium guajava',
-      'category': 'Fruits',
-      'icon': Icons.circle,
-      'color': Color(0xFF8BC34A),
-      'description': 'Tropical fruit with fragrant flesh. High in vitamin C.',
-      'growthTime': '2-4 years to fruit',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'Moderate',
-      'soil': 'Well-drained',
-    },
-    {
-      'name': 'Coconut',
-      'scientificName': 'Cocos nucifera',
-      'category': 'Fruits',
-      'icon': Icons.circle,
-      'color': Color(0xFF795548),
-      'description':
-          'Versatile tropical palm fruit providing water, milk, oil, and flesh.',
-      'growthTime': '5-6 years to fruit',
-      'difficulty': 'Hard',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Sandy, well-drained',
-    },
-
-    // Herbs
-    {
-      'name': 'Basil',
-      'scientificName': 'Ocimum basilicum',
-      'category': 'Herbs',
       'icon': Icons.local_florist,
-      'color': Color(0xFF4CAF50),
-      'description':
-          'Aromatic herb essential in Italian and Thai cuisine. Easy to grow indoors.',
-      'growthTime': '50-75 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Moist, well-drained',
+      'color': Color(0xFFE91E63),
+      'description': 'Sweet red fruit rich in vitamin C and antioxidants. Best with good drainage and regular care.',
     },
     {
-      'name': 'Lemongrass',
-      'scientificName': 'Cymbopogon citratus',
-      'category': 'Herbs',
-      'icon': Icons.yard,
-      'color': Color(0xFFC5E1A5),
-      'description':
-          'Fragrant herb used in Asian cuisine and tea. Also repels mosquitoes.',
-      'growthTime': '75-100 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'High',
-      'soil': 'Rich, moist',
+      'name': 'Apple',
+      'scientificName': 'Malus domestica',
+      'category': 'Fruits',
+      'icon': Icons.apple,
+      'color': Color(0xFFEF5350),
+      'description': 'Temperate fruit tree requiring 800-1000 chill hours (below 7°C). NOT suitable for tropical lowlands. Best in highland areas above 1000m elevation.',
     },
-    {
-      'name': 'Mint',
-      'scientificName': 'Mentha',
-      'category': 'Herbs',
-      'icon': Icons.spa,
-      'color': Color(0xFF26A69A),
-      'description':
-          'Refreshing herb used in drinks, desserts, and savory dishes. Spreads quickly.',
-      'growthTime': '30-40 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Partial shade',
-      'water': 'Regular',
-      'soil': 'Moist, rich',
-    },
-    {
-      'name': 'Coriander',
-      'scientificName': 'Coriandrum sativum',
-      'category': 'Herbs',
-      'icon': Icons.eco,
-      'color': Color(0xFF66BB6A),
-      'description':
-          'Versatile herb with edible leaves and seeds. Essential in Asian cooking.',
-      'growthTime': '45-70 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Partial to full sun',
-      'water': 'Moderate',
-      'soil': 'Well-drained',
-    },
+    // Herbs
     {
       'name': 'Pandan',
       'scientificName': 'Pandanus amaryllifolius',
       'category': 'Herbs',
       'icon': Icons.grass,
       'color': Color(0xFF388E3C),
-      'description':
-          'Fragrant leaves used in Southeast Asian desserts and rice dishes.',
-      'growthTime': '6-12 months',
-      'difficulty': 'Easy',
-      'sunlight': 'Partial shade',
-      'water': 'High',
-      'soil': 'Moist, rich',
-    },
-    {
-      'name': 'Turmeric',
-      'scientificName': 'Curcuma longa',
-      'category': 'Herbs',
-      'icon': Icons.circle,
-      'color': Color(0xFFFF9800),
-      'description':
-          'Golden spice with anti-inflammatory properties. Used in curries.',
-      'growthTime': '8-10 months',
-      'difficulty': 'Medium',
-      'sunlight': 'Partial shade',
-      'water': 'Regular',
-      'soil': 'Rich, well-drained',
-    },
-    {
-      'name': 'Ginger',
-      'scientificName': 'Zingiber officinale',
-      'category': 'Herbs',
-      'icon': Icons.spa,
-      'color': Color(0xFFFFCC80),
-      'description':
-          'Spicy rhizome used in cooking and traditional medicine worldwide.',
-      'growthTime': '8-10 months',
-      'difficulty': 'Medium',
-      'sunlight': 'Partial shade',
-      'water': 'Regular',
-      'soil': 'Rich, moist',
-    },
-
-    // Grains
-    {
-      'name': 'Rice',
-      'scientificName': 'Oryza sativa',
-      'category': 'Grains',
-      'icon': Icons.grain,
-      'color': Color(0xFFE0E0E0),
-      'description':
-          'Staple food for over half of world population. Grown in paddies.',
-      'growthTime': '120-150 days',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun',
-      'water': 'Flooded paddies',
-      'soil': 'Clay, water-retaining',
-    },
-    {
-      'name': 'Corn',
-      'scientificName': 'Zea mays',
-      'category': 'Grains',
-      'icon': Icons.grain,
-      'color': Color(0xFFFDD835),
-      'description':
-          'Versatile grain used for food, feed, and industrial products.',
-      'growthTime': '60-100 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Fertile, well-drained',
-    },
-    {
-      'name': 'Wheat',
-      'scientificName': 'Triticum aestivum',
-      'category': 'Grains',
-      'icon': Icons.grass,
-      'color': Color(0xFFD4A574),
-      'description':
-          'Major cereal grain for bread and pasta. Cool season crop.',
-      'growthTime': '120-180 days',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun',
-      'water': 'Moderate',
-      'soil': 'Fertile loam',
-    },
-
-    // Flowers
-    {
-      'name': 'Orchid',
-      'scientificName': 'Orchidaceae',
-      'category': 'Flowers',
-      'icon': Icons.filter_vintage,
-      'color': Color(0xFFAB47BC),
-      'description':
-          'Beautiful flowering plant with diverse varieties. Popular ornamental.',
-      'growthTime': 'Varies by species',
-      'difficulty': 'Hard',
-      'sunlight': 'Indirect light',
-      'water': 'Weekly',
-      'soil': 'Bark mix, well-drained',
-    },
-    {
-      'name': 'Sunflower',
-      'scientificName': 'Helianthus annuus',
-      'category': 'Flowers',
-      'icon': Icons.wb_sunny,
-      'color': Color(0xFFFFEB3B),
-      'description':
-          'Tall flowering plant that tracks the sun. Seeds are edible.',
-      'growthTime': '70-100 days',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Well-drained',
-    },
-    {
-      'name': 'Rose',
-      'scientificName': 'Rosa',
-      'category': 'Flowers',
-      'icon': Icons.local_florist,
-      'color': Color(0xFFE91E63),
-      'description':
-          'Classic flowering plant symbolizing love. Many varieties available.',
-      'growthTime': '6-8 weeks to bloom',
-      'difficulty': 'Medium',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Rich, well-drained',
-    },
-    {
-      'name': 'Jasmine',
-      'scientificName': 'Jasminum',
-      'category': 'Flowers',
-      'icon': Icons.spa,
-      'color': Color(0xFFFFFDE7),
-      'description': 'Fragrant white flowers used in teas and perfumes.',
-      'growthTime': '6 months to bloom',
-      'difficulty': 'Medium',
-      'sunlight': 'Full to partial sun',
-      'water': 'Regular',
-      'soil': 'Well-drained',
-    },
-    {
-      'name': 'Hibiscus',
-      'scientificName': 'Hibiscus rosa-sinensis',
-      'category': 'Flowers',
-      'icon': Icons.local_florist,
-      'color': Color(0xFFF44336),
-      'description':
-          'Tropical flower with large colorful blooms. Malaysia\'s national flower.',
-      'growthTime': '3-4 months to bloom',
-      'difficulty': 'Easy',
-      'sunlight': 'Full sun',
-      'water': 'Regular',
-      'soil': 'Rich, well-drained',
+      'description': 'Fragrant leaves used in Southeast Asian desserts and rice dishes.',
     },
   ];
 
@@ -498,6 +93,94 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
     return _plants
         .where((plant) => plant['category'] == _selectedCategory)
         .toList();
+  }
+
+  @override
+  void dispose() {
+    _gridController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addPlantToGarden(Map<String, dynamic> plant) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to add plants.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final int totalDays = _parseGrowthDays(plant['growthTime'] as String?);
+    final IconData icon = plant['icon'] as IconData;
+    final Color color = plant['color'] as Color;
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('plantations')
+        .add({
+          'name': plant['name'],
+          'scientificName': plant['scientificName'],
+          'category': plant['category'],
+          'totalDays': totalDays,
+          'daysPlanted': 0,
+          'plantedAt': Timestamp.now(),
+          'icon': _iconName(icon),
+          'color': color.value,
+        });
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${plant['name']} added to your garden!'),
+        backgroundColor: const Color(0xFF2E7D32),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  int _parseGrowthDays(String? growthTime) {
+    if (growthTime == null || growthTime.trim().isEmpty) {
+      return 90; // Default 90 days if no data available
+    }
+    final String lower = growthTime.toLowerCase();
+    final match = RegExp(r'(\d+)').firstMatch(lower);
+    if (match == null) {
+      return 90;
+    }
+    final int value = int.tryParse(match.group(1) ?? '') ?? 90;
+    if (lower.contains('month')) {
+      return value * 30;
+    }
+    if (lower.contains('year')) {
+      return value * 365;
+    }
+    return value;
+  }
+
+  String _iconName(IconData icon) {
+    if (icon == Icons.circle) {
+      return 'circle';
+    }
+    if (icon == Icons.local_fire_department) {
+      return 'local_fire_department';
+    }
+    if (icon == Icons.spa) {
+      return 'spa';
+    }
+    if (icon == Icons.nature) {
+      return 'nature';
+    }
+    if (icon == Icons.grass) {
+      return 'grass';
+    }
+    return 'spa';
   }
 
   @override
@@ -586,6 +269,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: GridView.builder(
+                key: const PageStorageKey<String>('dictionary_grid'),
+                controller: _gridController,
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 4,
@@ -674,228 +359,1109 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            // Handle bar
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+      builder: (context) => _PlantDetailSheet(
+        plant: plant,
+        geminiService: _geminiService,
+        onAddToGarden: () => _addPlantToGarden(plant),
+      ),
+    );
+  }
+}
 
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with icon and name
-                    Row(
+// ========== AI-POWERED PLANT DETAIL SHEET ==========
+
+class _PlantDetailSheet extends StatefulWidget {
+  final Map<String, dynamic> plant;
+  final GeminiApiService geminiService;
+  final VoidCallback onAddToGarden;
+
+  const _PlantDetailSheet({
+    required this.plant,
+    required this.geminiService,
+    required this.onAddToGarden,
+  });
+
+  @override
+  State<_PlantDetailSheet> createState() => _PlantDetailSheetState();
+}
+
+class _PlantDetailSheetState extends State<_PlantDetailSheet> {
+  // Static cache to prevent duplicate API calls
+  static final Map<String, Map<String, dynamic>> _aiCache = {};
+  
+  Map<String, dynamic>? _aiAdvice;
+  bool _isLoadingAI = true;
+  String _locationName = 'Unknown';
+  double _temperature = 25.0;
+  String _weatherCondition = 'Clear';
+  String _debugError = ''; 
+  
+  // Track which cards are expanded
+  final Set<String> _expandedCards = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocationAndAI();
+  }
+
+  Future<void> _loadLocationAndAI() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        // No user logged in - use default location for demo
+        _locationName = 'Malaysia';
+        _fetchAIAdvice();
+        return;
+      }
+
+      // Fetch saved garden location from user document
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists || userDoc.data()?['gardenLocation'] == null) {
+        // No saved location - use default location for demo
+        _locationName = 'Malaysia';
+        _fetchAIAdvice();
+        return;
+      }
+
+      final locationData = userDoc.data()!['gardenLocation'] as Map<String, dynamic>;
+      final latitude = locationData['latitude'] as double;
+      final longitude = locationData['longitude'] as double;
+      _locationName = locationData['address'] ?? 'Your location';
+
+      // Fetch current weather
+      final weatherUrl = Uri.parse(
+        'https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current=temperature_2m,weather_code',
+      );
+      final weatherResponse = await http.get(weatherUrl);
+
+      if (weatherResponse.statusCode == 200) {
+        final weatherJson = jsonDecode(weatherResponse.body);
+        _temperature = (weatherJson['current']?['temperature_2m'] ?? 25.0).toDouble();
+        final weatherCode = weatherJson['current']?['weather_code'] ?? 0;
+        _weatherCondition = _weatherCodeToCondition(weatherCode);
+      }
+
+      // Fetch AI advice with real data
+      _fetchAIAdvice();
+    } catch (e) {
+      print('Error loading AI advice: $e');
+      setState(() => _isLoadingAI = false);
+    }
+  }
+
+  Future<void> _fetchAIAdvice() async {
+    try {
+      final plantName = widget.plant['name'];
+      final cacheKey = '$plantName-$_locationName';
+      
+      // Check cache first
+      if (_aiCache.containsKey(cacheKey)) {
+        print('💾 Using cached data for $plantName in $_locationName');
+        setState(() {
+          _aiAdvice = _aiCache[cacheKey];
+          _isLoadingAI = false;
+          _debugError = 'Data: Cached ✓';
+        });
+        return;
+      }
+      
+      print('🤖 Calling Gemini AI for $plantName...');
+      print('📍 Location: $_locationName');
+      print('🌡️ Temperature: $_temperature°C');
+      print('🌤️ Weather: $_weatherCondition');
+      
+      // Fetch AI advice
+      final advice = await widget.geminiService.getLocalizedAdvice(
+        plantName: plantName,
+        scientificName: widget.plant['scientificName'],
+        category: widget.plant['category'],
+        location: _locationName,
+        temperature: _temperature,
+        weatherCondition: _weatherCondition,
+      );
+
+      print('✅ AI Response received: ${advice != null}');
+      if (advice != null) {
+        print('📊 Local Match Score: ${advice['localMatchScore']}');
+        print('🌱 Growth Time: ${advice['growthTime']}');
+        print('☀️ Sunlight: ${advice['sunlight']}');
+        
+        // Cache the result
+        _aiCache[cacheKey] = advice;
+        _debugError = 'Data: OK ✓';
+      } else {
+        print('⚠️ AI returned null - no fallback provided');
+        print('❌ Check Gemini API logs above for details');
+        _debugError = 'API quota exceeded. Try again in 1 minute.';
+        setState(() {
+          _aiAdvice = null;
+          _isLoadingAI = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _aiAdvice = advice;
+        _isLoadingAI = false;
+      });
+    } catch (e) {
+      print('❌ Error fetching AI advice: $e');
+      _debugError = 'Exception: ${e.toString()}';
+      setState(() => _isLoadingAI = false);
+    }
+  }
+
+  String _weatherCodeToCondition(int code) {
+    if (code == 0) return 'Clear';
+    if (code <= 3) return 'Partly Cloudy';
+    if (code <= 49) return 'Foggy';
+    if (code <= 59) return 'Drizzle';
+    if (code <= 69) return 'Rainy';
+    if (code <= 79) return 'Snowy';
+    if (code <= 84) return 'Showers';
+    return 'Stormy';
+  }
+
+  String _getDetailedInfo(String key) {
+    final plantName = widget.plant['name'];
+    final location = _locationName;
+    
+    switch (key) {
+      case 'growthTime':
+        return 'Growth time varies based on your local climate conditions in $location. '
+               'Factors like temperature (${_temperature.toStringAsFixed(1)}°C), daylight hours, '
+               'and seasonal patterns all affect how quickly $plantName matures.';
+               
+      case 'difficulty':
+        return 'Difficulty rating considers climate compatibility, maintenance requirements, '
+               'pest resistance, and how well $plantName adapts to $location conditions. '
+               'Beginners should start with "Easy" rated plants.';
+               
+      case 'sunlight':
+        return 'Sunlight requirements are crucial for photosynthesis and healthy growth. '
+               'In $location, consider seasonal variations and provide shade during extremely hot periods. '
+               'Morning sun is generally gentler than harsh afternoon sun.';
+               
+      case 'watering':
+        return 'Current weather: $_weatherCondition at ${_temperature.toStringAsFixed(1)}°C. '
+               'Adjust watering frequency based on rainfall, humidity, and soil moisture. '
+               'Overwatering is a common mistake - check soil before watering.';
+               
+      case 'soil':
+        return 'Soil quality directly impacts nutrient availability and root health. '
+               'In $location, amend soil based on local conditions. Good drainage prevents root rot, '
+               'while organic matter improves fertility and water retention.';
+               
+      default:
+        return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header with icon and name
+                  _buildHeader(),
+                  const SizedBox(height: 16),
+
+                  // Location info banner
+                  if (_locationName == 'Malaysia')
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Save your garden location in My Journey for personalized local advice!',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange.shade900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (_locationName == 'Malaysia') const SizedBox(height: 16),
+
+                  const SizedBox(height: 8),
+
+                  // DEBUG PANEL - Remove after testing
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: plant['color'] as Color,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (plant['color'] as Color).withOpacity(
-                                  0.4,
-                                ),
-                                blurRadius: 12,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            plant['icon'] as IconData,
-                            color: Colors.white,
-                            size: 40,
+                        Text(
+                          '🔍 Debug Info',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade900,
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                plant['name'],
-                                style: const TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1B5E20),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                plant['scientificName'],
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontStyle: FontStyle.italic,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Color(0xFFE8F5E9),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  plant['category'],
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF2E7D32),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Loading: $_isLoadingAI',
+                          style: TextStyle(fontSize: 11, color: Colors.blue.shade800),
                         ),
+                        Text(
+                          'AI Data: ${_aiAdvice != null ? "✅ Received" : "❌ Null"}',
+                          style: TextStyle(fontSize: 11, color: Colors.blue.shade800),
+                        ),
+                        Text(
+                          'Location: $_locationName',
+                          style: TextStyle(fontSize: 11, color: Colors.blue.shade800),
+                        ),
+                        if (_aiAdvice != null)
+                          Text(
+                            'Score: ${_aiAdvice!['localMatchScore']}',
+                            style: TextStyle(fontSize: 11, color: Colors.blue.shade800),
+                          ),
+                        if (_debugError.isNotEmpty)
+                          Text(
+                            'Error: $_debugError',
+                            style: TextStyle(fontSize: 11, color: Colors.red.shade800),
+                          ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 16),
 
+                  // AI SECTION 1: Local Match Score
+                  if (_aiAdvice != null) ...[
+                    _buildLocalMatchScore(_aiAdvice!['localMatchScore']),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // AI SECTION 2: Local Growing Context
+                  if (_aiAdvice != null) ...[
+                    _buildLocalGrowingContext(_aiAdvice!['growingContext']),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Description
+                  _buildSection('About', widget.plant['description']),
+                  const SizedBox(height: 24),
+
+                  // AI SECTION 3: AI-Enhanced Growing Guide
+                  _buildAIGrowingGuide(),
+                  const SizedBox(height: 24),
+
+                  // AI SECTION 3.5: Growth Stages Timeline
+                  if (_aiAdvice != null && _aiAdvice!['growthStages'] != null)
+                    _buildGrowthStagesTimeline(_aiAdvice!['growthStages']),
+                  if (_aiAdvice != null && _aiAdvice!['growthStages'] != null)
                     const SizedBox(height: 24),
 
-                    // Description
-                    Text(
-                      'About',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1B5E20),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      plant['description'],
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.grey[700],
-                        height: 1.5,
-                      ),
-                    ),
-
+                  // AI SECTION 3.6: Materials Needed
+                  if (_aiAdvice != null && _aiAdvice!['materialsNeeded'] != null)
+                    _buildMaterialsNeeded(_aiAdvice!['materialsNeeded']),
+                  if (_aiAdvice != null && _aiAdvice!['materialsNeeded'] != null)
                     const SizedBox(height: 24),
 
-                    // Growing info cards
-                    Text(
-                      'Growing Guide',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1B5E20),
+                  // AI SECTION 4: Carbon Reduction
+                  if (_aiAdvice != null) ...[
+                    _buildCarbonReduction(_aiAdvice!['carbonReduction']),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Loading state
+                  if (_isLoadingAI)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      margin: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFF1F8E9),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    _buildInfoCard(
-                      Icons.schedule,
-                      'Growth Time',
-                      plant['growthTime'],
-                    ),
-                    _buildInfoCard(
-                      Icons.trending_up,
-                      'Difficulty',
-                      plant['difficulty'],
-                    ),
-                    _buildInfoCard(
-                      Icons.wb_sunny,
-                      'Sunlight',
-                      plant['sunlight'],
-                    ),
-                    _buildInfoCard(Icons.water_drop, 'Water', plant['water']),
-                    _buildInfoCard(Icons.landscape, 'Soil', plant['soil']),
-
-                    const SizedBox(height: 24),
-
-                    // Action button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                '${plant['name']} added to your garden!',
-                              ),
-                              backgroundColor: Color(0xFF2E7D32),
-                              behavior: SnackBarBehavior.floating,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF2E7D32),
+                              strokeWidth: 3,
                             ),
-                          );
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add to My Garden'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF2E7D32),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
                           ),
+                          const SizedBox(width: 16),
+                          Text(
+                            '🤖 AI is analyzing local conditions...',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1B5E20),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 24),
+
+                  // Action button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.onAddToGarden();
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add to My Garden'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF2E7D32),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        Stack(
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: widget.plant['color'] as Color,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: (widget.plant['color'] as Color).withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                widget.plant['icon'] as IconData,
+                color: Colors.white,
+                size: 40,
+              ),
+            ),
+            Positioned(
+              top: -2,
+              right: -2,
+              child: GestureDetector(
+                onTap: widget.onAddToGarden,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Color(0xFF1B5E20),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: const Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: 14,
+                  ),
                 ),
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.plant['name'],
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1B5E20),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.plant['scientificName'],
+                style: TextStyle(
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  widget.plant['category'],
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2E7D32),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildInfoCard(IconData icon, String label, String value) {
+  // AI SECTION 1: Local Match Score
+  Widget _buildLocalMatchScore(int score) {
+    Color scoreColor;
+    String scoreLabel;
+    if (score >= 80) {
+      scoreColor = Colors.green;
+      scoreLabel = 'Excellent Match';
+    } else if (score >= 60) {
+      scoreColor = Colors.orange;
+      scoreLabel = 'Good Match';
+    } else {
+      scoreColor = Colors.red;
+      scoreLabel = 'Challenging';
+    }
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Color(0xFFF1F8E9),
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [scoreColor.withOpacity(0.1), scoreColor.withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scoreColor.withOpacity(0.3), width: 2),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
-              color: Color(0xFF2E7D32),
-              borderRadius: BorderRadius.circular(8),
+              color: scoreColor,
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
+            child: Center(
+              child: Text(
+                '$score',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  'Local Climate Match',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
                 ),
                 Text(
-                  value,
+                  scoreLabel,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: scoreColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'for $_locationName',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.eco, color: scoreColor, size: 32),
+        ],
+      ),
+    );
+  }
+
+  // AI SECTION 2: Local Growing Context
+  Widget _buildLocalGrowingContext(String context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Color(0xFFF1F8E9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(0xFF2E7D32).withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.location_on, color: Color(0xFF2E7D32), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Local Growing Context',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1B5E20),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '🌡️ Current: ${_temperature.toStringAsFixed(1)}°C, $_weatherCondition',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // AI SECTION 3: AI-Enhanced Growing Guide
+  Widget _buildAIGrowingGuide() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.local_florist, color: Color(0xFF2E7D32), size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Growing Guide',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1B5E20),
+              ),
+            ),
+            if (_aiAdvice != null) ...[ 
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Color(0xFF2E7D32),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome, color: Colors.white, size: 12),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'AI Powered',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        _buildInfoCard(
+          Icons.schedule, 
+          'Growth Time',
+          'growthTime',
+          _aiAdvice?['growthTime'] ?? '',
+        ),
+        _buildInfoCard(
+          Icons.trending_up, 
+          'Difficulty',
+          'difficulty',
+          _aiAdvice?['difficulty'] ?? '',
+        ),
+        _buildInfoCard(
+          Icons.wb_sunny, 
+          'Sunlight',
+          'sunlight',
+          _aiAdvice?['sunlight'] ?? '',
+        ),
+        _buildInfoCard(
+          Icons.water_drop, 
+          'Water',
+          'watering',
+          _aiAdvice?['watering'] ?? '',
+        ),
+        _buildInfoCard(
+          Icons.landscape, 
+          'Soil',
+          'soil',
+          _aiAdvice?['soil'] ?? '',
+        ),
+      ],
+    );
+  }
+
+  // AI SECTION 3.5: Growth Stages Timeline
+  Widget _buildGrowthStagesTimeline(dynamic rawStages) {
+    final List<Map<String, dynamic>> stages = [];
+    if (rawStages is List) {
+      for (final item in rawStages) {
+        if (item is Map<String, dynamic>) {
+          final int? start = item['startDay'] is int
+              ? item['startDay'] as int
+              : int.tryParse('${item['startDay']}');
+          final int? end = item['endDay'] is int
+              ? item['endDay'] as int
+              : int.tryParse('${item['endDay']}');
+          final String stage = (item['stage'] ?? '').toString().trim();
+          final String desc = (item['description'] ?? '').toString().trim();
+          if (start != null && end != null && stage.isNotEmpty) {
+            stages.add({
+              'stage': stage,
+              'startDay': start,
+              'endDay': end,
+              'description': desc,
+            });
+          }
+        }
+      }
+    }
+
+    if (stages.isEmpty) return const SizedBox.shrink();
+
+    stages.sort((a, b) => (a['startDay'] as int).compareTo(b['startDay'] as int));
+
+    final int totalDays = stages.last['endDay'] as int;
+
+    const List<Color> stageColors = [
+      Color(0xFF8D6E63), // brown - seed
+      Color(0xFF66BB6A), // light green - sprout
+      Color(0xFF43A047), // green - vegetative
+      Color(0xFFFFB300), // amber - flowering
+      Color(0xFFEF5350), // red - fruiting
+      Color(0xFFAB47BC), // purple - ripening
+      Color(0xFF26A69A), // teal - harvest
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.timeline, color: Color(0xFF2E7D32), size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Growth Stages',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1B5E20),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Color(0xFF2E7D32),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome, color: Colors.white, size: 12),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'AI Powered',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Total: $totalDays days',
+          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+        ),
+        const SizedBox(height: 16),
+
+        // Proportional color bar
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            height: 14,
+            child: Row(
+              children: List.generate(stages.length, (i) {
+                final s = stages[i];
+                final int days = (s['endDay'] as int) - (s['startDay'] as int) + 1;
+                final double fraction = days / totalDays;
+                return Expanded(
+                  flex: (fraction * 1000).round().clamp(1, 1000),
+                  child: Container(color: stageColors[i % stageColors.length]),
+                );
+              }),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Stage timeline cards
+        ...List.generate(stages.length, (i) {
+          final s = stages[i];
+          final color = stageColors[i % stageColors.length];
+          final int startDay = s['startDay'] as int;
+          final int endDay = s['endDay'] as int;
+          final int days = endDay - startDay + 1;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left: dot + vertical line
+                SizedBox(
+                  width: 24,
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withOpacity(0.4),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (i < stages.length - 1)
+                        Container(
+                          width: 2,
+                          height: 40,
+                          color: Colors.grey[300],
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Right: card
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: color.withOpacity(0.25)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                s['stage'] as String,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: color,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Day $startDay\u2013$endDay',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: color,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if ((s['description'] as String).isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            s['description'] as String,
+                            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                          ),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          '$days days',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[500],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  // AI SECTION 3.6: Materials Needed
+  Widget _buildMaterialsNeeded(dynamic rawMaterials) {
+    if (rawMaterials == null || rawMaterials is! List || rawMaterials.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final materials = rawMaterials.cast<Map<String, dynamic>>();
+
+    IconData _materialIcon(String item) {
+      final lower = item.toLowerCase();
+      if (lower.contains('seed')) return Icons.grain;
+      if (lower.contains('fertiliz') || lower.contains('compost') || lower.contains('manure')) return Icons.science;
+      if (lower.contains('pot') || lower.contains('container') || lower.contains('tray')) return Icons.inventory_2;
+      if (lower.contains('water') || lower.contains('hose') || lower.contains('can')) return Icons.water_drop;
+      if (lower.contains('soil') || lower.contains('mulch') || lower.contains('peat')) return Icons.terrain;
+      if (lower.contains('trellis') || lower.contains('stake') || lower.contains('support')) return Icons.vertical_align_top;
+      if (lower.contains('net') || lower.contains('cover') || lower.contains('shade')) return Icons.shield;
+      if (lower.contains('prun') || lower.contains('scissor') || lower.contains('shear')) return Icons.content_cut;
+      if (lower.contains('pesticide') || lower.contains('spray') || lower.contains('insect')) return Icons.bug_report;
+      if (lower.contains('shovel') || lower.contains('spade') || lower.contains('tool') || lower.contains('hoe')) return Icons.handyman;
+      return Icons.check_circle_outline;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.shopping_bag, color: Colors.amber[800], size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Materials Needed',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1B5E20),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome, size: 12, color: Colors.amber[800]),
+                    const SizedBox(width: 4),
+                    Text(
+                      'AI Powered',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber[800],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: materials.map<Widget>((m) {
+              final item = (m['item'] as String?) ?? '';
+              final purpose = (m['purpose'] as String?) ?? '';
+              return Tooltip(
+                message: purpose,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.amber.shade100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.withOpacity(0.08),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(_materialIcon(item), size: 16, color: Colors.amber[700]),
+                      const SizedBox(width: 6),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1B5E20),
+                            ),
+                          ),
+                          if (purpose.isNotEmpty)
+                            Text(
+                              purpose,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // AI SECTION 4: Carbon Reduction
+  Widget _buildCarbonReduction(String carbonText) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.cloud, color: Colors.white, size: 32),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Carbon Impact',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  carbonText,
                   style: const TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B5E20),
+                    color: Colors.white,
+                    height: 1.4,
                   ),
                 ),
               ],
@@ -905,4 +1471,127 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       ),
     );
   }
+
+  Widget _buildSection(String title, String content) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1B5E20),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          content,
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.grey[700],
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoCard(IconData icon, String label, String key, String? value) {
+    // Only show card if value exists and is not empty
+    if (value == null || value.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    final isExpanded = _expandedCards.contains(key);
+    final detailedInfo = _getDetailedInfo(key);
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedCards.remove(key);
+          } else {
+            _expandedCards.add(key);
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isExpanded ? Color(0xFFE8F5E9) : Color(0xFFF1F8E9),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isExpanded ? Color(0xFF2E7D32) : Colors.transparent,
+            width: isExpanded ? 2 : 0,
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Color(0xFF2E7D32),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      Text(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1B5E20),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  color: Color(0xFF2E7D32),
+                  size: 24,
+                ),
+              ],
+            ),
+            if (isExpanded && detailedInfo.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  detailedInfo,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[800],
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
+

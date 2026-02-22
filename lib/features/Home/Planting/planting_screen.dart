@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:kita_agro/features/Home/Dictionary/dictionary_screen.dart';
+
 class PlantingScreen extends StatelessWidget {
   const PlantingScreen({super.key});
 
@@ -16,8 +18,13 @@ class PlantingScreen extends StatelessWidget {
             const Text('Watering Schedule & Growth Journal'),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {},
-              child: const Text("Add New Plant"),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DictionaryScreen()),
+                );
+              },
+              child: const Text("Add New Plant")
             ),
           ],
         ),

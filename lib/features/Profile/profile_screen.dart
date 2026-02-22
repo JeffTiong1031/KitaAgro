@@ -7,11 +7,11 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/models/user_model.dart';
 import '../../features/auth/auth_service.dart';
+import '../auth/welcome_screen.dart';
 import '../../features/community/community_service.dart';
 import '../../services/user_service.dart';
-import '../auth/welcome_screen.dart';
-import '../community/create_post_screen.dart';
 import 'edit_profile_screen.dart';
+import '../community/create_post_screen.dart';
 import 'single_post_screen.dart';
 
 class ProfileScreen extends StatefulWidget {

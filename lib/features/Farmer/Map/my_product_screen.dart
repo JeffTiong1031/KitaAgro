@@ -553,7 +553,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
         'address': _address ?? '',
         'colorValue': colorValue,
         'iconCodePoint': iconCodePoint,
-        if (ownerId != null) 'ownerId': ownerId,
+        'ownerId': ?ownerId,
       };
 
       if (widget.initialSnapshot != null) {
@@ -619,7 +619,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                   labelText: 'Crop',
                   border: OutlineInputBorder(),
                 ),
-                value: _selectedPlant,
+                initialValue: _selectedPlant,
                 items: PlantData.allPlants
                     .map(
                       (plant) => DropdownMenuItem<Map<String, dynamic>>(

@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart'; // Needed for User? handling
+// Needed for User? handling
 import 'package:flutter/material.dart';
 import '../../features/auth/auth_service.dart';
 import '../../main_layout.dart';

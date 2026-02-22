@@ -12,6 +12,8 @@ import 'package:kita_agro/features/Home/search_users_screen.dart';
 import 'package:kita_agro/features/Profile/single_post_screen.dart';
 import 'package:kita_agro/services/notification_service.dart';
 import 'package:kita_agro/features/community/community_service.dart';
+import 'package:kita_agro/features/Home/notification_screen.dart'; 
+import 'package:kita_agro/core/services/notification_storage.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -91,16 +93,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
+                
+                // 👉 UPDATED: The Bell Icon Section
                 GestureDetector(
-                  onTap: () => _showNotificationsDialog(context),
+                  onTap: () async {
+                    // Navigate to the full screen instead of showing a dialog
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                    );
+                    // Refresh the state when they come back so the red dot vanishes
+                    setState(() {}); 
+                  },
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.all(8),
-                    child: StreamBuilder<int>(
-                      stream: _notificationService.getUnseenCountStream(),
+                    child: FutureBuilder<int>(
+                      // 👉 CHANGED: Look directly at the local storage for the unread count
+                      future: NotificationStorage.getUnreadCount(), 
                       builder: (context, snapshot) {
                         int unseenCount = snapshot.data ?? 0;
                         return Stack(
@@ -122,9 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     shape: BoxShape.circle,
                                   ),
                                   child: Text(
-                                    unseenCount > 9
-                                        ? '9+'
-                                        : unseenCount.toString(),
+                                    unseenCount > 9 ? '9+' : unseenCount.toString(),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 10,
@@ -1408,23 +1419,6 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.grey[600],
               fontSize: 14,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showNotificationsDialog(BuildContext context) {
-    // Placeholder for notifications dialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Notifications'),
-        content: const Text('Notifications will appear here'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
           ),
         ],
       ),

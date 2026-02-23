@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // 👉 NEW: Import Auth to track who made the report
 import 'package:kita_agro/core/services/weather_service.dart';
 
 class PestReportService {
@@ -16,7 +17,10 @@ class PestReportService {
       position.longitude
     );
 
-    // 3. Create the Data Package
+    // 👉 3. Grab the ID of the farmer making the report
+    final String userId = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+
+    // 4. Create the Data Package
     final report = {
       "pestName": pestName,
       "severity": severity, // e.g., "High", "Medium"
@@ -25,9 +29,11 @@ class PestReportService {
       "timestamp": FieldValue.serverTimestamp(),
       "windSpeed": windData['speed'],
       "windAngle": windData['deg'],
+      "reporterId": userId, // 👉 NEW: Save who reported it
+      "status": "active",   // 👉 NEW: Set status to active by default
     };
 
-    // 4. Save to Firebase
+    // 5. Save to Firebase
     await _db.collection('pest_reports').add(report);
   }
 

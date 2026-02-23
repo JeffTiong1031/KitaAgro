@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ProductListing {
   const ProductListing({
     required this.id,
+    required this.userId,
     required this.cropName,
     required this.weight,
     required this.harvestDate,
@@ -16,6 +17,7 @@ class ProductListing {
   });
 
   final String id;
+  final String userId;
   final String cropName;
   final double weight;
   final DateTime harvestDate;
@@ -58,6 +60,7 @@ class ProductListing {
 
     return ProductListing(
       id: snapshot.id,
+      userId: data['userId'] as String? ?? '',
       cropName: data['cropName'] as String? ?? '',
       weight: weight,
       harvestDate: harvestDate,
@@ -73,6 +76,7 @@ class ProductListing {
 
   Map<String, dynamic> toMap() {
     return {
+      'userId': userId,
       'cropName': cropName,
       'weight': weight,
       'harvestDate': Timestamp.fromDate(harvestDate),

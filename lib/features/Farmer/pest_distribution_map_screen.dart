@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:firebase_auth/firebase_auth.dart'; 
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'dart:typed_data';
+
+// 👉 Make sure this import path matches exactly where you saved the new screen!
+import 'my_reports_screen.dart'; 
 
 class PestDistributionMapScreen extends StatefulWidget {
   const PestDistributionMapScreen({super.key});
@@ -16,8 +20,10 @@ class PestDistributionMapScreen extends StatefulWidget {
 }
 
 class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
+  // Filter the stream to only show "active" outbreaks
   final Stream<QuerySnapshot> _pestStream = FirebaseFirestore.instance
       .collection('pest_reports')
+      .where('status', isEqualTo: 'active') 
       .snapshots();
 
   GoogleMapController? _mapController;
@@ -97,7 +103,37 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
     }
   }
 
-  // 👉 THE FIX: Adjusted the rotation math to spin Clockwise like a Map Compass!
+  // The popup dialog to clear the outbreak
+  void _showClearOutbreakDialog(String docId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Outbreak?'),
+        content: const Text('Has this pest outbreak been resolved? This will permanently remove the danger zone from the map for all farmers.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(context); // Close the dialog
+              // Update the database to hide it!
+              await FirebaseFirestore.instance.collection('pest_reports').doc(docId).update({
+                'status': 'cleared',
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Outbreak cleared! Map updated.'), backgroundColor: Colors.green),
+              );
+            },
+            child: const Text('Yes, Clear It'),
+          ),
+        ],
+      ),
+    );
+  }
+
   List<LatLng> _createWindEllipse(LatLng center, double radiusY, double radiusX, double windAngleDegrees) {
     List<LatLng> points = [];
     const double earthRadius = 6378137.0;
@@ -136,7 +172,24 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pest Distribution Map')),
+      appBar: AppBar(
+        title: const Text('Pest Distribution Map'),
+        // 👉 NEW: Add the history button to the top right of the map
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'My Reports',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MyReportsScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -202,10 +255,14 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                             LatLng center = LatLng(loc.latitude, loc.longitude);
                             String docId = doc.id;
                             double windStretch = windSpeed * 20.0;
-
-                            // 👉 THE FIX: Weather APIs say where wind comes FROM. 
-                            // We flip it 180 degrees to show where pests are blowing TO.
+                            
+                            // Weather APIs state where wind comes FROM. Flip 180 degrees to show where pests blow TO.
                             double downwindAngle = (windAngle + 180) % 360;
+
+                            // Check ownership of the report
+                            String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+                            String reporterId = data['reporterId'] ?? '';
+                            bool isMyReport = reporterId == currentUserId && currentUserId.isNotEmpty;
 
                             // 1. Draw Polygons using downwindAngle
                             polygons.add(Polygon(
@@ -233,7 +290,13 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                               position: center,
                               infoWindow: InfoWindow(
                                 title: '🚨 $pestName',
-                                snippet: 'Reported Outbreak Center',
+                                // Change text and logic based on ownership
+                                snippet: isMyReport ? 'Tap here to mark as CLEARED ✅' : 'Reported Outbreak Center',
+                                onTap: () {
+                                  if (isMyReport) {
+                                    _showClearOutbreakDialog(docId);
+                                  }
+                                },
                               ),
                               icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
                             ));
@@ -250,7 +313,7 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                                 ), 
                                 position: arrowPosition,
                                 width: 600, 
-                                bearing: downwindAngle, // Rotated properly to match the heatmap
+                                bearing: downwindAngle, 
                                 anchor: const Offset(0.5, 0.5), 
                                 transparency: 0.2, 
                                 zIndex: 1, 

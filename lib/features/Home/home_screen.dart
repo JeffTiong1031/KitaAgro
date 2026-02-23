@@ -229,20 +229,17 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, snapshot) {
         final plants = snapshot.data ?? <Map<String, dynamic>>[];
 
-        final totalProgress = plants.fold<double>(
-          0,
+        // Calculate total carbon reduction
+        final totalCarbonReduction = plants.fold<double>(
+          0.0,
           (sum, plant) {
-            final totalDays = plant['totalDays'] as int;
-            final daysPlanted = plant['daysPlanted'] as int;
-            if (totalDays <= 0) {
-              return sum;
+            final carbon = plant['carbonReduction'];
+            if (carbon is num) {
+              return sum + carbon.toDouble();
             }
-            return sum + (daysPlanted / totalDays).clamp(0.0, 1.0);
+            return sum;
           },
         );
-
-        final averageProgress = plants.isEmpty ? 0.0 : (totalProgress / plants.length);
-        final progressPercent = (averageProgress * 100).round();
 
         return Container(
           color: Colors.grey[50],
@@ -251,64 +248,66 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  gradient: LinearGradient(
+                    colors: [Colors.green[700]!, Colors.green[500]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Column(
+                      child: Row(
                         children: [
-                          SizedBox(
-                            width: 120,
-                            height: 120,
-                            child: Stack(
-                              alignment: Alignment.center,
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.co2,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.grey[300]!,
-                                      width: 8,
+                                const Text(
+                                  'Carbon Reduction',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  totalCarbonReduction > 0
+                                      ? '${totalCarbonReduction.toStringAsFixed(1)} kg CO₂/year'
+                                      : 'Start planting',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                if (plants.isNotEmpty)
+                                  Text(
+                                    '${plants.length} ${plants.length == 1 ? 'plant' : 'plants'} in garden',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
                                     ),
                                   ),
-                                ),
-                                SizedBox(
-                                  width: 120,
-                                  height: 120,
-                                  child: CircularProgressIndicator(
-                                    value: averageProgress,
-                                    strokeWidth: 8,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.teal[400]!),
-                                    backgroundColor: Colors.transparent,
-                                  ),
-                                ),
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.black,
-                                  ),
-                                  child: const Icon(Icons.eco, color: Colors.white, size: 32),
-                                ),
                               ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            '$progressPercent%',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.teal[400],
-                            ),
-                          ),
-                          Text(
-                            plants.isEmpty ? 'No plants yet' : 'Average Growth',
-                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              color: Colors.grey[600],
                             ),
                           ),
                         ],
@@ -335,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                   return Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.blue[50],
+                                      color: Colors.white.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     padding: const EdgeInsets.all(12.0),
@@ -349,12 +348,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                               'Today',
                                               style: TextStyle(
                                                 fontSize: 12,
-                                                color: Colors.grey,
+                                                color: Colors.white70,
                                               ),
                                             ),
                                             Icon(
                                               weather != null ? _weatherIconForCode(weather.weatherCode) : Icons.cloud_outlined,
-                                              color: Colors.blue[600],
+                                              color: Colors.white,
                                               size: 20,
                                             ),
                                           ],
@@ -362,10 +361,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                         const SizedBox(height: 4),
                                         if (isLoading)
                                           const Text(
-                                            'Loading weather...',
+                                            'Loading...',
                                             style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
+                                              color: Colors.white,
                                             ),
                                           )
                                         else if (weather != null)
@@ -374,16 +374,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                             style: const TextStyle(
                                               fontSize: 20,
                                               fontWeight: FontWeight.bold,
+                                              color: Colors.white,
                                             ),
                                           )
                                         else
                                           Text(
                                             hasError
-                                                ? 'Weather unavailable'
-                                                : 'Set location first',
+                                                ? 'Unavailable'
+                                                : 'Set location',
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
+                                              color: Colors.white,
                                             ),
                                           ),
                                         const SizedBox(height: 2),
@@ -393,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               : locationText,
                                           style: const TextStyle(
                                             fontSize: 12,
-                                            color: Colors.grey,
+                                            color: Colors.white70,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -402,9 +404,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                           const SizedBox(height: 4),
                                           Text(
                                             _getWeatherAdvice(weather.temperatureCelsius, weather.weatherCode),
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               fontSize: 10,
-                                              color: Colors.blue[800],
+                                              color: Colors.white,
                                               fontWeight: FontWeight.w500,
                                             ),
                                             maxLines: 1,

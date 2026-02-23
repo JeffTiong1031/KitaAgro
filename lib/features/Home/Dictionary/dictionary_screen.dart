@@ -123,6 +123,11 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
     final int totalDays = _parseGrowthDays(plant['growthTime'] as String?);
     final IconData icon = plant['icon'] as IconData;
     final Color color = plant['color'] as Color;
+    final double carbonReduction = _estimateCarbonReduction(
+      plant['name'] as String,
+      plant['category'] as String,
+      totalDays,
+    );
 
     await FirebaseFirestore.instance
         .collection('users')
@@ -137,6 +142,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
           'plantedAt': Timestamp.now(),
           'icon': _iconName(icon),
           'color': color.value,
+          'carbonReduction': carbonReduction,
         });
 
     if (!mounted) {
@@ -181,6 +187,33 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
     }
 
     return value;
+  }
+
+  /// Estimate annual carbon reduction in kg CO2 per year based on plant type
+  double _estimateCarbonReduction(String name, String category, int totalDays) {
+    final nameLower = name.toLowerCase();
+    
+    // Trees absorb the most CO2
+    if (nameLower.contains('apple') || nameLower.contains('tree')) {
+      return 25.0; // Large trees: ~25kg CO2/year
+    }
+    
+    // Medium plants
+    if (nameLower.contains('papaya') || nameLower.contains('banana')) {
+      return 12.0; // Medium plants: ~12kg CO2/year
+    }
+    
+    // Vegetables and herbs based on category
+    switch (category.toLowerCase()) {
+      case 'vegetable':
+        return 2.5; // Small vegetables: ~2.5kg CO2/year
+      case 'herb':
+        return 1.5; // Herbs: ~1.5kg CO2/year
+      case 'fruit':
+        return 5.0; // Fruit plants: ~5kg CO2/year
+      default:
+        return 3.0; // Default: ~3kg CO2/year
+    }
   }
 
   String _iconName(IconData icon) {

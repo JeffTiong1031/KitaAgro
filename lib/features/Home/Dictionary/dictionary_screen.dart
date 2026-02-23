@@ -14,6 +14,8 @@ class DictionaryScreen extends StatefulWidget {
 
 class _DictionaryScreenState extends State<DictionaryScreen> {
   String _selectedCategory = 'All';
+  String _selectedCost = 'All';
+  String _selectedDifficulty = 'All';
   final ScrollController _gridController = ScrollController();
   final GeminiApiService _geminiService = GeminiApiService('AIzaSyBkgljGd-zVO4lV5Cqpfipo0Br8pKwBe-k');
 
@@ -24,22 +26,31 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
     'Herbs',
   ];
 
+  final List<String> _costFilters = ['All', 'Low', 'Medium', 'High'];
+  final List<String> _difficultyFilters = ['All', 'Easy', 'Medium', 'Hard'];
+
   final List<Map<String, dynamic>> _plants = [
     // Vegetables
     {
       'name': 'Tomato',
       'scientificName': 'Solanum lycopersicum',
       'category': 'Vegetables',
+      'cost': 'Low',
+      'difficulty': 'Easy',
       'icon': Icons.circle,
       'color': Color(0xFFE53935),
+      'growthTime': '80-100 days',
       'description': 'A popular garden vegetable rich in vitamins A and C. Tomatoes are used in salads, sauces, and many cuisines worldwide.',
     },
     {
       'name': 'Chili',
       'scientificName': 'Capsicum annuum',
       'category': 'Vegetables',
+      'cost': 'Low',
+      'difficulty': 'Medium',
       'icon': Icons.local_fire_department,
       'color': Color(0xFFD32F2F),
+      'growthTime': '90-120 days',
       'description': 'Spicy fruit used in many cuisines worldwide. Contains capsaicin which gives the heat.',
     },
     // Fruits
@@ -47,32 +58,44 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'name': 'Papaya',
       'scientificName': 'Carica papaya',
       'category': 'Fruits',
+      'cost': 'Medium',
+      'difficulty': 'Medium',
       'icon': Icons.spa,
       'color': Color(0xFFFFB300),
+      'growthTime': '240-330 days',
       'description': 'Tropical fruit with sweet orange flesh. Rich in enzymes and vitamins.',
     },
     {
       'name': 'Banana',
       'scientificName': 'Musa acuminata',
       'category': 'Fruits',
+      'cost': 'Medium',
+      'difficulty': 'Medium',
       'icon': Icons.nature,
       'color': Color(0xFFFFEB3B),
+      'growthTime': '270-360 days',
       'description': 'Tropical fruit rich in potassium. Requires warm frost-free climate (above 10°C year-round). Dies at 0°C. NOT suitable for temperate zones with winter frost.',
     },
     {
       'name': 'Strawberry',
       'scientificName': 'Fragaria × ananassa',
       'category': 'Fruits',
+      'cost': 'Medium',
+      'difficulty': 'Medium',
       'icon': Icons.local_florist,
       'color': Color(0xFFE91E63),
+      'growthTime': '90-120 days',
       'description': 'Sweet red fruit rich in vitamin C and antioxidants. Best with good drainage and regular care.',
     },
     {
       'name': 'Apple',
       'scientificName': 'Malus domestica',
       'category': 'Fruits',
+      'cost': 'High',
+      'difficulty': 'Hard',
       'icon': Icons.apple,
       'color': Color(0xFFEF5350),
+      'growthTime': '4-5 years',
       'description': 'Temperate fruit tree requiring 800-1000 chill hours (below 7°C). NOT suitable for tropical lowlands. Best in highland areas above 1000m elevation.',
     },
     // Herbs
@@ -80,19 +103,23 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'name': 'Pandan',
       'scientificName': 'Pandanus amaryllifolius',
       'category': 'Herbs',
+      'cost': 'Low',
+      'difficulty': 'Easy',
       'icon': Icons.grass,
       'color': Color(0xFF388E3C),
+      'growthTime': '120-180 days',
       'description': 'Fragrant leaves used in Southeast Asian desserts and rice dishes.',
     },
   ];
 
   List<Map<String, dynamic>> get _filteredPlants {
-    if (_selectedCategory == 'All') {
-      return _plants;
-    }
-    return _plants
-        .where((plant) => plant['category'] == _selectedCategory)
-        .toList();
+    return _plants.where((plant) {
+      final categoryMatch = _selectedCategory == 'All' || plant['category'] == _selectedCategory;
+      final costMatch = _selectedCost == 'All' || plant['cost'] == _selectedCost;
+      final difficultyMatch =
+          _selectedDifficulty == 'All' || plant['difficulty'] == _selectedDifficulty;
+      return categoryMatch && costMatch && difficultyMatch;
+    }).toList();
   }
 
   @override
@@ -116,6 +143,11 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
     final int totalDays = _parseGrowthDays(plant['growthTime'] as String?);
     final IconData icon = plant['icon'] as IconData;
     final Color color = plant['color'] as Color;
+    final double carbonReduction = _estimateCarbonReduction(
+      plant['name'] as String,
+      plant['category'] as String,
+      totalDays,
+    );
 
     await FirebaseFirestore.instance
         .collection('users')
@@ -130,6 +162,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
           'plantedAt': Timestamp.now(),
           'icon': _iconName(icon),
           'color': color.value,
+          'carbonReduction': carbonReduction,
         });
 
     if (!mounted) {
@@ -147,21 +180,60 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
 
   int _parseGrowthDays(String? growthTime) {
     if (growthTime == null || growthTime.trim().isEmpty) {
-      return 90; // Default 90 days if no data available
+      return 75;
     }
+
     final String lower = growthTime.toLowerCase();
-    final match = RegExp(r'(\d+)').firstMatch(lower);
-    if (match == null) {
-      return 90;
+    final numbers = RegExp(r'(\d+)')
+        .allMatches(lower)
+        .map((match) => int.tryParse(match.group(1) ?? ''))
+        .whereType<int>()
+        .toList();
+
+    if (numbers.isEmpty) {
+      return 75;
     }
-    final int value = int.tryParse(match.group(1) ?? '') ?? 90;
+
+    int value = numbers.length > 1 ? numbers.last : numbers.first;
+
+    if (lower.contains('week')) {
+      value *= 7;
+    }
     if (lower.contains('month')) {
-      return value * 30;
+      value *= 30;
     }
     if (lower.contains('year')) {
-      return value * 365;
+      value *= 365;
     }
+
     return value;
+  }
+
+  /// Estimate annual carbon reduction in kg CO2 per year based on plant type
+  double _estimateCarbonReduction(String name, String category, int totalDays) {
+    final nameLower = name.toLowerCase();
+    
+    // Trees absorb the most CO2
+    if (nameLower.contains('apple') || nameLower.contains('tree')) {
+      return 25.0; // Large trees: ~25kg CO2/year
+    }
+    
+    // Medium plants
+    if (nameLower.contains('papaya') || nameLower.contains('banana')) {
+      return 12.0; // Medium plants: ~12kg CO2/year
+    }
+    
+    // Vegetables and herbs based on category
+    switch (category.toLowerCase()) {
+      case 'vegetable':
+        return 2.5; // Small vegetables: ~2.5kg CO2/year
+      case 'herb':
+        return 1.5; // Herbs: ~1.5kg CO2/year
+      case 'fruit':
+        return 5.0; // Fruit plants: ~5kg CO2/year
+      default:
+        return 3.0; // Default: ~3kg CO2/year
+    }
   }
 
   String _iconName(IconData icon) {
@@ -245,6 +317,38 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
             ),
           ),
 
+          // Cost & difficulty filters
+          Container(
+            color: Color(0xFF2E7D32),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterDropdown(
+                    label: 'Cost',
+                    value: _selectedCost,
+                    options: _costFilters,
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _selectedCost = value);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterDropdown(
+                    label: 'Difficulty',
+                    value: _selectedDifficulty,
+                    options: _difficultyFilters,
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _selectedDifficulty = value);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           // Plant count
           Container(
             color: Color(0xFF1B5E20),
@@ -287,6 +391,38 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterDropdown({
+    required String label,
+    required String value,
+    required List<String> options,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          dropdownColor: const Color(0xFF2E7D32),
+          iconEnabledColor: Colors.white,
+          style: const TextStyle(color: Colors.white, fontSize: 13),
+          onChanged: onChanged,
+          items: options
+              .map(
+                (option) => DropdownMenuItem<String>(
+                  value: option,
+                  child: Text('$label: $option'),
+                ),
+              )
+              .toList(),
+        ),
       ),
     );
   }
@@ -340,11 +476,26 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                 plant['name'],
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
-                maxLines: 1,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                plant['scientificName'] as String,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 9,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -368,8 +519,6 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   }
 }
 
-// ========== AI-POWERED PLANT DETAIL SHEET ==========
-
 class _PlantDetailSheet extends StatefulWidget {
   final Map<String, dynamic> plant;
   final GeminiApiService geminiService;
@@ -386,16 +535,16 @@ class _PlantDetailSheet extends StatefulWidget {
 }
 
 class _PlantDetailSheetState extends State<_PlantDetailSheet> {
-  // Static cache to prevent duplicate API calls
   static final Map<String, Map<String, dynamic>> _aiCache = {};
-  
+  static DateTime? _aiQuotaCooldownUntil;
+
   Map<String, dynamic>? _aiAdvice;
   bool _isLoadingAI = true;
   String _locationName = 'Unknown';
   double _temperature = 25.0;
   String _weatherCondition = 'Clear';
-  String _debugError = ''; 
-  
+  String _debugError = '';
+
   // Track which cards are expanded
   final Set<String> _expandedCards = {};
 
@@ -469,6 +618,18 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
         });
         return;
       }
+
+      final now = DateTime.now();
+      if (_aiQuotaCooldownUntil != null && now.isBefore(_aiQuotaCooldownUntil!)) {
+        final fallback = _buildFallbackAdvice(plantName);
+        _aiCache[cacheKey] = fallback;
+        setState(() {
+          _aiAdvice = fallback;
+          _isLoadingAI = false;
+          _debugError = 'API cooling down. Using offline guidance.';
+        });
+        return;
+      }
       
       print('🤖 Calling Gemini AI for $plantName...');
       print('📍 Location: $_locationName');
@@ -495,11 +656,13 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
         _aiCache[cacheKey] = advice;
         _debugError = 'Data: OK ✓';
       } else {
-        print('⚠️ AI returned null - no fallback provided');
-        print('❌ Check Gemini API logs above for details');
-        _debugError = 'API quota exceeded. Try again in 1 minute.';
+        print('⚠️ AI returned null - using fallback guidance');
+        final fallback = _buildFallbackAdvice(plantName);
+        _aiCache[cacheKey] = fallback;
+        _aiQuotaCooldownUntil = DateTime.now().add(const Duration(seconds: 60));
+        _debugError = 'API quota exceeded. Showing offline guidance.';
         setState(() {
-          _aiAdvice = null;
+          _aiAdvice = fallback;
           _isLoadingAI = false;
         });
         return;
@@ -511,9 +674,45 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
       });
     } catch (e) {
       print('❌ Error fetching AI advice: $e');
-      _debugError = 'Exception: ${e.toString()}';
-      setState(() => _isLoadingAI = false);
+      final fallback = _buildFallbackAdvice(widget.plant['name']);
+      _debugError = 'Network issue. Showing offline guidance.';
+      setState(() {
+        _aiAdvice = fallback;
+        _isLoadingAI = false;
+      });
     }
+  }
+
+  Map<String, dynamic> _buildFallbackAdvice(String plantName) {
+    final category = (widget.plant['category'] as String? ?? '').toLowerCase();
+    final carbonByCategory = {
+      'vegetable': 'About 2-3 kg CO₂/year reduction',
+      'herb': 'About 1-2 kg CO₂/year reduction',
+      'fruit': 'About 5-12 kg CO₂/year reduction',
+    };
+
+    return {
+      'localMatchScore': 78,
+      'growingContext': '$plantName is suitable in $_locationName conditions.',
+      'growthTime': widget.plant['growthTime'] ?? '60-120 days',
+      'difficulty': 'Moderate - monitor weather and pests',
+      'sunlight': '4-6 hours sunlight daily',
+      'watering': _temperature >= 30 ? 'Water morning and late afternoon' : 'Water once daily',
+      'soil': 'Well-drained soil with compost',
+      'carbonReduction': carbonByCategory[category] ?? 'About 3-5 kg CO₂/year reduction',
+      'materialsNeeded': [
+        {'item': 'Organic compost', 'purpose': 'Improve soil fertility'},
+        {'item': 'Mulch', 'purpose': 'Keep moisture stable'},
+        {'item': 'Watering can', 'purpose': 'Gentle root watering'},
+        {'item': 'Neem spray', 'purpose': 'Prevent pests naturally'},
+      ],
+      'growthStages': [
+        {'stage': 'Seedling', 'startDay': 1, 'endDay': 14, 'description': 'Establish roots'},
+        {'stage': 'Vegetative', 'startDay': 15, 'endDay': 45, 'description': 'Leaf and stem growth'},
+        {'stage': 'Flowering', 'startDay': 46, 'endDay': 75, 'description': 'Flower formation'},
+        {'stage': 'Maturity', 'startDay': 76, 'endDay': 120, 'description': 'Harvest ready'},
+      ],
+    };
   }
 
   String _weatherCodeToCondition(int code) {

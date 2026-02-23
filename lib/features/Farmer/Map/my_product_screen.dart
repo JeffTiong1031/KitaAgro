@@ -26,18 +26,10 @@ class _MyProductScreenState extends State<MyProductScreen> {
   static const String _placeholderImageUrl =
       'https://placehold.co/600x400?text=Crop';
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> _productsStream() {
-    final user = FirebaseAuth.instance.currentUser;
-    Query<Map<String, dynamic>> query = _productsCollection.orderBy(
-      'harvestDate',
-      descending: true,
-    );
-
-    if (user != null) {
-      query = query.where('ownerId', isEqualTo: user.uid);
-    }
-
-    return query.snapshots();
+  Stream<QuerySnapshot<Map<String, dynamic>>> _productsStream(String userId) {
+    return _productsCollection
+        .where('userId', isEqualTo: userId)
+        .snapshots();
   }
 
   Future<void> _openProductForm({
@@ -132,6 +124,17 @@ class _MyProductScreenState extends State<MyProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('My Products')),
+        body: const Center(
+          child: Text('Please log in to view your products.'),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('My Products')),
       floatingActionButton: FloatingActionButton.extended(
@@ -140,7 +143,7 @@ class _MyProductScreenState extends State<MyProductScreen> {
         label: const Text('Add Product'),
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: _productsStream(),
+        stream: _productsStream(currentUser.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -152,7 +155,18 @@ class _MyProductScreenState extends State<MyProductScreen> {
             );
           }
 
-          final docs = snapshot.data?.docs ?? [];
+          final docs = List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(
+            snapshot.data?.docs ?? const [],
+          )..sort((first, second) {
+            final firstHarvest =
+                    (first.data()['harvestDate'] as Timestamp?)?.toDate() ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            final secondHarvest =
+                    (second.data()['harvestDate'] as Timestamp?)?.toDate() ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            return secondHarvest.compareTo(firstHarvest);
+          });
+
           if (docs.isEmpty) {
             return const Center(
               child: Text('No products yet. Tap "+" to add one.'),
@@ -517,7 +531,11 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     });
 
     try {
-      final ownerId = FirebaseAuth.instance.currentUser?.uid;
+      final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      if (currentUserId.isEmpty) {
+        throw StateError('Please log in to save your product.');
+      }
+
       final colorValue =
           _colorValue ??
           (selectedPlant != null
@@ -542,19 +560,22 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
           widget.initialProduct?.imageUrl ??
           widget.placeholderImageUrl;
 
-      final payload = {
-        'cropName': cropName,
-        'weight': parsedWeight,
-        'harvestDate': Timestamp.fromDate(harvestDate),
-        'contactNumber': contactNumber,
-        'imageUrl': imageUrl,
-        'latitude': _latitude,
-        'longitude': _longitude,
-        'address': _address ?? '',
-        'colorValue': colorValue,
-        'iconCodePoint': iconCodePoint,
-        'ownerId': ?ownerId,
-      };
+      final product = ProductListing(
+        id: widget.initialSnapshot?.id ?? '',
+        userId: currentUserId,
+        cropName: cropName,
+        weight: parsedWeight,
+        harvestDate: harvestDate,
+        contactNumber: contactNumber,
+        imageUrl: imageUrl,
+        latitude: _latitude!,
+        longitude: _longitude!,
+        address: _address ?? '',
+        colorValue: colorValue,
+        iconCodePoint: iconCodePoint,
+      );
+
+      final payload = product.toMap();
 
       if (widget.initialSnapshot != null) {
         await widget.initialSnapshot!.reference.update(payload);

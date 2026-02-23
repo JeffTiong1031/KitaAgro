@@ -4,10 +4,56 @@ import 'package:http/http.dart' as http;
 
 class GeminiApiService {
   final String apiKey;
+  static DateTime? _quotaCooldownUntil;
 
   GeminiApiService(this.apiKey);
 
+  bool get _isInQuotaCooldown {
+    final until = _quotaCooldownUntil;
+    return until != null && DateTime.now().isBefore(until);
+  }
+
+  void _startQuotaCooldownFromBody(String responseBody) {
+    final retrySeconds = _extractRetrySeconds(responseBody);
+    final cooldownSeconds = retrySeconds > 0 ? retrySeconds : 60;
+    _quotaCooldownUntil = DateTime.now().add(Duration(seconds: cooldownSeconds));
+  }
+
+  int _extractRetrySeconds(String responseBody) {
+    final match = RegExp(r'Please retry in\s+([0-9]+(?:\.[0-9]+)?)s', caseSensitive: false)
+        .firstMatch(responseBody);
+    if (match == null) {
+      return 0;
+    }
+    final value = double.tryParse(match.group(1) ?? '0') ?? 0;
+    return value.ceil();
+  }
+
+  String _buildPhotoFallback(String mode) {
+    if (mode.contains("pest")) {
+      return '''
+**Pest Name:** Unable to analyze now
+**Symptoms:** AI quota is temporarily exceeded, so image diagnosis is paused.
+**Solutions:** Retry after about one minute. Meanwhile, isolate affected leaves and avoid overwatering.
+
+**Short Advice:** Retry soon; keep leaves dry.
+''';
+    }
+
+    return '''
+**Deficiency Name:** Unable to analyze now
+**Symptoms:** AI quota is temporarily exceeded, so nutrient diagnosis is paused.
+**Solutions:** Retry after about one minute. Meanwhile, check soil moisture and use balanced fertilizer carefully.
+
+**Short Advice:** Retry soon; monitor leaf color.
+''';
+  }
+
   Future<String?> analyzeImage(String imagePath, String mode) async {
+    if (_isInQuotaCooldown) {
+      return _buildPhotoFallback(mode);
+    }
+
     // ⚠️ FIX: We found "gemini-2.5-flash" in your browser JSON list.
     // We must use that EXACT name.
     final String urlString =
@@ -74,6 +120,10 @@ At the VERY END of your response, on a new line, you MUST add this exact text:
         return jsonResponse['candidates']?[0]?['content']?['parts']?[0]?['text'] ??
             "Error: No text in response.";
       } else {
+        if (response.statusCode == 429) {
+          _startQuotaCooldownFromBody(response.body);
+          return _buildPhotoFallback(mode);
+        }
         return "Server Error ${response.statusCode}: ${response.body}";
       }
     } catch (e) {

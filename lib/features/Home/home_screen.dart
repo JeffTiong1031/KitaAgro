@@ -13,7 +13,8 @@ import 'package:kita_agro/features/Profile/single_post_screen.dart';
 import 'package:kita_agro/services/notification_service.dart';
 import 'package:kita_agro/features/community/community_service.dart';
 import 'package:kita_agro/features/Home/notification_screen.dart'; 
-import 'package:kita_agro/core/services/notification_storage.dart'; 
+import 'package:kita_agro/core/services/notification_storage.dart';
+import 'package:kita_agro/features/Home/ai_assistant_screen.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,6 +33,16 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime? _weatherFetchedAt;
   final NotificationService _notificationService = NotificationService();
   final CommunityService _communityService = CommunityService();
+
+  static const Map<String, int> _plantDetailDays = {
+    'Tomato': 100,
+    'Chili': 120,
+    'Papaya': 330,
+    'Banana': 360,
+    'Strawberry': 120,
+    'Apple': 1825,
+    'Pandan': 180,
+  };
 
   @override
   void dispose() {
@@ -218,53 +229,23 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, snapshot) {
         final plants = snapshot.data ?? <Map<String, dynamic>>[];
 
-        final totalProgress = plants.fold<double>(
-          0,
+        // Calculate total carbon reduction
+        final totalCarbonReduction = plants.fold<double>(
+          0.0,
           (sum, plant) {
-            final totalDays = plant['totalDays'] as int;
-            final daysPlanted = plant['daysPlanted'] as int;
-            if (totalDays <= 0) {
-              return sum;
+            final carbon = plant['carbonReduction'];
+            if (carbon is num) {
+              return sum + carbon.toDouble();
             }
-            return sum + (daysPlanted / totalDays).clamp(0.0, 1.0);
+            return sum;
           },
         );
 
-        final averageProgress = plants.isEmpty ? 0.0 : (totalProgress / plants.length);
-        final progressPercent = (averageProgress * 100).round();
-
-        Map<String, dynamic>? nextPlant;
-        int? nextHarvestDays;
-        for (final plant in plants) {
-          final totalDays = plant['totalDays'] as int;
-          final daysPlanted = plant['daysPlanted'] as int;
-          final remaining = totalDays - daysPlanted;
-          if (remaining <= 0) {
-            continue;
-          }
-          if (nextHarvestDays == null || remaining < nextHarvestDays) {
-            nextHarvestDays = remaining;
-            nextPlant = plant;
-          }
-        }
-
-        final reminderTitle = plants.isEmpty
-            ? 'Add your first plant'
-            : nextPlant == null
-                ? 'Ready to harvest'
-                : '${nextPlant['name']} in $nextHarvestDays day${nextHarvestDays == 1 ? '' : 's'}';
-
-        final reminderColor = plants.isEmpty
-            ? Colors.orange
-            : nextPlant == null
-                ? Colors.green
-                : Colors.red;
-
-        final reminderIcon = plants.isEmpty
-            ? Icons.add_circle_outline
-            : nextPlant == null
-                ? Icons.check_circle
-                : Icons.schedule;
+        const double carbonPerLevel = 30.0;
+        final int carbonLevel = (totalCarbonReduction ~/ carbonPerLevel) + 1;
+        final double currentLevelCarbon = totalCarbonReduction % carbonPerLevel;
+        final double levelProgress = (currentLevelCarbon / carbonPerLevel).clamp(0.0, 1.0);
+        final double remainToNextLevel = (carbonPerLevel - currentLevelCarbon) % carbonPerLevel;
 
         return Container(
           color: Colors.grey[50],
@@ -273,71 +254,131 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  gradient: LinearGradient(
+                    colors: [Colors.green[700]!, Colors.green[500]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Column(
-                        children: [
-                          SizedBox(
-                            width: 120,
-                            height: 120,
-                            child: Stack(
-                              alignment: Alignment.center,
+                      flex: 11,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white.withOpacity(0.20)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
                                 Container(
+                                  width: 40,
+                                  height: 40,
                                   decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.grey[300]!,
-                                      width: 8,
+                                    color: Colors.white.withOpacity(0.22),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.co2,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Carbon Emission Reduction',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.92),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
                                     ),
+                                    maxLines: 2,
                                   ),
-                                ),
-                                SizedBox(
-                                  width: 120,
-                                  height: 120,
-                                  child: CircularProgressIndicator(
-                                    value: averageProgress,
-                                    strokeWidth: 8,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.teal[400]!),
-                                    backgroundColor: Colors.transparent,
-                                  ),
-                                ),
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.black,
-                                  ),
-                                  child: const Icon(Icons.eco, color: Colors.white, size: 32),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            '$progressPercent%',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.teal[400],
+                            const SizedBox(height: 10),
+                            Text(
+                              totalCarbonReduction > 0
+                                  ? '${totalCarbonReduction.toStringAsFixed(1)} kg CO₂e/yr'
+                                  : 'Start planting to earn impact',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          Text(
-                            plants.isEmpty ? 'No plants yet' : 'Average Growth',
-                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              color: Colors.grey[600],
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.20),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    'Level $carbonLevel',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    '${remainToNextLevel == 0 ? carbonPerLevel.toStringAsFixed(0) : remainToNextLevel.toStringAsFixed(1)} kg to L${carbonLevel + 1}',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(999),
+                              child: LinearProgressIndicator(
+                                value: levelProgress,
+                                minHeight: 6,
+                                backgroundColor: Colors.white24,
+                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            ),
+                            if (plants.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                '${plants.length} ${plants.length == 1 ? 'plant' : 'plants'} contributing',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
+                      flex: 9,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -357,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                   return Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.blue[50],
+                                      color: Colors.white.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     padding: const EdgeInsets.all(12.0),
@@ -371,12 +412,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                               'Today',
                                               style: TextStyle(
                                                 fontSize: 12,
-                                                color: Colors.grey,
+                                                color: Colors.white70,
                                               ),
                                             ),
                                             Icon(
                                               weather != null ? _weatherIconForCode(weather.weatherCode) : Icons.cloud_outlined,
-                                              color: Colors.blue[600],
+                                              color: Colors.white,
                                               size: 20,
                                             ),
                                           ],
@@ -384,10 +425,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                         const SizedBox(height: 4),
                                         if (isLoading)
                                           const Text(
-                                            'Loading weather...',
+                                            'Loading...',
                                             style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
+                                              color: Colors.white,
                                             ),
                                           )
                                         else if (weather != null)
@@ -396,16 +438,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                             style: const TextStyle(
                                               fontSize: 20,
                                               fontWeight: FontWeight.bold,
+                                              color: Colors.white,
                                             ),
                                           )
                                         else
                                           Text(
                                             hasError
-                                                ? 'Weather unavailable'
-                                                : 'Set location first',
+                                                ? 'Unavailable'
+                                                : 'Set location',
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
+                                              color: Colors.white,
                                             ),
                                           ),
                                         const SizedBox(height: 2),
@@ -415,11 +459,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                               : locationText,
                                           style: const TextStyle(
                                             fontSize: 12,
-                                            color: Colors.grey,
+                                            color: Colors.white70,
                                           ),
-                                          maxLines: 2,
+                                          maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
+                                        if (weather != null) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _getWeatherAdvice(weather.temperatureCelsius, weather.weatherCode),
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   );
@@ -428,41 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                           ),
                           const SizedBox(height: 12),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.red[50],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text(
-                                      'Reminder',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                    Icon(reminderIcon, color: reminderColor, size: 20),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  reminderTitle,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
+                          _buildReminderCard(plants),
                         ],
                       ),
                     ),
@@ -648,6 +671,14 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.purple[100]!,
             icon: Icons.smart_toy,
             iconColor: Colors.purple,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AiAssistantScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -1004,7 +1035,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             SizedBox(
-              height: 220,
+              height: 264,
               child: PageView.builder(
                 key: const PageStorageKey<String>('my_garden_pageview'),
                 controller: _gardenCarouselController,
@@ -1017,6 +1048,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   final plant = plants[index];
                   final int totalDays = plant['totalDays'] as int;
                   final int daysPlanted = plant['daysPlanted'] as int;
+                  final int health = _calculateHealthFromPlant(plant);
+                  final String healthStatus = _healthStatusLabel(health);
+                  final Color healthColor = _healthStatusColor(health);
+                  final String latestPhotoStatus =
+                    ((plant['latestPhotoStatus'] as String?) ?? '').trim();
                   final double progress = totalDays <= 0
                       ? 0.0
                       : (daysPlanted / totalDays).clamp(0.0, 1.0);
@@ -1025,7 +1061,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       : (totalDays - daysPlanted);
 
                   return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -1056,9 +1092,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.all(16.0),
+                          padding: const EdgeInsets.all(14.0),
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
@@ -1097,6 +1132,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -1106,11 +1143,44 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontSize: 12,
                                   fontStyle: FontStyle.italic,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Text(
+                                    'Health: $healthStatus',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.95),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: LinearProgressIndicator(
+                                      value: health / 100,
+                                      backgroundColor: Colors.white.withOpacity(0.3),
+                                      valueColor: AlwaysStoppedAnimation<Color>(healthColor),
+                                      minHeight: 8,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    latestPhotoStatus.isNotEmpty
+                                        ? latestPhotoStatus
+                                        : 'No photo analysis yet',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 11,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 8),
                                   Text(
                                     'Growth Progress',
                                     style: TextStyle(
@@ -1206,20 +1276,291 @@ class _HomeScreenState extends State<HomeScreen> {
     final String name = (rawName == null || rawName.trim().isEmpty)
         ? 'Unnamed Plant'
         : rawName.trim();
+    final String category = (data['category'] as String? ?? '').trim();
     final String scientificName = data['scientificName'] as String? ?? '';
-    final int totalDays = _parsePositiveInt(data['totalDays'], fallback: 60);
+    final String latestPhotoStatus = data['latestPhotoStatus'] as String? ?? '';
+    final int rawTotalDays = _parsePositiveInt(data['totalDays'], fallback: 0);
+    final int totalDays = _resolvePlantTotalDays(
+      name: name,
+      storedTotalDays: rawTotalDays,
+    );
     final int daysPlanted = _resolveDaysPlanted(data, totalDays);
     final Color color = _parseColor(data['color']) ?? const Color(0xFF2E7D32);
     final IconData icon = _iconFromName(data['icon'] as String?);
+    final double carbonReduction = (data['carbonReduction'] as num?)?.toDouble() ??
+        _estimateCarbonReduction(
+          name: name,
+          category: category,
+          totalDays: totalDays,
+        );
 
     return {
       'name': name,
       'scientificName': scientificName,
+      'latestPhotoStatus': latestPhotoStatus,
       'daysPlanted': daysPlanted,
       'totalDays': totalDays,
       'icon': icon,
       'color': color,
+      'carbonReduction': carbonReduction,
     };
+  }
+
+  double _estimateCarbonReduction({
+    required String name,
+    required String category,
+    required int totalDays,
+  }) {
+    final nameLower = name.toLowerCase();
+    final categoryLower = category.toLowerCase();
+
+    if (nameLower.contains('apple') || nameLower.contains('tree')) {
+      return 25.0;
+    }
+
+    if (nameLower.contains('papaya') || nameLower.contains('banana')) {
+      return 12.0;
+    }
+
+    switch (categoryLower) {
+      case 'vegetable':
+        return 2.5;
+      case 'herb':
+        return 1.5;
+      case 'fruit':
+        return 5.0;
+      default:
+        return 3.0;
+    }
+  }
+
+  int _resolvePlantTotalDays({
+    required String name,
+    required int storedTotalDays,
+  }) {
+    final detailDays = _plantDetailDays[name];
+
+    if (storedTotalDays <= 0) {
+      return detailDays ?? 60;
+    }
+
+    if (storedTotalDays == 90 && detailDays != null && detailDays != 90) {
+      return detailDays;
+    }
+
+    return storedTotalDays;
+  }
+
+  int _healthFromStatus(String status) {
+    final normalized = status.toLowerCase();
+    if (normalized.contains('healthy')) return 90;
+    if (normalized.contains('critical')) return 20;
+    if (normalized.contains('attention') || normalized.contains('warning')) return 55;
+    if (normalized.contains('unknown')) return 50;
+    return 60;
+  }
+
+  int _calculateHealthFromPlant(Map<String, dynamic> plant) {
+    final String latestStatus = ((plant['latestPhotoStatus'] as String?) ?? '').trim();
+    if (latestStatus.isNotEmpty) {
+      return _healthFromStatus(latestStatus);
+    }
+    return 50;
+  }
+
+  String _healthStatusLabel(int health) {
+    if (health >= 85) return 'Healthy';
+    if (health >= 65) return 'Stable';
+    if (health >= 40) return 'Needs Attention';
+    return 'Critical';
+  }
+
+  Color _healthStatusColor(int health) {
+    if (health >= 85) return const Color(0xFF2E7D32);
+    if (health >= 65) return Colors.lightGreen;
+    if (health >= 40) return Colors.orange;
+    return Colors.red;
+  }
+
+  String _todayKey() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildReminderCard(List<Map<String, dynamic>> plants) {
+    if (plants.isEmpty) {
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MyJourneyScreen()),
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.orange[50],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Reminder',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  Icon(Icons.add_circle_outline, color: Colors.orange, size: 20),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Add your first plant',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return StreamBuilder<Map<String, int>>(
+      stream: _pendingTasksStream(),
+      builder: (context, snapshot) {
+        final taskData = snapshot.data ?? {};
+        final totalPending = taskData['pending'] ?? 0;
+        final totalTasks = taskData['total'] ?? 0;
+
+        final reminderColor = totalPending == 0 ? Colors.green : Colors.orange;
+        final reminderIcon = totalPending == 0 ? Icons.check_circle : Icons.task_alt;
+        final reminderTitle = totalPending == 0
+            ? 'All tasks done today!'
+            : '$totalPending task${totalPending > 1 ? 's' : ''} pending';
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MyJourneyScreen()),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: totalPending == 0 ? Colors.green[50] : Colors.orange[50],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Daily Tasks',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    Icon(reminderIcon, color: reminderColor, size: 20),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  reminderTitle,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Stream<Map<String, int>> _pendingTasksStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Stream.value({'total': 0, 'pending': 0});
+    }
+
+    final todayKey = _todayKey();
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('plantations')
+        .snapshots()
+        .map((snapshot) {
+      int totalTasks = 0;
+      int completedTasks = 0;
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final dailyTasks = data['dailyTasks'] as Map<String, dynamic>?;
+        if (dailyTasks != null) {
+          final todayData = dailyTasks[todayKey] as Map<String, dynamic>?;
+          if (todayData != null) {
+            final tasks = (todayData['tasks'] as List<dynamic>?) ?? [];
+            final completed = (todayData['completed'] as List<dynamic>?) ?? [];
+            totalTasks += tasks.length;
+            completedTasks += completed.length;
+          }
+        }
+      }
+
+      return {
+        'total': totalTasks,
+        'pending': totalTasks - completedTasks,
+      };
+    });
+  }
+
+  String _getWeatherAdvice(double temp, int weatherCode) {
+    // Rain conditions
+    if (weatherCode >= 51 && weatherCode <= 67) {
+      return '☔ Skip watering today';
+    }
+    if (weatherCode >= 80 && weatherCode <= 82) {
+      return '🌧️ Natural watering expected';
+    }
+    
+    // Temperature-based advice
+    if (temp > 35) {
+      return '🔥 Too hot, provide shade';
+    }
+    if (temp > 30) {
+      return '☀️ Hot day, check soil moisture';
+    }
+    if (temp >= 25 && temp <= 30) {
+      if (weatherCode == 0) {
+        return '✅ Perfect for most crops';
+      }
+      return '👍 Good growing conditions';
+    }
+    if (temp >= 20 && temp < 25) {
+      return '🌤️ Pleasant, water normally';
+    }
+    if (temp < 20) {
+      return '❄️ Cool, reduce watering';
+    }
+    
+    return '🌱 Check plant needs';
   }
 
   int _parsePositiveInt(dynamic value, {required int fallback}) {

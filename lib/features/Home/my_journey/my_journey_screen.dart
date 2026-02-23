@@ -69,6 +69,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     _loadCompletedTasks();
     _backfillLatestPhotoStatus();
     _backfillPlantTotalDays();
+    _backfillCarbonReduction();
     // Preload tasks for all plants after a short delay
     Future.delayed(const Duration(milliseconds: 500), _preloadAllTasks);
   }
@@ -168,6 +169,76 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       }
     } catch (e) {
       print('Error backfilling plant totalDays: $e');
+    }
+  }
+
+  Future<void> _backfillCarbonReduction() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final plantationsRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations');
+
+      final snapshot = await plantationsRef.get();
+      final batch = FirebaseFirestore.instance.batch();
+      int updatedCount = 0;
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final existingCarbon = data['carbonReduction'];
+        
+        // Skip if carbonReduction already exists
+        if (existingCarbon != null) continue;
+
+        final name = (data['name'] as String?)?.trim() ?? 'Unnamed Plant';
+        final category = (data['category'] as String?)?.trim() ?? 'Unknown';
+        final totalDays = (data['totalDays'] as num?)?.toInt() ?? 90;
+        
+        final carbonReduction = _estimateCarbonReduction(name, category, totalDays);
+
+        batch.set(doc.reference, {
+          'carbonReduction': carbonReduction,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        updatedCount++;
+      }
+
+      if (updatedCount > 0) {
+        await batch.commit();
+        print('✅ Backfilled carbonReduction for $updatedCount plant(s)');
+      }
+    } catch (e) {
+      print('Error backfilling carbonReduction: $e');
+    }
+  }
+
+  /// Estimate annual carbon reduction in kg CO2 per year based on plant type
+  double _estimateCarbonReduction(String name, String category, int totalDays) {
+    final nameLower = name.toLowerCase();
+    
+    // Trees absorb the most CO2
+    if (nameLower.contains('apple') || nameLower.contains('tree')) {
+      return 25.0; // Large trees: ~25kg CO2/year
+    }
+    
+    // Medium plants
+    if (nameLower.contains('papaya') || nameLower.contains('banana')) {
+      return 12.0; // Medium plants: ~12kg CO2/year
+    }
+    
+    // Vegetables and herbs based on category
+    switch (category.toLowerCase()) {
+      case 'vegetable':
+        return 2.5; // Small vegetables: ~2.5kg CO2/year
+      case 'herb':
+        return 1.5; // Herbs: ~1.5kg CO2/year
+      case 'fruit':
+        return 5.0; // Fruit plants: ~5kg CO2/year
+      default:
+        return 3.0; // Default: ~3kg CO2/year
     }
   }
 

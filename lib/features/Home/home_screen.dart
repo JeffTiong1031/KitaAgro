@@ -241,6 +241,12 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
 
+        const double carbonPerLevel = 30.0;
+        final int carbonLevel = (totalCarbonReduction ~/ carbonPerLevel) + 1;
+        final double currentLevelCarbon = totalCarbonReduction % carbonPerLevel;
+        final double levelProgress = (currentLevelCarbon / carbonPerLevel).clamp(0.0, 1.0);
+        final double remainToNextLevel = (carbonPerLevel - currentLevelCarbon) % carbonPerLevel;
+
         return Container(
           color: Colors.grey[50],
           padding: const EdgeInsets.all(16.0),
@@ -259,62 +265,120 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.co2,
-                              color: Colors.white,
-                              size: 32,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      flex: 11,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white.withOpacity(0.20)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
-                                const Text(
-                                  'Carbon Reduction',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.22),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  totalCarbonReduction > 0
-                                      ? '${totalCarbonReduction.toStringAsFixed(1)} kg CO₂/year'
-                                      : 'Start planting',
-                                  style: const TextStyle(
+                                  child: const Icon(
+                                    Icons.co2,
                                     color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
+                                    size: 22,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                if (plants.isNotEmpty)
-                                  Text(
-                                    '${plants.length} ${plants.length == 1 ? 'plant' : 'plants'} in garden',
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Carbon Emission Reduction',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.92),
                                       fontSize: 11,
+                                      fontWeight: FontWeight.w600,
                                     ),
+                                    maxLines: 2,
                                   ),
+                                ),
                               ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 10),
+                            Text(
+                              totalCarbonReduction > 0
+                                  ? '${totalCarbonReduction.toStringAsFixed(1)} kg CO₂e/yr'
+                                  : 'Start planting to earn impact',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.20),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    'Level $carbonLevel',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    '${remainToNextLevel == 0 ? carbonPerLevel.toStringAsFixed(0) : remainToNextLevel.toStringAsFixed(1)} kg to L${carbonLevel + 1}',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(999),
+                              child: LinearProgressIndicator(
+                                value: levelProgress,
+                                minHeight: 6,
+                                backgroundColor: Colors.white24,
+                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            ),
+                            if (plants.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                '${plants.length} ${plants.length == 1 ? 'plant' : 'plants'} contributing',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
+                      flex: 9,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -1212,6 +1276,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final String name = (rawName == null || rawName.trim().isEmpty)
         ? 'Unnamed Plant'
         : rawName.trim();
+    final String category = (data['category'] as String? ?? '').trim();
     final String scientificName = data['scientificName'] as String? ?? '';
     final String latestPhotoStatus = data['latestPhotoStatus'] as String? ?? '';
     final int rawTotalDays = _parsePositiveInt(data['totalDays'], fallback: 0);
@@ -1222,6 +1287,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final int daysPlanted = _resolveDaysPlanted(data, totalDays);
     final Color color = _parseColor(data['color']) ?? const Color(0xFF2E7D32);
     final IconData icon = _iconFromName(data['icon'] as String?);
+    final double carbonReduction = (data['carbonReduction'] as num?)?.toDouble() ??
+        _estimateCarbonReduction(
+          name: name,
+          category: category,
+          totalDays: totalDays,
+        );
 
     return {
       'name': name,
@@ -1231,7 +1302,36 @@ class _HomeScreenState extends State<HomeScreen> {
       'totalDays': totalDays,
       'icon': icon,
       'color': color,
+      'carbonReduction': carbonReduction,
     };
+  }
+
+  double _estimateCarbonReduction({
+    required String name,
+    required String category,
+    required int totalDays,
+  }) {
+    final nameLower = name.toLowerCase();
+    final categoryLower = category.toLowerCase();
+
+    if (nameLower.contains('apple') || nameLower.contains('tree')) {
+      return 25.0;
+    }
+
+    if (nameLower.contains('papaya') || nameLower.contains('banana')) {
+      return 12.0;
+    }
+
+    switch (categoryLower) {
+      case 'vegetable':
+        return 2.5;
+      case 'herb':
+        return 1.5;
+      case 'fruit':
+        return 5.0;
+      default:
+        return 3.0;
+    }
   }
 
   int _resolvePlantTotalDays({

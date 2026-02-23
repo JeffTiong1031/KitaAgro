@@ -26,7 +26,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
 
   final GeminiApiService _geminiApi = GeminiApiService('AIzaSyBkgljGd-zVO4lV5Cqpfipo0Br8pKwBe-k');
 
-  String _sortBy = 'name'; // 'name', 'daysPlanted', 'health'
+  String _sortBy = 'newest'; // 'newest', 'name', 'daysPlanted', 'health'
   bool _gardenLocationLoading = false;
   String? _gardenAddress;
   double? _gardenLatitude;
@@ -67,6 +67,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     super.initState();
     _loadGardenLocation();
     _loadCompletedTasks();
+    _backfillPlantingDates();
     _backfillLatestPhotoStatus();
     _backfillPlantTotalDays();
     _backfillCarbonReduction();
@@ -212,6 +213,65 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       }
     } catch (e) {
       print('Error backfilling carbonReduction: $e');
+    }
+  }
+
+  Future<void> _backfillPlantingDates() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final plantationsRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations');
+
+      final snapshot = await plantationsRef.get();
+      final batch = FirebaseFirestore.instance.batch();
+      int updatedCount = 0;
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final plantedAt = data['plantedAt'];
+        final storedDays = (data['daysPlanted'] as num?)?.toInt() ?? 0;
+
+        Timestamp resolvedPlantedAt;
+        if (plantedAt is Timestamp) {
+          resolvedPlantedAt = plantedAt;
+        } else {
+          final safeDays = storedDays < 0 ? 0 : storedDays;
+          final inferredDate = DateTime.now().subtract(Duration(days: safeDays));
+          resolvedPlantedAt = Timestamp.fromDate(
+            DateTime(inferredDate.year, inferredDate.month, inferredDate.day),
+          );
+        }
+
+        final syncedDays = (DateTime.now()
+              .difference(resolvedPlantedAt.toDate())
+              .inDays +
+            1)
+          .clamp(1, 99999);
+
+        final needsPlantedAt = plantedAt is! Timestamp;
+        final needsDaysSync = syncedDays != storedDays;
+        if (!needsPlantedAt && !needsDaysSync) {
+          continue;
+        }
+
+        batch.set(doc.reference, {
+          'plantedAt': resolvedPlantedAt,
+          'daysPlanted': syncedDays,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        updatedCount++;
+      }
+
+      if (updatedCount > 0) {
+        await batch.commit();
+        print('✅ Backfilled planting dates for $updatedCount plant(s)');
+      }
+    } catch (e) {
+      print('Error backfilling planting dates: $e');
     }
   }
 
@@ -587,12 +647,13 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
+    final safeDay = daysPlanted < 1 ? 1 : daysPlanted;
 
     // Immediately add to local cache with local file path so gallery works right away
     _photoTimeline.putIfAbsent(plantId, () => []);
     final localEntry = {
       'url': imagePath, // Use local path first
-      'day': daysPlanted,
+      'day': safeDay,
       'date': _todayKey,
       'status': status,
       'diagnosis': diagnosis,
@@ -614,7 +675,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       // Save metadata to Firestore
       final photoData = {
         'url': downloadUrl,
-        'day': daysPlanted,
+        'day': safeDay,
         'date': _todayKey,
         'timestamp': FieldValue.serverTimestamp(),
         'status': status,
@@ -644,7 +705,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       localEntry['url'] = downloadUrl;
       localEntry['isLocal'] = false;
 
-      print('\u2705 Photo saved: day $daysPlanted, $status');
+      print('\u2705 Photo saved: day $safeDay, $status');
     } catch (e) {
       print('\u274c Photo upload error: $e');
     }
@@ -719,9 +780,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
 
       final photos = snapshot.docs.map((doc) {
         final data = doc.data();
+        final storedDay = (data['day'] as int?) ?? 1;
         return {
           'url': data['url'] as String? ?? '',
-          'day': data['day'] as int? ?? 0,
+          'day': storedDay < 1 ? 1 : storedDay,
           'date': data['date'] as String? ?? '',
           'status': data['status'] as String? ?? 'Unknown',
           'diagnosis': data['diagnosis'] as String? ?? '',
@@ -744,9 +806,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
 
         final photos = snapshot.docs.map((doc) {
           final data = doc.data();
+          final storedDay = (data['day'] as int?) ?? 1;
           return {
             'url': data['url'] as String? ?? '',
-            'day': data['day'] as int? ?? 0,
+            'day': storedDay < 1 ? 1 : storedDay,
             'date': data['date'] as String? ?? '',
             'status': data['status'] as String? ?? 'Unknown',
             'diagnosis': data['diagnosis'] as String? ?? '',
@@ -1188,17 +1251,6 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                 icon: const Icon(Icons.edit_location_alt),
                 label: Text(hasLocation ? 'Edit Location' : 'Set Location'),
               ),
-              const SizedBox(width: 10),
-              if (_googleMapsApiKey.isEmpty)
-                Expanded(
-                  child: Text(
-                    'Tip: pass --dart-define=GOOGLE_MAPS_API_KEY=YOUR_KEY for Places search.',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.orange.shade800,
-                    ),
-                  ),
-                ),
             ],
           ),
         ],
@@ -1220,6 +1272,22 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
           final plants = snapshot.docs.map((doc) => _mapGardenPlant(doc)).toList();
           // Sort based on selected criteria
           switch (_sortBy) {
+            case 'newest':
+              plants.sort((a, b) {
+                final aPlantedAt = a['plantedAt'] as Timestamp?;
+                final bPlantedAt = b['plantedAt'] as Timestamp?;
+
+                if (aPlantedAt != null && bPlantedAt != null) {
+                  return bPlantedAt.compareTo(aPlantedAt);
+                }
+                if (aPlantedAt != null) return -1;
+                if (bPlantedAt != null) return 1;
+
+                final aDays = (a['daysPlanted'] as int?) ?? 0;
+                final bDays = (b['daysPlanted'] as int?) ?? 0;
+                return aDays.compareTo(bDays);
+              });
+              break;
             case 'daysPlanted':
               plants.sort((a, b) => (b['daysPlanted'] as int).compareTo(a['daysPlanted'] as int));
               break;
@@ -1256,7 +1324,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
 
     int actualDaysPlanted = daysPlanted;
     if (plantedAt != null) {
-      actualDaysPlanted = DateTime.now().difference(plantedAt.toDate()).inDays;
+      actualDaysPlanted = DateTime.now().difference(plantedAt.toDate()).inDays + 1;
+    }
+    if (actualDaysPlanted < 1) {
+      actualDaysPlanted = 1;
     }
 
     return {
@@ -1451,6 +1522,8 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
+                  _buildSortButton('Newest', 'newest'),
+                  const SizedBox(width: 8),
                   _buildSortButton('Name', 'name'),
                   const SizedBox(width: 8),
                   _buildSortButton('Days Planted', 'daysPlanted'),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'package:kita_agro/models/product_listing.dart';
+import 'package:kita_agro/widgets/dynamic_contact_button.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -128,6 +129,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                DynamicContactButton(ownerId: product.userId),
               ],
             ),
           ),

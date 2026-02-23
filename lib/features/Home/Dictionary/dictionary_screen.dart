@@ -32,6 +32,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.circle,
       'color': Color(0xFFE53935),
+      'growthTime': '80-100 days',
       'description': 'A popular garden vegetable rich in vitamins A and C. Tomatoes are used in salads, sauces, and many cuisines worldwide.',
     },
     {
@@ -40,6 +41,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Vegetables',
       'icon': Icons.local_fire_department,
       'color': Color(0xFFD32F2F),
+      'growthTime': '90-120 days',
       'description': 'Spicy fruit used in many cuisines worldwide. Contains capsaicin which gives the heat.',
     },
     // Fruits
@@ -49,6 +51,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.spa,
       'color': Color(0xFFFFB300),
+      'growthTime': '240-330 days',
       'description': 'Tropical fruit with sweet orange flesh. Rich in enzymes and vitamins.',
     },
     {
@@ -57,6 +60,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.nature,
       'color': Color(0xFFFFEB3B),
+      'growthTime': '270-360 days',
       'description': 'Tropical fruit rich in potassium. Requires warm frost-free climate (above 10°C year-round). Dies at 0°C. NOT suitable for temperate zones with winter frost.',
     },
     {
@@ -65,6 +69,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.local_florist,
       'color': Color(0xFFE91E63),
+      'growthTime': '90-120 days',
       'description': 'Sweet red fruit rich in vitamin C and antioxidants. Best with good drainage and regular care.',
     },
     {
@@ -73,6 +78,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Fruits',
       'icon': Icons.apple,
       'color': Color(0xFFEF5350),
+      'growthTime': '4-5 years',
       'description': 'Temperate fruit tree requiring 800-1000 chill hours (below 7°C). NOT suitable for tropical lowlands. Best in highland areas above 1000m elevation.',
     },
     // Herbs
@@ -82,6 +88,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'category': 'Herbs',
       'icon': Icons.grass,
       'color': Color(0xFF388E3C),
+      'growthTime': '120-180 days',
       'description': 'Fragrant leaves used in Southeast Asian desserts and rice dishes.',
     },
   ];
@@ -147,20 +154,32 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
 
   int _parseGrowthDays(String? growthTime) {
     if (growthTime == null || growthTime.trim().isEmpty) {
-      return 90; // Default 90 days if no data available
+      return 75;
     }
+
     final String lower = growthTime.toLowerCase();
-    final match = RegExp(r'(\d+)').firstMatch(lower);
-    if (match == null) {
-      return 90;
+    final numbers = RegExp(r'(\d+)')
+        .allMatches(lower)
+        .map((match) => int.tryParse(match.group(1) ?? ''))
+        .whereType<int>()
+        .toList();
+
+    if (numbers.isEmpty) {
+      return 75;
     }
-    final int value = int.tryParse(match.group(1) ?? '') ?? 90;
+
+    int value = numbers.length > 1 ? numbers.last : numbers.first;
+
+    if (lower.contains('week')) {
+      value *= 7;
+    }
     if (lower.contains('month')) {
-      return value * 30;
+      value *= 30;
     }
     if (lower.contains('year')) {
-      return value * 365;
+      value *= 365;
     }
+
     return value;
   }
 

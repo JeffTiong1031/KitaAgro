@@ -36,10 +36,13 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   // Expandable task dropdown state
   String? _expandedPlantId;
   final Map<String, List<Map<String, String>>> _plantTasks = {};
-  final Map<String, Set<int>> _completedTasks = {};
+  final ValueNotifier<Map<String, Set<int>>> _completedTasksNotifier = ValueNotifier({});
   final Map<String, bool> _taskLoading = {};
   // Cache key: plantId + date string to avoid re-fetching same day
   final Map<String, String> _taskCacheDate = {};
+  
+  // Helper getter for backward compatibility
+  Map<String, Set<int>> get _completedTasks => _completedTasksNotifier.value;
 
   // Photo analysis state
   final ImagePicker _imagePicker = ImagePicker();
@@ -49,11 +52,123 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   // Photo timeline state: plantId -> list of {url, day, date, status, diagnosis}
   final Map<String, List<Map<String, dynamic>>> _photoTimeline = {};
 
+  static const Map<String, int> _plantDetailDays = {
+    'Tomato': 100,
+    'Chili': 120,
+    'Papaya': 330,
+    'Banana': 360,
+    'Strawberry': 120,
+    'Apple': 1825,
+    'Pandan': 180,
+  };
+
   @override
   void initState() {
     super.initState();
     _loadGardenLocation();
     _loadCompletedTasks();
+    _backfillLatestPhotoStatus();
+    _backfillPlantTotalDays();
+    // Preload tasks for all plants after a short delay
+    Future.delayed(const Duration(milliseconds: 500), _preloadAllTasks);
+  }
+
+  @override
+  void dispose() {
+    _completedTasksNotifier.dispose();
+    super.dispose();
+  }
+
+  Future<void> _backfillLatestPhotoStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final plantations = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations')
+          .get();
+
+      for (final plantDoc in plantations.docs) {
+        final data = plantDoc.data();
+        final latestStatus = (data['latestPhotoStatus'] as String?)?.trim();
+        if (latestStatus != null && latestStatus.isNotEmpty) {
+          continue;
+        }
+
+        final photoSnap = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('plantations')
+            .doc(plantDoc.id)
+            .collection('photos')
+            .orderBy('timestamp', descending: true)
+            .limit(1)
+            .get();
+
+        if (photoSnap.docs.isEmpty) continue;
+
+        final latestPhoto = photoSnap.docs.first.data();
+        final status = (latestPhoto['status'] as String?) ?? 'Unknown';
+        final diagnosis = (latestPhoto['diagnosis'] as String?) ?? '';
+        final date = (latestPhoto['date'] as String?) ?? _todayKey;
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('plantations')
+            .doc(plantDoc.id)
+            .set({
+          'latestPhotoStatus': status,
+          'latestPhotoDiagnosis': diagnosis,
+          'latestPhotoDate': date,
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      print('Error backfilling latest photo status: $e');
+    }
+  }
+
+  Future<void> _backfillPlantTotalDays() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final plantationsRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations');
+
+      final snapshot = await plantationsRef.get();
+      final batch = FirebaseFirestore.instance.batch();
+      int updatedCount = 0;
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final name = (data['name'] as String?)?.trim() ?? 'Unnamed Plant';
+        final storedTotalDays = (data['totalDays'] as num?)?.toInt() ?? 0;
+        final resolvedTotalDays = _resolvePlantTotalDays(
+          name: name,
+          storedTotalDays: storedTotalDays,
+        );
+
+        if (resolvedTotalDays != storedTotalDays) {
+          batch.set(doc.reference, {
+            'totalDays': resolvedTotalDays,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          updatedCount++;
+        }
+      }
+
+      if (updatedCount > 0) {
+        await batch.commit();
+        print('✅ Backfilled totalDays for $updatedCount plant(s)');
+      }
+    } catch (e) {
+      print('Error backfilling plant totalDays: $e');
+    }
   }
 
   DocumentReference<Map<String, dynamic>>? _userDocRef() {
@@ -67,6 +182,12 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   String get _todayKey {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Check if cached tasks are still valid (same date)
+  /// Tasks automatically refresh at midnight when _todayKey changes
+  bool _areTasksValidForToday(String plantId) {
+    return _taskCacheDate[plantId] == _todayKey && _plantTasks.containsKey(plantId);
   }
 
   /// Load completed tasks from Firestore for today
@@ -88,7 +209,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
           final todayData = todayTasks[_todayKey] as Map<String, dynamic>?;
           if (todayData != null) {
             final completed = (todayData['completed'] as List<dynamic>?) ?? [];
-            _completedTasks[doc.id] = completed.map<int>((e) => e as int).toSet();
+            final completedSet = completed.map<int>((e) => e as int).toSet();
+            final current = _completedTasksNotifier.value;
+            current[doc.id] = completedSet;
+            _completedTasksNotifier.value = Map.from(current);
 
             // Also restore cached tasks if available
             final cachedTasks = (todayData['tasks'] as List<dynamic>?);
@@ -104,9 +228,83 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
           }
         }
       }
-      if (mounted) setState(() {});
     } catch (e) {
       print('Error loading completed tasks: $e');
+    }
+  }
+
+  /// Preload daily tasks for all plants to avoid lazy loading
+  Future<void> _preloadAllTasks() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations')
+          .get();
+
+      final weather = await _getWeatherData();
+      final location = _gardenAddress ?? 'Malaysia';
+      final temp = weather['temperature'] as double;
+      final condition = weather['condition'] as String;
+
+      for (final doc in snapshot.docs) {
+        final plantId = doc.id;
+        
+        // Skip if already have today's tasks
+        if (_areTasksValidForToday(plantId)) {
+          continue;
+        }
+
+        final data = doc.data();
+        final plantName = data['name'] as String? ?? 'Plant';
+        final rawTotalDays = (data['totalDays'] as num?)?.toInt() ?? 0;
+        final totalDays = _resolvePlantTotalDays(
+          name: plantName,
+          storedTotalDays: rawTotalDays,
+        );
+        final plant = {
+          'name': plantName,
+          'scientificName': data['scientificName'] as String? ?? '',
+          'category': data['category'] as String? ?? 'Unknown',
+          'daysPlanted': (data['daysPlanted'] as num?)?.toInt() ?? 0,
+          'totalDays': totalDays,
+        };
+
+        try {
+          final tasks = await _geminiApi.generateDailyTasks(
+            plantName: plant['name'] as String,
+            scientificName: plant['scientificName'] as String,
+            category: plant['category'] as String,
+            daysPlanted: plant['daysPlanted'] as int,
+            totalDays: plant['totalDays'] as int,
+            location: location,
+            temperature: temp,
+            weatherCondition: condition,
+          );
+
+          if (tasks != null && tasks.isNotEmpty) {
+            _plantTasks[plantId] = tasks;
+            _taskCacheDate[plantId] = _todayKey;
+            
+            // Initialize completed set if absent
+            final current = _completedTasksNotifier.value;
+            current.putIfAbsent(plantId, () => <int>{});
+            _completedTasksNotifier.value = Map.from(current);
+
+            // Persist to Firestore
+            await _saveTasksToFirestore(plantId, tasks);
+          }
+        } catch (e) {
+          print('Error preloading tasks for $plantId: $e');
+        }
+      }
+
+      if (mounted) setState(() {}); // Single rebuild after all tasks loaded
+    } catch (e) {
+      print('Error in preloadAllTasks: $e');
     }
   }
 
@@ -360,6 +558,17 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
           .collection('photos')
           .add(photoData);
 
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations')
+          .doc(plantId)
+          .set({
+        'latestPhotoStatus': status,
+        'latestPhotoDiagnosis': diagnosis,
+        'latestPhotoDate': _todayKey,
+      }, SetOptions(merge: true));
+
       // Update the local entry with the remote URL
       localEntry['url'] = downloadUrl;
       localEntry['isLocal'] = false;
@@ -401,6 +610,17 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
           };
         });
       }
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('plantations')
+          .doc(plantId)
+          .set({
+        'latestPhotoStatus': status,
+        'latestPhotoDiagnosis': diagnosis,
+        'latestPhotoDate': data['date'] as String? ?? _todayKey,
+      }, SetOptions(merge: true));
     } catch (e) {
       print('Error restoring analysis: $e');
     }
@@ -554,8 +774,8 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       _restoreLatestAnalysis(plantId);
     }
 
-    // Already have today's tasks cached
-    if (_taskCacheDate[plantId] == _todayKey && _plantTasks.containsKey(plantId)) {
+    // Already have today's tasks cached (refreshes only at midnight when date changes)
+    if (_areTasksValidForToday(plantId)) {
       return;
     }
 
@@ -585,7 +805,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
         _plantTasks[plantId] = tasks;
         _taskCacheDate[plantId] = _todayKey;
         // Initialize completed set if absent
-        _completedTasks.putIfAbsent(plantId, () => <int>{});
+        final current = _completedTasksNotifier.value;
+        current.putIfAbsent(plantId, () => <int>{});
+        _completedTasksNotifier.value = Map.from(current);
 
         // Persist generated tasks to Firestore
         _saveTasksToFirestore(plantId, tasks);
@@ -614,7 +836,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
         'dailyTasks': {
           _todayKey: {
             'tasks': tasks,
-            'completed': (_completedTasks[plantId] ?? <int>{}).toList(),
+            'completed': (_completedTasksNotifier.value[plantId] ?? <int>{}).toList(),
           }
         }
       }, SetOptions(merge: true));
@@ -625,16 +847,19 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
 
   /// Toggle task completion and persist
   void _toggleTaskCompletion(String plantId, int taskIndex) {
-    setState(() {
-      _completedTasks.putIfAbsent(plantId, () => <int>{});
-      if (_completedTasks[plantId]!.contains(taskIndex)) {
-        _completedTasks[plantId]!.remove(taskIndex);
-      } else {
-        _completedTasks[plantId]!.add(taskIndex);
-      }
-    });
+    // Update using ValueNotifier to avoid full page rebuild
+    final current = Map<String, Set<int>>.from(_completedTasksNotifier.value);
+    current.putIfAbsent(plantId, () => <int>{});
+    
+    if (current[plantId]!.contains(taskIndex)) {
+      current[plantId]!.remove(taskIndex);
+    } else {
+      current[plantId]!.add(taskIndex);
+    }
+    
+    _completedTasksNotifier.value = current;
 
-    // Persist to Firestore
+    // Persist to Firestore (async, non-blocking)
     final tasks = _plantTasks[plantId];
     if (tasks != null) {
       _saveTasksToFirestore(plantId, tasks);
@@ -947,9 +1172,14 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     final name = (data['name'] as String?) ?? 'Unnamed Plant';
     final scientificName = (data['scientificName'] as String?) ?? '';
     final category = (data['category'] as String?) ?? 'Unknown';
-    final totalDays = (data['totalDays'] as int?) ?? 60;
-    final daysPlanted = (data['daysPlanted'] as int?) ?? 0;
+    final storedTotalDays = (data['totalDays'] as num?)?.toInt() ?? 0;
+    final totalDays = _resolvePlantTotalDays(
+      name: name,
+      storedTotalDays: storedTotalDays,
+    );
+    final daysPlanted = (data['daysPlanted'] as num?)?.toInt() ?? 0;
     final plantedAt = data['plantedAt'] as Timestamp?;
+    final latestPhotoStatus = (data['latestPhotoStatus'] as String?) ?? '';
     final iconName = (data['icon'] as String?) ?? 'spa';
     final colorValue = (data['color'] as int?) ?? 0xFF4CAF50;
 
@@ -966,9 +1196,27 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       'totalDays': totalDays,
       'daysPlanted': actualDaysPlanted,
       'plantedAt': plantedAt,
+      'latestPhotoStatus': latestPhotoStatus,
       'icon': _iconFromName(iconName),
       'color': _parseColor(colorValue),
     };
+  }
+
+  int _resolvePlantTotalDays({
+    required String name,
+    required int storedTotalDays,
+  }) {
+    final detailDays = _plantDetailDays[name];
+
+    if (storedTotalDays <= 0) {
+      return detailDays ?? 60;
+    }
+
+    if (storedTotalDays == 90 && detailDays != null && detailDays != 90) {
+      return detailDays;
+    }
+
+    return storedTotalDays;
   }
 
   IconData _iconFromName(String name) {
@@ -1001,29 +1249,49 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     return const Color(0xFF4CAF50);
   }
 
-  int _calculateHealth(Map<String, dynamic> plant) {
-    final int daysPlanted = plant['daysPlanted'] as int;
-    final int totalDays = plant['totalDays'] as int;
+  int _healthFromStatus(String status) {
+    final normalized = status.toLowerCase();
+    if (normalized.contains('healthy')) return 90;
+    if (normalized.contains('critical')) return 20;
+    if (normalized.contains('attention') || normalized.contains('warning')) return 55;
+    if (normalized.contains('unknown')) return 50;
+    return 60;
+  }
 
-    if (totalDays == 0) return 50;
-    final progress = (daysPlanted / totalDays * 100).clamp(0, 100).toInt();
-    return progress;
+  int _calculateHealth(Map<String, dynamic> plant) {
+    final latestStatus = (plant['latestPhotoStatus'] as String?)?.trim();
+    if (latestStatus != null && latestStatus.isNotEmpty) {
+      return _healthFromStatus(latestStatus);
+    }
+
+    final plantId = plant['id'] as String;
+    final cachedStatus = (_photoAnalysis[plantId]?['status'] as String?)?.trim();
+    if (cachedStatus != null && cachedStatus.isNotEmpty) {
+      return _healthFromStatus(cachedStatus);
+    }
+
+    return 50;
   }
 
   String _getHealthStatus(int health) {
-    if (health == 0) return '🌱 Just Planted';
-    if (health < 30) return '🌿 Growing';
-    if (health < 70) return '🌾 Thriving';
-    if (health < 100) return '📦 Nearly Ready';
-    return '✅ Harvest Ready';
+    if (health >= 85) return 'Healthy';
+    if (health >= 65) return 'Stable';
+    if (health >= 40) return 'Needs Attention';
+    return 'Critical';
   }
 
   Color _getHealthColor(int health) {
-    if (health == 0) return Colors.blue;
-    if (health < 30) return Colors.green[300]!;
-    if (health < 70) return Colors.green;
-    if (health < 100) return Colors.amber;
-    return Colors.orange;
+    if (health >= 85) return const Color(0xFF2E7D32);
+    if (health >= 65) return Colors.lightGreen;
+    if (health >= 40) return Colors.orange;
+    return Colors.red;
+  }
+
+  double _calculateGrowthProgress(Map<String, dynamic> plant) {
+    final daysPlanted = plant['daysPlanted'] as int;
+    final totalDays = plant['totalDays'] as int;
+    if (totalDays <= 0) return 0;
+    return (daysPlanted / totalDays).clamp(0.0, 1.0);
   }
 
   Future<void> _deletePlant(String plantId) async {
@@ -1148,6 +1416,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                 }
 
                 final plants = snapshot.data ?? [];
+                
                 if (plants.isEmpty) {
                   return Center(
                     child: Column(
@@ -1181,8 +1450,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                   itemCount: plants.length,
                   itemBuilder: (context, index) {
                     final plant = plants[index];
-                    final health = _calculateHealth(plant);
-                    return _buildPlantListItem(plant, health);
+                    return _buildPlantListItem(plant);
                   },
                 );
               },
@@ -1219,17 +1487,18 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     );
   }
 
-  Widget _buildPlantListItem(Map<String, dynamic> plant, int health) {
+  Widget _buildPlantListItem(Map<String, dynamic> plant) {
+    final health = _calculateHealth(plant);
+    final growthProgress = _calculateGrowthProgress(plant);
+    final growthPercent = (growthProgress * 100).round();
     final healthStatus = _getHealthStatus(health);
     final healthColor = _getHealthColor(health);
     final daysRemaining = (plant['totalDays'] as int) - (plant['daysPlanted'] as int);
     final plantId = plant['id'] as String;
+    final latestPhotoStatus = (plant['latestPhotoStatus'] as String?)?.trim();
     final isExpanded = _expandedPlantId == plantId;
     final tasks = _plantTasks[plantId] ?? [];
-    final completed = _completedTasks[plantId] ?? <int>{};
     final isLoading = _taskLoading[plantId] == true;
-    final completedCount = completed.length;
-    final totalTasks = tasks.length;
 
     return GestureDetector(
       onTap: () => _togglePlantExpand(plant),
@@ -1327,12 +1596,12 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
 
                       const SizedBox(height: 16),
 
-                      // Health status and progress
+                      // Health status (based on latest uploaded photo)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            healthStatus,
+                            'Health: $healthStatus',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -1340,7 +1609,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                             ),
                           ),
                           Text(
-                            '${plant['daysPlanted']} / ${plant['totalDays']} days',
+                            latestPhotoStatus?.isNotEmpty == true
+                                ? latestPhotoStatus!
+                                : 'No photo yet',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -1351,7 +1622,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
 
                       const SizedBox(height: 8),
 
-                      // Progress bar
+                      // Health bar
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: LinearProgressIndicator(
@@ -1359,6 +1630,42 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                           minHeight: 8,
                           backgroundColor: Colors.grey[200],
                           valueColor: AlwaysStoppedAnimation<Color>(healthColor),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Growth progress (based on plant details)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Progress',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                          Text(
+                            '${plant['daysPlanted']} / ${plant['totalDays']} days ($growthPercent%)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: growthProgress,
+                          minHeight: 8,
+                          backgroundColor: Colors.grey[200],
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)),
                         ),
                       ),
 
@@ -1396,27 +1703,41 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                             ),
                           ],
                           // Task progress badge + chevron
-                          if (totalTasks > 0 && !isExpanded)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: completedCount == totalTasks
-                                    ? const Color(0xFFE8F5E9)
-                                    : Colors.orange[50],
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '$completedCount/$totalTasks tasks',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: completedCount == totalTasks
-                                      ? const Color(0xFF2E7D32)
-                                      : Colors.orange[800],
-                                ),
-                              ),
-                            ),
-                          const SizedBox(width: 4),
+                          ValueListenableBuilder<Map<String, Set<int>>>(
+                            valueListenable: _completedTasksNotifier,
+                            builder: (context, completedMap, _) {
+                              final completed = completedMap[plantId] ?? <int>{};
+                              final completedCount = completed.length;
+                              final totalTasks = tasks.length;
+                              
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (totalTasks > 0 && !isExpanded)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: completedCount == totalTasks
+                                            ? const Color(0xFFE8F5E9)
+                                            : Colors.orange[50],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '$completedCount/$totalTasks tasks',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: completedCount == totalTasks
+                                              ? const Color(0xFF2E7D32)
+                                              : Colors.orange[800],
+                                        ),
+                                      ),
+                                    ),
+                                  const SizedBox(width: 4),
+                                ],
+                              );
+                            },
+                          ),
                           AnimatedRotation(
                             turns: isExpanded ? 0.5 : 0,
                             duration: const Duration(milliseconds: 300),
@@ -1513,7 +1834,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
             // ── Expandable AI Tasks Dropdown ──
             AnimatedCrossFade(
               firstChild: const SizedBox.shrink(),
-              secondChild: _buildTasksDropdown(plantId, tasks, completed, isLoading),
+              secondChild: _buildTasksDropdown(plantId, tasks, isLoading),
               crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
               duration: const Duration(milliseconds: 300),
             ),
@@ -1526,7 +1847,6 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   Widget _buildTasksDropdown(
     String plantId,
     List<Map<String, String>> tasks,
-    Set<int> completed,
     bool isLoading,
   ) {
     final analysis = _photoAnalysis[plantId];
@@ -1638,34 +1958,40 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
           ],
 
           // ── Standard AI Tasks header ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Row(
-              children: [
-                const Icon(Icons.auto_awesome, size: 16, color: Color(0xFF2E7D32)),
-                const SizedBox(width: 6),
-                const Text(
-                  "Today's AI Tasks",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B5E20),
-                  ),
-                ),
-                const Spacer(),
-                if (tasks.isNotEmpty)
-                  Text(
-                    '${completed.length}/${tasks.length} done',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: completed.length == tasks.length
-                          ? const Color(0xFF2E7D32)
-                          : Colors.grey[600],
+          ValueListenableBuilder<Map<String, Set<int>>>(
+            valueListenable: _completedTasksNotifier,
+            builder: (context, completedMap, _) {
+              final completed = completedMap[plantId] ?? <int>{};
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.auto_awesome, size: 16, color: Color(0xFF2E7D32)),
+                    const SizedBox(width: 6),
+                    const Text(
+                      "Today's AI Tasks",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1B5E20),
+                      ),
                     ),
-                  ),
-              ],
-            ),
+                    const Spacer(),
+                    if (tasks.isNotEmpty)
+                      Text(
+                        '${completed.length}/${tasks.length} done',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: completed.length == tasks.length
+                              ? const Color(0xFF2E7D32)
+                              : Colors.grey[600],
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
           if (isLoading)
             Padding(
@@ -1701,68 +2027,76 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
               ),
             )
           else
-            ...List.generate(tasks.length, (index) {
-              final task = tasks[index];
-              final isDone = completed.contains(index);
-              final iconStr = task['icon'] ?? 'inspect';
-              return GestureDetector(
-                onTap: () => _toggleTaskCompletion(plantId, index),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isDone ? Colors.white.withOpacity(0.6) : Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isDone ? const Color(0xFFA5D6A7) : Colors.grey[200]!,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      // Checkbox
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 24,
-                        height: 24,
+            ValueListenableBuilder<Map<String, Set<int>>>(
+              valueListenable: _completedTasksNotifier,
+              builder: (context, completedMap, _) {
+                final completed = completedMap[plantId] ?? <int>{};
+                return Column(
+                  children: List.generate(tasks.length, (index) {
+                    final task = tasks[index];
+                    final isDone = completed.contains(index);
+                    final iconStr = task['icon'] ?? 'inspect';
+                    return GestureDetector(
+                      onTap: () => _toggleTaskCompletion(plantId, index),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          color: isDone ? const Color(0xFF2E7D32) : Colors.white,
-                          borderRadius: BorderRadius.circular(6),
+                          color: isDone ? Colors.white.withOpacity(0.6) : Colors.white,
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isDone ? const Color(0xFF2E7D32) : Colors.grey[400]!,
-                            width: 2,
+                            color: isDone ? const Color(0xFFA5D6A7) : Colors.grey[200]!,
                           ),
                         ),
-                        child: isDone
-                            ? const Icon(Icons.check, size: 16, color: Colors.white)
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      // Task icon
-                      Icon(
-                        _taskIconFromString(iconStr),
-                        size: 18,
-                        color: isDone
-                            ? Colors.grey[400]
-                            : _taskIconColor(iconStr),
-                      ),
-                      const SizedBox(width: 10),
-                      // Task text
-                      Expanded(
-                        child: Text(
-                          task['task'] ?? '',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDone ? Colors.grey[400] : Colors.grey[800],
-                            decoration: isDone ? TextDecoration.lineThrough : null,
-                            fontWeight: isDone ? FontWeight.normal : FontWeight.w500,
-                          ),
+                        child: Row(
+                          children: [
+                            // Checkbox
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isDone ? const Color(0xFF2E7D32) : Colors.white,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isDone ? const Color(0xFF2E7D32) : Colors.grey[400]!,
+                                  width: 2,
+                                ),
+                              ),
+                              child: isDone
+                                  ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                  : null,
+                            ),
+                            const SizedBox(width: 10),
+                            // Task icon
+                            Icon(
+                              _taskIconFromString(iconStr),
+                              size: 18,
+                              color: isDone
+                                  ? Colors.grey[400]
+                                  : _taskIconColor(iconStr),
+                            ),
+                            const SizedBox(width: 10),
+                            // Task text
+                            Expanded(
+                              child: Text(
+                                task['task'] ?? '',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isDone ? Colors.grey[400] : Colors.grey[800],
+                                  decoration: isDone ? TextDecoration.lineThrough : null,
+                                  fontWeight: isDone ? FontWeight.normal : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              );
-            }),
+                    );
+                  }),
+                );
+              },
+            ),
           const SizedBox(height: 12),
         ],
       ),

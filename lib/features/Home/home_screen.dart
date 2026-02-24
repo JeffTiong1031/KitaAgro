@@ -637,8 +637,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       color: Colors.grey[50],
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Wrap(
+        alignment: WrapAlignment.spaceEvenly,
+        runSpacing: 12,
+        spacing: 8,
         children: [
           _buildActionButton(
             label: 'My Journey',

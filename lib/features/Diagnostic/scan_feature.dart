@@ -19,7 +19,7 @@ class _ScanFeatureState extends State<ScanFeature> {
 
   // Initialize the service with your API Key
   final GeminiApiService _apiService = GeminiApiService(
-    'AIzaSyAONXuYRzzHalWMopx82Zalefaa2-w5lmU',
+    'AIzaSyDPR3Y8gUYHKEqK8EuPyyXMouGLddBHb5E',
   );
 
   Future<void> _pickImage(ImageSource source) async {

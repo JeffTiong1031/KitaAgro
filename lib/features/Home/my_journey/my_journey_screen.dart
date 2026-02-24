@@ -24,7 +24,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     defaultValue: '',
   );
 
-  final GeminiApiService _geminiApi = GeminiApiService('AIzaSyBkgljGd-zVO4lV5Cqpfipo0Br8pKwBe-k');
+  final GeminiApiService _geminiApi = GeminiApiService('AIzaSyBM5iu-EhSPggjAcQffEVUFLTq655xHea4');
 
   String _sortBy = 'newest'; // 'newest', 'name', 'daysPlanted', 'health'
   bool _gardenLocationLoading = false;
@@ -543,9 +543,14 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _photoAnalyzing[plantId] = false);
+        
+        final errorMessage = e.toString().contains('API limit reached')
+            ? 'API limit reached. Please try again later.'
+            : 'Analysis error: $e';
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Analysis error: $e'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -948,6 +953,17 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       }
     } catch (e) {
       print('Error loading tasks: $e');
+      if (mounted) {
+        if (e.toString().contains('API limit reached')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('API limit reached. Please try again later.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     }
 
     if (mounted) {

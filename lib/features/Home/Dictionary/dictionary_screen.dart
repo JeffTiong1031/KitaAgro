@@ -17,7 +17,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   String _selectedCost = 'All';
   String _selectedDifficulty = 'All';
   final ScrollController _gridController = ScrollController();
-  final GeminiApiService _geminiService = GeminiApiService('AIzaSyBkgljGd-zVO4lV5Cqpfipo0Br8pKwBe-k');
+  final GeminiApiService _geminiService = GeminiApiService('AIzaSyBM5iu-EhSPggjAcQffEVUFLTq655xHea4');
 
   final List<String> _categories = [
     'All',

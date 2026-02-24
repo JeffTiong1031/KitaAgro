@@ -363,10 +363,14 @@ Keep it SHORT. Return ONLY the JSON array.
         }
       } else {
         print('❌ Task API Error ${response.statusCode}');
+        if (response.statusCode == 429) {
+          throw Exception('API limit reached. Please try again later.');
+        }
         return null;
       }
     } catch (e) {
       print('❌ Task generation error: $e');
+      if (e.toString().contains('API limit reached')) throw e;
       return null;
     }
   }
@@ -453,10 +457,14 @@ Rules:
         }
       } else {
         print('❌ Photo analysis API error: ${response.statusCode}');
+        if (response.statusCode == 429) {
+          throw Exception('API limit reached. Please try again later.');
+        }
         return null;
       }
     } catch (e) {
       print('❌ Photo analysis error: $e');
+      if (e.toString().contains('API limit reached')) throw e;
       return null;
     }
   }

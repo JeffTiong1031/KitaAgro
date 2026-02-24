@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>KitaAgro needs camera access for the AI Video Call feature to analyze your crops in real-time.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>KitaAgro needs microphone access for the AI Video Call feature so you can speak to the AI assistant.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>KitaAgro uses speech recognition to convert your voice into text for the AI assistant.</string>
 </dict>
 </plist>

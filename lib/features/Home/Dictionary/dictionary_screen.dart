@@ -380,7 +380,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                   crossAxisCount: 4,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.85,
+                  childAspectRatio: 0.75,
                 ),
                 itemCount: _filteredPlants.length,
                 itemBuilder: (context, index) {

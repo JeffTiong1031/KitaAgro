@@ -33,7 +33,11 @@ class GeminiApiService {
     if (mode.contains("pest")) {
       return '''
 **Pest Name:** Unable to analyze now
+
+**Threat:** Low
+
 **Symptoms:** AI quota is temporarily exceeded, so image diagnosis is paused.
+
 **Solutions:** Retry after about one minute. Meanwhile, isolate affected leaves and avoid overwatering.
 
 **Short Advice:** Retry soon; keep leaves dry.
@@ -42,7 +46,11 @@ class GeminiApiService {
 
     return '''
 **Deficiency Name:** Unable to analyze now
+
+**Threat:** Low
+
 **Symptoms:** AI quota is temporarily exceeded, so nutrient diagnosis is paused.
+
 **Solutions:** Retry after about one minute. Meanwhile, check soil moisture and use balanced fertilizer carefully.
 
 **Short Advice:** Retry soon; monitor leaf color.
@@ -54,8 +62,6 @@ class GeminiApiService {
       return _buildPhotoFallback(mode);
     }
 
-    // ⚠️ FIX: We found "gemini-2.5-flash" in your browser JSON list.
-    // We must use that EXACT name.
     final String urlString =
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey';
 
@@ -73,21 +79,61 @@ class GeminiApiService {
     String prompt;
     if (mode.contains("pest")) {
       prompt = '''Analyze this plant image for pests or diseases. 
-Provide a detailed, highly informative analysis using Markdown formatting (bullet points, bold text, paragraphs).
-You MUST include these exact headers:
+Provide a detailed, highly informative analysis using Markdown formatting.
+
+*IMPORTANT:* if you **do not** see any pests or diseases, do **not** guess at a nutrient
+issue. Instead reply with a simple report indicating no pests were found – for example:
+
+**Pest Name:** None detected
+
+**Threat:** Low
+
+**Symptoms:** No visible pest symptoms
+
+**Solutions:** No treatment needed
+
+You MUST otherwise strictly follow this exact template with double line breaks between sections:
+
 **Pest Name:** [Insert exact pest or disease name]
-**Symptoms:** [Provide detailed symptoms]
-**Solutions:** [Provide detailed treatment steps]
+
+**Threat:** [Low, Medium, or High]
+
+**Symptoms:**
+[Provide detailed symptoms using bullet points]
+
+**Solutions:**
+[Provide detailed treatment steps using bullet points]
 
 At the VERY END of your response, on a new line, you MUST add this exact text:
 **Short Advice:** [Insert exactly ONE short sentence (max 10 words) of advice for a mobile push notification]''';
+
     } else {
-      prompt = '''Analyze this plant image for nutrient deficiencies. 
-Provide a detailed, highly informative analysis using Markdown formatting (bullet points, bold text, paragraphs).
-You MUST include these exact headers:
-**Deficiency Name:** [Insert exact nutrient deficiency]
-**Symptoms:** [Provide detailed symptoms]
-**Solutions:** [Provide detailed fertilizer recommendations]
+      
+      // 👉 NEW: Instruct the AI to ignore pests and focus ONLY on nutrients
+      prompt = '''Analyze this plant image SPECIFICALLY for nutrient deficiencies. 
+Provide a detailed, highly informative analysis using Markdown formatting.
+
+*IMPORTANT:* Focus ONLY on nutrition. If the plant looks nutritionally healthy (even if there are pests, bugs, or insect damage visible), do **not** diagnose a pest issue. Instead reply with a simple report indicating no nutrient deficiencies were found – for example:
+
+**Deficiency Name:** None detected
+
+**Threat:** Low
+
+**Symptoms:** Leaves appear nutritionally healthy. No visible nutrient deficiencies.
+
+**Solutions:** Maintain current care routine.
+
+You MUST otherwise strictly follow this exact template with double line breaks between sections:
+
+**Deficiency Name:** [Insert exact nutrient deficiency name]
+
+**Threat:** [Low, Medium, or High]
+
+**Symptoms:**
+[Provide detailed symptoms using bullet points]
+
+**Solutions:**
+[Provide detailed fertilizer recommendations using bullet points]
 
 At the VERY END of your response, on a new line, you MUST add this exact text:
 **Short Advice:** [Insert exactly ONE short sentence (max 10 words) of advice for a mobile push notification]''';
@@ -132,7 +178,6 @@ At the VERY END of your response, on a new line, you MUST add this exact text:
   }
 
   /// Generate location-aware plant growing advice using Gemini AI
-  /// Returns a map with: localScore, growingContext, todayTasks, carbonReduction
   Future<Map<String, dynamic>?> getLocalizedAdvice({
     required String plantName,
     required String scientificName,
@@ -146,7 +191,6 @@ At the VERY END of your response, on a new line, you MUST add this exact text:
     
     final Uri url = Uri.parse(urlString);
 
-    // Build comprehensive prompt for location-aware advice
     final String prompt = '''
 Growing conditions for $plantName ($scientificName) in $location. Temp: $temperature°C, Weather: $weatherCondition, Category: $category.
 
@@ -211,7 +255,6 @@ Rules:
           print('📝 Raw AI response length: ${text.length} characters');
           print('📝 First 300 chars: ${text.substring(0, text.length > 300 ? 300 : text.length)}');
 
-          // Extract JSON from response (handle markdown code blocks)
           String jsonText = text.trim();
           if (jsonText.startsWith('```json')) {
             jsonText = jsonText.substring(7);
@@ -225,7 +268,6 @@ Rules:
 
           print('🔍 Extracted JSON length: ${jsonText.length} characters');
 
-          // Parse the AI response
           final aiData = jsonDecode(jsonText);
           
           print('✅ Successfully parsed AI data');
@@ -233,7 +275,6 @@ Rules:
           print('📖 Growth Time: ${aiData['growthTime']}');
           print('💪 Difficulty: ${aiData['difficulty']}');
           
-          // Return ONLY what AI provides - no defaults, no fallbacks
           return {
             'localMatchScore': aiData['localMatchScore'],
             'growingContext': aiData['growingContext'],
@@ -261,6 +302,7 @@ Rules:
       return null;
     }
   }
+
   /// Generate today's suggested tasks for a specific plant based on its growth stage
   Future<List<Map<String, String>>?> generateDailyTasks({
     required String plantName,
@@ -273,7 +315,7 @@ Rules:
     required String weatherCondition,
   }) async {
     final String urlString =
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey';
+        '[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey)';
 
     final Uri url = Uri.parse(urlString);
 
@@ -336,9 +378,7 @@ Keep it SHORT. Return ONLY the JSON array.
           }
           jsonText = jsonText.trim();
 
-          // Try to repair truncated JSON — close unclosed array
           if (!jsonText.endsWith(']')) {
-            // Find last complete object (ends with })
             final lastBrace = jsonText.lastIndexOf('}');
             if (lastBrace > 0) {
               jsonText = '${jsonText.substring(0, lastBrace + 1)}]';

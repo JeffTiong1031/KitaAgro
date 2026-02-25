@@ -44,6 +44,21 @@ class _ScanFeatureState extends State<ScanFeature> {
     // Call the API
     String? result = await _apiService.analyzeImage(pickedFile.path, mode);
 
+    // 👉 SANITIZER 1: They wanted Pests, but AI gave Nutrients
+    if (userWantsPestDetection && result != null) {
+      final low = result.toLowerCase();
+      if (low.contains('deficiency name') || low.contains('nutrient')) {
+        result = '''**Pest Name:** None detected\n\n**Threat:** Low\n\n**Symptoms:** No visible pest symptoms\n\n**Solutions:** No treatment needed\n\n**Short Advice:** No pests found''';
+      }
+    } 
+    // 👉 SANITIZER 2: They wanted Nutrients, but AI gave Pests (The new fix!)
+    else if (!userWantsPestDetection && result != null) {
+      final low = result.toLowerCase();
+      if (low.contains('pest name') || (!low.contains('deficiency name') && low.contains('pest'))) {
+        result = '''**Deficiency Name:** None detected\n\n**Threat:** Low\n\n**Symptoms:** No visible nutrient deficiencies. Plant appears nutritionally healthy.\n\n**Solutions:** Maintain current care routine.\n\n**Short Advice:** Nutrition looks good.''';
+      }
+    }
+
     setState(() {
       _isAnalyzing = false;
     });
@@ -59,13 +74,14 @@ class _ScanFeatureState extends State<ScanFeature> {
           ),
         );
       } else {
-        // Success! Go to results.
+        // Success! Go to results. promote result to non-nullable since we're inside a null check
+        final String analysis = result;
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => AnalysisResultScreen(
               imageFile: pickedFile,
-              analysisText: result,
+              analysisText: analysis,
               isPestMode: userWantsPestDetection,
             ),
           ),

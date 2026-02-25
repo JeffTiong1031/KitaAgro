@@ -23,8 +23,7 @@ class AnalysisResultScreen extends StatefulWidget {
 class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
   bool _isReporting = false;
 
-  // 👉 FIXED: Bulletproof parser for the exact "Name:" line
-  // 👉 FIXED: Smarter Pest Name Extractor to cut off extra AI rambling
+  // Bulletproof parser for the exact "Name:" line
   String _extractPestName(String text) {
     try {
       final lines = text.split('\n');
@@ -33,7 +32,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
           // Strip out the Markdown and label
           String rawName = line.replaceAll(RegExp(r'\*\*|\*|Pest Name:|Deficiency Name:', caseSensitive: false), '').trim();
           
-          // 👉 NEW: Chop off any extra details after a parenthesis or comma
+          // Chop off any extra details after a parenthesis or comma
           if (rawName.contains('(')) {
             rawName = rawName.split('(')[0].trim();
           }
@@ -56,7 +55,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
     return "Unknown Issue"; 
   }
 
-  // 👉 FIXED: Grabs our custom-generated 10-word notification string!
+  // Grabs our custom-generated 10-word notification string!
   String _extractShortAdvice(String text) {
     try {
       final lines = text.split('\n');
@@ -72,6 +71,25 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
     return "Take standard precautionary measures."; // Fallback
   }
 
+  // Grab the threat level (Low/Medium/High) from the analysis text
+  String _extractThreat(String text) {
+    try {
+      final lines = text.split('\n');
+      for (var line in lines) {
+        if (line.toLowerCase().contains("threat:")) {
+          String raw = line.replaceAll(RegExp(r'\*\*|\*|Threat:', caseSensitive: false), '').trim();
+          // only keep first word (Low/Medium/High)
+          final words = raw.split(RegExp(r'\s+'));
+          if (words.isNotEmpty) return words[0];
+          return raw;
+        }
+      }
+    } catch (e) {
+      print("Parsing error: $e");
+    }
+    return "High"; // default if not found
+  }
+
   // Update your submit handler to use the new extraction function
   void _handleReportOutbreak() async {
     setState(() {
@@ -80,14 +98,14 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
 
     try {
       final pestName = _extractPestName(widget.analysisText);
-      // 👉 UPDATED: Use the new short advice extractor
-      final shortAiAdvice = _extractShortAdvice(widget.analysisText); 
+      final shortAiAdvice = _extractShortAdvice(widget.analysisText);
+      final String threatLevel = _extractThreat(widget.analysisText);
       final PestReportService _reportService = PestReportService();
 
       await _reportService.reportPestOutbreak(
         pestName,
-        "High",
-        shortAiAdvice, // Push the 10-word summary to Firebase
+        threatLevel,
+        shortAiAdvice, 
       );
 
       if (mounted) {
@@ -117,7 +135,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
     }
   }
 
-  // 👉 NEW: This hides the "Short Advice" line from the screen UI
+  // This hides the "Short Advice" line from the screen UI
   String _getVisibleAnalysisText(String fullText) {
     // Look for the "Short Advice" marker
     int cutIndex = fullText.toLowerCase().indexOf('short advice:');
@@ -200,8 +218,8 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                 ),
               ),
 
-              // --- SECTION 3: The Report Button (Only for Pests) ---
-              if (widget.isPestMode) ...[
+              // --- SECTION 3: The Report Button (Only for Pests with actual pest detected) ---
+              if (widget.isPestMode && !widget.analysisText.toLowerCase().contains('none detected')) ...[
                 const Divider(),
                 Padding(
                   padding: const EdgeInsets.symmetric(

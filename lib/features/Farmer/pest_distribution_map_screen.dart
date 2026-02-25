@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:firebase_auth/firebase_auth.dart'; 
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -20,10 +21,17 @@ class PestDistributionMapScreen extends StatefulWidget {
 }
 
 class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
-  // Filter the stream to only show "active" outbreaks
+  // Filter the stream to only show "active" outbreaks for the map polygons
   final Stream<QuerySnapshot> _pestStream = FirebaseFirestore.instance
       .collection('pest_reports')
-      .where('status', isEqualTo: 'active') 
+      .where('status', isEqualTo: 'active')
+      .snapshots();
+
+  // Separate stream to fetch the 5 most recent reports (any status) for the top card list
+  final Stream<QuerySnapshot> _recentReportsStream = FirebaseFirestore.instance
+      .collection('pest_reports')
+      .orderBy('timestamp', descending: true)
+      .limit(5)
       .snapshots();
 
   GoogleMapController? _mapController;
@@ -105,8 +113,10 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
 
   // The popup dialog to clear the outbreak
   void _showClearOutbreakDialog(String docId) {
+    // save the state context so we can show SnackBar later
+    final BuildContext parentContext = context;
     showDialog(
-      context: context,
+      context: parentContext,
       builder: (context) => AlertDialog(
         title: const Text('Clear Outbreak?'),
         content: const Text('Has this pest outbreak been resolved? This will permanently remove the danger zone from the map for all farmers.'),
@@ -123,9 +133,12 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
               await FirebaseFirestore.instance.collection('pest_reports').doc(docId).update({
                 'status': 'cleared',
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Outbreak cleared! Map updated.'), backgroundColor: Colors.green),
-              );
+              // use the outer context (not the dialog's) for the snackbar
+              if (mounted) {
+                ScaffoldMessenger.of(parentContext).showSnackBar(
+                  const SnackBar(content: Text('Outbreak cleared! Map updated.'), backgroundColor: Colors.green),
+                );
+              }
             },
             child: const Text('Yes, Clear It'),
           ),
@@ -198,18 +211,95 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Current Pest Alerts in Malaysia',
+                  'Recent Pest Alerts in Malaysia',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
                   height: 200,
-                  child: ListView(
-                    children: [
-                      _buildPestAlert('Fall Armyworm', 'Selangor, Perak', 'High', Colors.red, Icons.bug_report),
-                      _buildPestAlert('Brown Planthopper', 'Kedah, Perlis', 'Medium', Colors.orange, Icons.pest_control),
-                      _buildPestAlert('Citrus Leaf Miner', 'Johor, Pahang', 'Low', Colors.yellow, Icons.nature),
-                    ],
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: _recentReportsStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return const Center(child: Text('Error loading alerts.'));
+                      }
+
+                      final docs = snapshot.data?.docs ?? [];
+                      if (docs.isEmpty) {
+                        return const Center(child: Text('No recent alerts.'));
+                      }
+
+                      return ListView.builder(
+                        itemCount: docs.length,
+                        itemBuilder: (context, index) {
+                          final data = docs[index].data() as Map<String, dynamic>;
+                          final String pestName = data['pestName'] ?? 'Unknown';
+                          final String severity = data['severity'] ?? 'Unknown';
+                          final GeoPoint? loc = data['location'];
+                          final bool cleared = (data['status'] ?? '') == 'cleared';
+
+                          Color color;
+                          switch (severity.toLowerCase()) {
+                            case 'low':
+                              color = Colors.yellow;
+                              break;
+                            case 'medium':
+                              color = Colors.orange;
+                              break;
+                            case 'high':
+                            default:
+                              color = Colors.red;
+                          }
+
+                          // create widget that resolves geocoding
+                          Widget alertWidget;
+                          if (loc != null) {
+                            // show coordinates initially, then replace with city/state when available
+                            alertWidget = FutureBuilder<List<Placemark>>(
+                              future: placemarkFromCoordinates(
+                                  loc.latitude, loc.longitude),
+                              builder: (ctx, snap) {
+                                String locationStr =
+                                    'Lat: ${loc.latitude.toStringAsFixed(2)}, Lng: ${loc.longitude.toStringAsFixed(2)}';
+                                if (snap.connectionState == ConnectionState.done) {
+                                  if (snap.hasData && snap.data!.isNotEmpty) {
+                                    final pl = snap.data![0];
+                                    String city = pl.locality ?? '';
+                                    String state = pl.administrativeArea ?? '';
+                                    if (city.isNotEmpty || state.isNotEmpty) {
+                                      locationStr =
+                                          '${city.isNotEmpty ? city : ''}${city.isNotEmpty && state.isNotEmpty ? ', ' : ''}${state}';
+                                    }
+                                  }
+                                }
+                                return _buildPestAlert(
+                                  pestName,
+                                  locationStr,
+                                  severity,
+                                  color,
+                                  Icons.bug_report,
+                                  cleared: cleared,
+                                );
+                              },
+                            );
+                          } else {
+                            alertWidget = _buildPestAlert(
+                              pestName,
+                              'Location unknown',
+                              severity,
+                              color,
+                              Icons.bug_report,
+                              cleared: cleared,
+                            );
+                          }
+
+                          return alertWidget;
+                        },
+                      );
+                    },
                   ),
                 ),
               ],
@@ -250,6 +340,7 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                           double windSpeed = windSpeedNum.toDouble();
                           double windAngle = windAngleNum.toDouble();
                           String pestName = data['pestName'] ?? 'Unknown Pest';
+                          String severity = data['severity'] ?? 'low';
 
                           if (loc != null) {
                             LatLng center = LatLng(loc.latitude, loc.longitude);
@@ -285,6 +376,20 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                             ));
 
                             // 2. Add Red Pin Marker
+                            // choose hue based on threat level
+                            double hue;
+                            switch (severity.toLowerCase()) {
+                              case 'low':
+                                hue = BitmapDescriptor.hueYellow;
+                                break;
+                              case 'medium':
+                                hue = BitmapDescriptor.hueOrange;
+                                break;
+                              case 'high':
+                              default:
+                                hue = BitmapDescriptor.hueRed;
+                            }
+
                             markers.add(Marker(
                               markerId: MarkerId("${docId}_pin"),
                               position: center,
@@ -298,7 +403,7 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                                   }
                                 },
                               ),
-                              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                              icon: BitmapDescriptor.defaultMarkerWithHue(hue),
                             ));
 
                             // 3. Add Wind Arrow using downwindAngle
@@ -355,9 +460,10 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
     String region,
     String severity,
     Color color,
-    IconData icon,
-  ) {
-    return Card(
+    IconData icon, {
+    bool cleared = false,
+  }) {
+    Widget card = Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: Icon(icon, color: color, size: 32),
@@ -370,5 +476,28 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
         ),
       ),
     );
+
+    if (cleared) {
+      return Stack(
+        children: [
+          card,
+          Positioned.fill(
+            child: Container(
+              color: Colors.white.withOpacity(0.7),
+              alignment: Alignment.center,
+              child: Text(
+                'CLEARED',
+                style: TextStyle(
+                  color: Colors.green,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    return card;
   }
 }

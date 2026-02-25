@@ -57,113 +57,102 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: null,
         automaticallyImplyLeading: false,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(80),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 12.0,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SearchUsersScreen(),
-                          ),
-                        );
-                      },
-                      child: AbsorbPointer(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Search people, crops, pests...',
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            suffixIcon: Icon(
-                              Icons.search,
-                              color: Colors.grey[600],
-                            ),
-                          ),
+        titleSpacing: 16.0,
+        toolbarHeight: 65, // Adjusts the height to fit the search bar nicely
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SearchUsersScreen(),
+                      ),
+                    );
+                  },
+                  child: AbsorbPointer(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search people, crops, pests...',
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        suffixIcon: Icon(
+                          Icons.search,
+                          color: Colors.grey[600],
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                
-                // 👉 UPDATED: The Bell Icon Section
-                GestureDetector(
-                  onTap: () async {
-                    // Navigate to the full screen instead of showing a dialog
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const NotificationScreen()),
-                    );
-                    // Refresh the state when they come back so the red dot vanishes
-                    setState(() {}); 
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: FutureBuilder<int>(
-                      // 👉 CHANGED: Look directly at the local storage for the unread count
-                      future: NotificationStorage.getUnreadCount(), 
-                      builder: (context, snapshot) {
-                        int unseenCount = snapshot.data ?? 0;
-                        return Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Icon(
-                              Icons.notifications,
-                              color: Colors.grey[700],
-                              size: 24,
-                            ),
-                            if (unseenCount > 0)
-                              Positioned(
-                                right: -4,
-                                top: -4,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Text(
-                                    unseenCount > 9 ? '9+' : unseenCount.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            
+            // 👉 The Bell Icon Section
+            GestureDetector(
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                );
+                setState(() {}); 
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: FutureBuilder<int>(
+                  future: NotificationStorage.getUnreadCount(), 
+                  builder: (context, snapshot) {
+                    int unseenCount = snapshot.data ?? 0;
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          Icons.notifications,
+                          color: Colors.grey[700],
+                          size: 24,
+                        ),
+                        if (unseenCount > 0)
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                unseenCount > 9 ? '9+' : unseenCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
       body: CustomScrollView(
@@ -738,36 +727,40 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          tabs[index],
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: _selectedTabIndex == index
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: _selectedTabIndex == index
-                                ? Colors.teal
-                                : Colors.grey,
-                          ),
-                        ),
-                        if (index == 0) ...[
-                          const SizedBox(width: 4),
-                          GestureDetector(
-                            onTap: () => _pickImageAndNavigate(context),
-                            child: Icon(
-                              Icons.add_circle,
-                              size: 18,
+                    padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
+                    // 👉 Added FittedBox to scale down the text/icon if it exceeds the column width
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            tabs[index],
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: _selectedTabIndex == index
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                               color: _selectedTabIndex == index
                                   ? Colors.teal
                                   : Colors.grey,
                             ),
                           ),
+                          if (index == 0) ...[
+                            const SizedBox(width: 4),
+                            GestureDetector(
+                              onTap: () => _pickImageAndNavigate(context),
+                              child: Icon(
+                                Icons.add_circle,
+                                size: 18,
+                                color: _selectedTabIndex == index
+                                    ? Colors.teal
+                                    : Colors.grey,
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                   if (_selectedTabIndex == index)

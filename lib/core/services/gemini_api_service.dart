@@ -92,12 +92,8 @@ class GeminiApiService {
         'IMPORTANT: You MUST write your ENTIRE response in $langName. Do NOT use English unless the language is English.\n\n';
     String prompt;
     if (mode.contains("pest")) {
-<<<<<<< Updated upstream
-      prompt = '''Analyze this plant image for pests or diseases. 
-=======
       prompt =
           '''${langInstruction}You are an expert Malaysian agricultural extension officer. Analyze this plant image for pests or diseases. 
->>>>>>> Stashed changes
 Provide a detailed, highly informative analysis using Markdown formatting.
 
 *IMPORTANT:* if you **do not** see any pests or diseases, do **not** guess at a nutrient
@@ -127,12 +123,8 @@ At the VERY END of your response, on a new line, you MUST add this exact text:
 **Short Advice:** [Insert exactly ONE short sentence (max 10 words) of advice for a mobile push notification]''';
     } else {
       // 👉 NEW: Instruct the AI to ignore pests and focus ONLY on nutrients
-<<<<<<< Updated upstream
-      prompt = '''Analyze this plant image SPECIFICALLY for nutrient deficiencies. 
-=======
       prompt =
           '''${langInstruction}You are an expert Malaysian agricultural extension officer. Analyze this plant image SPECIFICALLY for nutrient deficiencies. 
->>>>>>> Stashed changes
 Provide a detailed, highly informative analysis using Markdown formatting.
 
 *IMPORTANT:* Focus ONLY on nutrition. If the plant looks nutritionally healthy (even if there are pests, bugs, or insect damage visible), do **not** diagnose a pest issue. Instead reply with a simple report indicating no nutrient deficiencies were found – for example:

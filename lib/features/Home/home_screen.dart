@@ -15,13 +15,9 @@ import 'package:kita_agro/services/notification_service.dart';
 import 'package:kita_agro/features/community/community_service.dart';
 import 'package:kita_agro/features/Home/notification_screen.dart';
 import 'package:kita_agro/core/services/notification_storage.dart';
-<<<<<<< Updated upstream
-import 'package:kita_agro/features/Home/ai_assistant_screen.dart'; 
-=======
 import 'package:kita_agro/features/Home/ai_assistant_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kita_agro/features/community/create_post_screen.dart';
->>>>>>> Stashed changes
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

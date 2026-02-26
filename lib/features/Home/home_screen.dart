@@ -1859,11 +1859,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _pickImageAndNavigate(BuildContext context) {
-    // Placeholder for image picker and navigation
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Image picker will be implemented here')),
-    );
+  Future<void> _pickImageAndNavigate(BuildContext context) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null && context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CreatePostScreen(imageFile: pickedFile),
+        ),
+      );
+    }
   }
 }
 

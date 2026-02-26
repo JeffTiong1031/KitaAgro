@@ -21,11 +21,11 @@ class _MessageScreenState extends State<MessageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Dark theme like references
+      backgroundColor: Colors.white, // Changed to white
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.white, // Changed to white
         elevation: 0,
-        toolbarHeight: 0, // Hides the AppBar but keeps the safe area
+        toolbarHeight: 0, 
       ),
       body: Column(
         children: [
@@ -38,17 +38,17 @@ class _MessageScreenState extends State<MessageScreen> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.grey[900],
+                color: Colors.grey[200], // Changed to light grey
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const TextField(
-                style: TextStyle(color: Colors.white),
+              child: TextField(
+                style: const TextStyle(color: Colors.black87), // Changed to black
                 decoration: InputDecoration(
                   hintText: 'Search',
-                  hintStyle: TextStyle(color: Colors.grey),
+                  hintStyle: TextStyle(color: Colors.grey[600]), // Changed to darker grey
                   border: InputBorder.none,
-                  prefixIcon: Icon(Icons.search, color: Colors.grey),
-                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                  prefixIcon: Icon(Icons.search, color: Colors.grey[600]), // Changed to darker grey
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
                 ),
               ),
             ),
@@ -87,13 +87,13 @@ class _MessageScreenState extends State<MessageScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.grey[800] : Colors.transparent,
+          color: isSelected ? Colors.grey[200] : Colors.transparent, // Light grey for selected
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           text,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey,
+            color: isSelected ? Colors.black87 : Colors.grey[600], // Black for selected, grey for unselected
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -112,7 +112,7 @@ class _MessageScreenState extends State<MessageScreen> {
           return const Center(
             child: Text(
               "Error loading requests",
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Colors.black54), // Changed to black54
             ),
           );
         }
@@ -137,11 +137,11 @@ class _MessageScreenState extends State<MessageScreen> {
                 backgroundImage: user.profilePicUrl.isNotEmpty
                     ? NetworkImage(user.profilePicUrl)
                     : null,
-                backgroundColor: Colors.grey[800],
+                backgroundColor: Colors.grey[300], // Lighter grey avatar background
                 child: user.profilePicUrl.isEmpty
                     ? Text(
                         user.fullName[0].toUpperCase(),
-                        style: const TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.black87), // Black letter
                       )
                     : null,
               ),
@@ -149,7 +149,7 @@ class _MessageScreenState extends State<MessageScreen> {
                 user.fullName,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Colors.black87, // Changed to black
                 ),
               ),
               subtitle: const Text(
@@ -197,8 +197,6 @@ class _MessageScreenState extends State<MessageScreen> {
           );
         }
 
-        // We should ideally merge this with ChatService's getChatsStream to show latest messages
-        // For simplicity and to match the UI, let's list friends and fetch their latest message
         return ListView.builder(
           itemCount: friends.length,
           itemBuilder: (context, index) {
@@ -229,11 +227,11 @@ class _MessageScreenState extends State<MessageScreen> {
                     backgroundImage: friend.profilePicUrl.isNotEmpty
                         ? NetworkImage(friend.profilePicUrl)
                         : null,
-                    backgroundColor: Colors.grey[800],
+                    backgroundColor: Colors.grey[300], // Lighter avatar background
                     child: friend.profilePicUrl.isEmpty
                         ? Text(
                             friend.fullName[0].toUpperCase(),
-                            style: const TextStyle(color: Colors.white),
+                            style: const TextStyle(color: Colors.black87), // Black letter
                           )
                         : null,
                   ),
@@ -241,14 +239,14 @@ class _MessageScreenState extends State<MessageScreen> {
                     friend.fullName,
                     style: TextStyle(
                       fontWeight: isUnread ? FontWeight.w900 : FontWeight.bold,
-                      color: Colors.white,
+                      color: Colors.black87, // Changed to black
                       fontSize: 16,
                     ),
                   ),
                   subtitle: Text(
                     lastMessage,
                     style: TextStyle(
-                      color: isUnread ? Colors.white : Colors.grey,
+                      color: isUnread ? Colors.black87 : Colors.grey[600], // Adjusted colors
                       fontWeight: isUnread
                           ? FontWeight.bold
                           : FontWeight.normal,

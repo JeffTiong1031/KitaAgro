@@ -32,7 +32,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     _chatService.markChatAsRead(_chatId);
 
-    // Also mark as read whenever a new message streams in while we are on this screen
     _messageSub = _chatService.getMessagesStream(_chatId).listen((_) {
       _chatService.markChatAsRead(_chatId);
     });
@@ -110,11 +109,11 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Dark theme like messenger
+      backgroundColor: Colors.white, // Changed to white
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.white, // Changed to white
         elevation: 0,
-        leading: BackButton(color: Colors.blueAccent[400]),
+        iconTheme: const IconThemeData(color: Colors.black87), // Make back button black
         title: Row(
           children: [
             CircleAvatar(
@@ -122,11 +121,11 @@ class _ChatScreenState extends State<ChatScreen> {
               backgroundImage: widget.receiverUser.profilePicUrl.isNotEmpty
                   ? NetworkImage(widget.receiverUser.profilePicUrl)
                   : null,
-              backgroundColor: Colors.grey,
+              backgroundColor: Colors.grey[300], // Lighter grey avatar background
               child: widget.receiverUser.profilePicUrl.isEmpty
                   ? Text(
                       widget.receiverUser.fullName[0].toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: const TextStyle(color: Colors.black87, fontSize: 14), // Black letter
                     )
                   : null,
             ),
@@ -140,13 +139,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Colors.black87, // Changed to black
                     ),
                   ),
-                  // "Active now" text usually here
                   const Text(
                     'Active now',
-                    style: TextStyle(fontSize: 12, color: Colors.white54),
+                    style: TextStyle(fontSize: 12, color: Colors.black54), // Changed to darker grey
                   ),
                 ],
               ),
@@ -167,7 +165,7 @@ class _ChatScreenState extends State<ChatScreen> {
               builder: (context, snapshot) {
                 if (snapshot.hasError)
                   return const Center(
-                    child: Text("Error", style: TextStyle(color: Colors.white)),
+                    child: Text("Error", style: TextStyle(color: Colors.black54)), // Changed to dark grey
                   );
                 if (snapshot.connectionState == ConnectionState.waiting)
                   return const Center(child: CircularProgressIndicator());
@@ -177,11 +175,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   return const Center(
                     child: Text(
                       'Say hi!',
-                      style: TextStyle(color: Colors.white54),
+                      style: TextStyle(color: Colors.black54), // Changed to dark grey
                     ),
                   );
 
-                // Return list in reverse because of descending timestamp query
                 return ListView.builder(
                   reverse: true,
                   padding: const EdgeInsets.symmetric(
@@ -194,7 +191,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     final docId = messages[index].id;
                     final isSentByMe =
                         data['senderId'] == _auth.currentUser?.uid;
-                    final Timestamp? timestamp = data['timestamp'];
 
                     return _buildMessageItem(data, isSentByMe, docId);
                   },
@@ -216,8 +212,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = data['text'] ?? '';
     final imageUrl = data['imageUrl'];
     final List reactions = data['reactions'] ?? [];
-
-    // Convert timestamp to time string if needed
 
     return GestureDetector(
       onLongPressStart: (details) {
@@ -253,7 +247,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: isSentByMe ? Colors.blueAccent[700] : Colors.grey[800],
+                  color: isSentByMe ? Colors.blueAccent[700] : Colors.grey[200], // Sent=Blue, Received=Light Grey
                   borderRadius: BorderRadius.circular(20).copyWith(
                     bottomRight: isSentByMe
                         ? const Radius.circular(4)
@@ -265,7 +259,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 child: Text(
                   text,
-                  style: const TextStyle(fontSize: 16, color: Colors.white),
+                  // Sent text stays white, received text becomes black
+                  style: TextStyle(fontSize: 16, color: isSentByMe ? Colors.white : Colors.black87), 
                 ),
               ),
 
@@ -275,9 +270,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 margin: const EdgeInsets.only(top: 2),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.grey[900],
+                  color: Colors.white, // Changed to white
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.black, width: 2),
+                  border: Border.all(color: Colors.grey[300]!, width: 1.5), // Lighter border
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -300,7 +295,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildMessageInput() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      color: Colors.black,
+      color: Colors.white, // Changed to white
       child: SafeArea(
         child: Row(
           children: [
@@ -318,16 +313,16 @@ class _ChatScreenState extends State<ChatScreen> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey[900],
+                  color: Colors.grey[200], // Changed to light grey
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: TextField(
                   controller: _messageController,
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.black87), // Changed to black
                   onSubmitted: (_) => _sendMessage(),
                   decoration: InputDecoration(
                     hintText: 'Message',
-                    hintStyle: TextStyle(color: Colors.grey[500]),
+                    hintStyle: TextStyle(color: Colors.grey[600]), // Changed to darker grey
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,

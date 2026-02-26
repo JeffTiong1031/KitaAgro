@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/models/user_model.dart';
 import '../../features/auth/auth_service.dart';
 import '../../main_layout.dart';
-// Note: You need a form to collect Age, Town, etc.
+import '../../core/services/app_localizations.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -37,6 +37,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
+    final loc = AppLocalizations.of(context);
+
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
@@ -67,9 +69,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text("Error updating profile: $e")));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("${loc.errorUpdatingProfile}: $e")),
+          );
         }
       } finally {
         if (mounted)
@@ -82,26 +84,27 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Complete Profile")),
+      appBar: AppBar(title: Text(loc.completeProfile)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              const Text("Please complete your profile to continue."),
+              Text(loc.completeProfileMessage),
               const SizedBox(height: 20),
 
               TextFormField(
                 controller: _ageController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Age"),
+                decoration: InputDecoration(labelText: loc.age),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
-                    return 'Please enter your age';
+                  if (value == null || value.isEmpty) return loc.pleaseEnterAge;
                   if (int.tryParse(value) == null)
-                    return 'Please enter a valid number';
+                    return loc.pleaseEnterValidNumber;
                   return null;
                 },
               ),
@@ -109,7 +112,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
               DropdownButtonFormField<String>(
                 initialValue: _selectedGender,
-                items: ['Male', 'Female', 'Other'].map((String value) {
+                items: [loc.male, loc.female, loc.other].map((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(value),
@@ -120,16 +123,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     _selectedGender = newValue!;
                   });
                 },
-                decoration: const InputDecoration(labelText: "Gender"),
+                decoration: InputDecoration(labelText: loc.gender),
               ),
               const SizedBox(height: 10),
 
               TextFormField(
                 controller: _townController,
-                decoration: const InputDecoration(labelText: "Town"),
+                decoration: InputDecoration(labelText: loc.town),
                 validator: (value) {
                   if (value == null || value.isEmpty)
-                    return 'Please enter your town';
+                    return loc.pleaseEnterTown;
                   return null;
                 },
               ),
@@ -137,10 +140,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
               TextFormField(
                 controller: _stateController,
-                decoration: const InputDecoration(labelText: "State"),
+                decoration: InputDecoration(labelText: loc.state),
                 validator: (value) {
                   if (value == null || value.isEmpty)
-                    return 'Please enter your state';
+                    return loc.pleaseEnterState;
                   return null;
                 },
               ),
@@ -148,10 +151,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
               TextFormField(
                 controller: _countryController,
-                decoration: const InputDecoration(labelText: "Country"),
+                decoration: InputDecoration(labelText: loc.country),
                 validator: (value) {
                   if (value == null || value.isEmpty)
-                    return 'Please enter your country';
+                    return loc.pleaseEnterCountry;
                   return null;
                 },
               ),
@@ -159,18 +162,20 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
               DropdownButtonFormField<String>(
                 initialValue: _selectedRole,
-                items: ['Farmer', 'Buyer', 'Investor', 'Researcher'].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+                items: [loc.farmer, loc.buyer, loc.investor, loc.researcher]
+                    .map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    })
+                    .toList(),
                 onChanged: (newValue) {
                   setState(() {
                     _selectedRole = newValue!;
                   });
                 },
-                decoration: const InputDecoration(labelText: "Role"),
+                decoration: InputDecoration(labelText: loc.role),
               ),
               const SizedBox(height: 20),
 
@@ -178,7 +183,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
                       onPressed: _saveProfile,
-                      child: const Text("Save & Continue"),
+                      child: Text(loc.saveAndContinue),
                     ),
             ],
           ),

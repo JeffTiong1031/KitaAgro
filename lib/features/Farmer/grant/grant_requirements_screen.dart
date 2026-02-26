@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'grant_tutorial_screen.dart';
 import 'package:kita_agro/main_layout.dart';
+import 'package:kita_agro/core/services/app_localizations.dart';
 
 class GrantRequirementsScreen extends StatelessWidget {
   const GrantRequirementsScreen({super.key});
@@ -10,9 +11,9 @@ class GrantRequirementsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
-          'Program Requirements',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context).programRequirements,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.green[700],
         foregroundColor: Colors.white,
@@ -50,21 +51,21 @@ class GrantRequirementsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Eligibility & Requirements',
-                    style: TextStyle(
+                    AppLocalizations.of(context).eligibilityRequirements,
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'Review the criteria below to ensure you qualify',
-                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                    AppLocalizations.of(context).reviewCriteria,
+                    style: const TextStyle(fontSize: 14, color: Colors.white70),
                   ),
                 ],
               ),
@@ -93,9 +94,9 @@ class GrantRequirementsScreen extends StatelessWidget {
                             size: 28,
                           ),
                           const SizedBox(width: 12),
-                          const Text(
-                            'Program Objectives',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context).programObjectives,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
@@ -106,19 +107,17 @@ class GrantRequirementsScreen extends StatelessWidget {
                       const SizedBox(height: 16),
                       _buildObjectiveItem(
                         icon: Icons.people_outline,
-                        text:
-                            'Attract youth aged 18-45 to venture into agriculture',
+                        text: AppLocalizations.of(context).objective1,
                       ),
                       const SizedBox(height: 12),
                       _buildObjectiveItem(
                         icon: Icons.psychology_outlined,
-                        text:
-                            'Change perception of agriculture as a viable industry',
+                        text: AppLocalizations.of(context).objective2,
                       ),
                       const SizedBox(height: 12),
                       _buildObjectiveItem(
                         icon: Icons.trending_up,
-                        text: 'Increase income through technology',
+                        text: AppLocalizations.of(context).objective3,
                       ),
                     ],
                   ),
@@ -132,7 +131,7 @@ class GrantRequirementsScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
-                'Eligibility Requirements',
+                AppLocalizations.of(context).eligibilityReqs,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -154,13 +153,16 @@ class GrantRequirementsScreen extends StatelessWidget {
                     backgroundColor: Colors.green[100],
                     child: Icon(Icons.person_outline, color: Colors.green[700]),
                   ),
-                  title: const Text(
-                    'Basic Requirements',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  title: Text(
+                    AppLocalizations.of(context).basicRequirements,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
                   ),
-                  subtitle: const Text(
-                    'General eligibility criteria',
-                    style: TextStyle(fontSize: 13),
+                  subtitle: Text(
+                    AppLocalizations.of(context).generalEligibility,
+                    style: const TextStyle(fontSize: 13),
                   ),
                   children: [
                     Padding(
@@ -169,17 +171,17 @@ class GrantRequirementsScreen extends StatelessWidget {
                         children: [
                           _buildRequirementItem(
                             number: '1',
-                            text: 'Malaysian citizen',
+                            text: AppLocalizations.of(context).req1,
                           ),
                           const SizedBox(height: 12),
                           _buildRequirementItem(
                             number: '2',
-                            text: 'Aged between 18 and 45 years',
+                            text: AppLocalizations.of(context).req2,
                           ),
                           const SizedBox(height: 12),
                           _buildRequirementItem(
                             number: '3',
-                            text: 'Able to read, count, and write',
+                            text: AppLocalizations.of(context).req3,
                           ),
                         ],
                       ),
@@ -205,13 +207,16 @@ class GrantRequirementsScreen extends StatelessWidget {
                       color: Colors.orange[700],
                     ),
                   ),
-                  title: const Text(
-                    'Start-up Requirements',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  title: Text(
+                    AppLocalizations.of(context).startupRequirements,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
                   ),
-                  subtitle: const Text(
-                    'Additional criteria for new ventures',
-                    style: TextStyle(fontSize: 13),
+                  subtitle: Text(
+                    AppLocalizations.of(context).additionalCriteria,
+                    style: const TextStyle(fontSize: 13),
                   ),
                   children: [
                     Padding(
@@ -220,18 +225,17 @@ class GrantRequirementsScreen extends StatelessWidget {
                         children: [
                           _buildRequirementItem(
                             number: '1',
-                            text: 'Aged between 18 and 43 years',
+                            text: AppLocalizations.of(context).startupReq1,
                           ),
                           const SizedBox(height: 12),
                           _buildRequirementItem(
                             number: '2',
-                            text:
-                                'Must attend technical training (unless exempted)',
+                            text: AppLocalizations.of(context).startupReq2,
                           ),
                           const SizedBox(height: 12),
                           _buildRequirementItem(
                             number: '3',
-                            text: 'Net income less than RM5,000 per month',
+                            text: AppLocalizations.of(context).startupReq3,
                           ),
                         ],
                       ),
@@ -276,9 +280,9 @@ class GrantRequirementsScreen extends StatelessWidget {
               ),
               elevation: 2,
             ),
-            child: const Text(
-              'START APPLICATION',
-              style: TextStyle(
+            child: Text(
+              AppLocalizations.of(context).startApplication,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,

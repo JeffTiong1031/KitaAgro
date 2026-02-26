@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-// 1. Import your new service
 import 'package:kita_agro/core/services/pest_report_service.dart';
+import 'package:kita_agro/core/services/app_localizations.dart';
 
 class AnalysisResultScreen extends StatefulWidget {
   final File imageFile;
@@ -30,8 +30,16 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
       for (var line in lines) {
         if (line.toLowerCase().contains("name:")) {
           // Strip out the Markdown and label
-          String rawName = line.replaceAll(RegExp(r'\*\*|\*|Pest Name:|Deficiency Name:', caseSensitive: false), '').trim();
-          
+          String rawName = line
+              .replaceAll(
+                RegExp(
+                  r'\*\*|\*|Pest Name:|Deficiency Name:',
+                  caseSensitive: false,
+                ),
+                '',
+              )
+              .trim();
+
           // Chop off any extra details after a parenthesis or comma
           if (rawName.contains('(')) {
             rawName = rawName.split('(')[0].trim();
@@ -39,20 +47,20 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
           if (rawName.contains(',')) {
             rawName = rawName.split(',')[0].trim();
           }
-          
+
           // Failsafe: If the AI still writes a long sentence, limit it to 4 words max
           final words = rawName.split(' ');
           if (words.length > 4) {
             return words.sublist(0, 4).join(' ');
           }
-          
+
           return rawName;
         }
       }
     } catch (e) {
       print("Parsing error: $e");
     }
-    return "Unknown Issue"; 
+    return "Unknown Issue";
   }
 
   // Grabs our custom-generated 10-word notification string!
@@ -62,7 +70,12 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
       for (var line in lines) {
         // Look for our exact "Short Advice:" line
         if (line.toLowerCase().contains("short advice:")) {
-          return line.replaceAll(RegExp(r'\*\*|\*|Short Advice:', caseSensitive: false), '').trim();
+          return line
+              .replaceAll(
+                RegExp(r'\*\*|\*|Short Advice:', caseSensitive: false),
+                '',
+              )
+              .trim();
         }
       }
     } catch (e) {
@@ -77,7 +90,9 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
       final lines = text.split('\n');
       for (var line in lines) {
         if (line.toLowerCase().contains("threat:")) {
-          String raw = line.replaceAll(RegExp(r'\*\*|\*|Threat:', caseSensitive: false), '').trim();
+          String raw = line
+              .replaceAll(RegExp(r'\*\*|\*|Threat:', caseSensitive: false), '')
+              .trim();
           // only keep first word (Low/Medium/High)
           final words = raw.split(RegExp(r'\s+'));
           if (words.isNotEmpty) return words[0];
@@ -105,17 +120,17 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
       await _reportService.reportPestOutbreak(
         pestName,
         threatLevel,
-        shortAiAdvice, 
+        shortAiAdvice,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✅ Outbreak Reported! Alerting nearby farmers..."),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).outbreakReported),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context); 
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -135,22 +150,50 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
     }
   }
 
-  // This hides the "Short Advice" line from the screen UI
-  String _getVisibleAnalysisText(String fullText) {
+  // This hides the "Short Advice" line from the screen UI and translates labels
+  String _getVisibleAnalysisText(BuildContext context, String fullText) {
     // Look for the "Short Advice" marker
     int cutIndex = fullText.toLowerCase().indexOf('short advice:');
-    
+    String visibleText = fullText;
+
     if (cutIndex != -1) {
       // Find the start of the line so we don't leave lingering ** marks
       int lineStart = fullText.lastIndexOf('\n', cutIndex);
       if (lineStart != -1) {
-        return fullText.substring(0, lineStart).trim();
+        visibleText = fullText.substring(0, lineStart).trim();
       } else {
         // If it's on the very first line (unlikely, but safe)
-        return fullText.substring(0, cutIndex).replaceAll('**', '').trim();
+        visibleText = fullText
+            .substring(0, cutIndex)
+            .replaceAll('**', '')
+            .trim();
       }
     }
-    return fullText; // If not found, return the whole text
+
+    // Localize the Markdown labels
+    final loc = AppLocalizations.of(context);
+    visibleText = visibleText.replaceAll(
+      RegExp(r'\*\*Pest Name:\*\*', caseSensitive: false),
+      '**${loc.pestNameLabel}:**',
+    );
+    visibleText = visibleText.replaceAll(
+      RegExp(r'\*\*Deficiency Name:\*\*', caseSensitive: false),
+      '**${loc.deficiencyNameLabel}:**',
+    );
+    visibleText = visibleText.replaceAll(
+      RegExp(r'\*\*Threat:\*\*', caseSensitive: false),
+      '**${loc.threatLabel}:**',
+    );
+    visibleText = visibleText.replaceAll(
+      RegExp(r'\*\*Symptoms:\*\*', caseSensitive: false),
+      '**${loc.symptomsLabel}:**',
+    );
+    visibleText = visibleText.replaceAll(
+      RegExp(r'\*\*Solutions:\*\*', caseSensitive: false),
+      '**${loc.solutionsLabel}:**',
+    );
+
+    return visibleText;
   }
 
   @override
@@ -159,8 +202,8 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
       appBar: AppBar(
         title: Text(
           widget.isPestMode
-              ? "Pest Analysis Result"
-              : "Nutrient Analysis Result",
+              ? AppLocalizations.of(context).pestAnalysisResult
+              : AppLocalizations.of(context).nutrientAnalysisResult,
         ),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
@@ -189,9 +232,9 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Diagnosis Report:',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context).diagnosisReport,
+                      style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.green,
@@ -201,7 +244,10 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                     const SizedBox(height: 10),
 
                     MarkdownBody(
-                      data: _getVisibleAnalysisText(widget.analysisText),
+                      data: _getVisibleAnalysisText(
+                        context,
+                        widget.analysisText,
+                      ),
                       styleSheet:
                           MarkdownStyleSheet.fromTheme(
                             Theme.of(context),
@@ -219,17 +265,20 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
               ),
 
               // --- SECTION 3: The Report Button (Only for Pests with actual pest detected) ---
-              if (widget.isPestMode && !widget.analysisText.toLowerCase().contains('none detected')) ...[
+              if (widget.isPestMode &&
+                  !widget.analysisText.toLowerCase().contains(
+                    'none detected',
+                  )) ...[
                 const Divider(),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20.0,
                     vertical: 10,
                   ),
-                  child: const Text(
-                    "Is this a serious outbreak? Help other farmers by reporting it.",
+                  child: Text(
+                    AppLocalizations.of(context).reportOutbreakHelp,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.grey,
                       fontStyle: FontStyle.italic,
                     ),
@@ -259,8 +308,8 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                         : const Icon(Icons.warning_amber_rounded),
                     label: Text(
                       _isReporting
-                          ? "Reporting Location..."
-                          : "REPORT OUTBREAK 🚨",
+                          ? AppLocalizations.of(context).reportingLocation
+                          : AppLocalizations.of(context).reportOutbreak,
                     ),
                   ),
                 ),
@@ -271,7 +320,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                 padding: const EdgeInsets.only(bottom: 30),
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("Back to Scan"),
+                  child: Text(AppLocalizations.of(context).backToScan),
                 ),
               ),
             ],

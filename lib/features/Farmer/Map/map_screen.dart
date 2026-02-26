@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../../core/services/app_localizations.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -170,8 +171,10 @@ class _MapScreenState extends State<MapScreen> {
               const SizedBox(height: 8),
               Text(farmer.description),
               const SizedBox(height: 8),
-              Text('Phone: ${farmer.phone}'),
-              Text('Address: ${farmer.address}'),
+              Text('${AppLocalizations.of(context).phone}: ${farmer.phone}'),
+              Text(
+                '${AppLocalizations.of(context).address}: ${farmer.address}',
+              ),
               if (isOwner) ...[
                 const SizedBox(height: 16),
                 Row(
@@ -183,7 +186,7 @@ class _MapScreenState extends State<MapScreen> {
                           _onEditFarmerProfile(farmer);
                         },
                         icon: const Icon(Icons.edit),
-                        label: const Text('Edit'),
+                        label: Text(AppLocalizations.of(context).edit),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -194,7 +197,7 @@ class _MapScreenState extends State<MapScreen> {
                           _deleteFarmerProfile(farmer);
                         },
                         icon: const Icon(Icons.delete),
-                        label: const Text('Delete'),
+                        label: Text(AppLocalizations.of(context).delete),
                       ),
                     ),
                   ],
@@ -226,8 +229,10 @@ class _MapScreenState extends State<MapScreen> {
               const SizedBox(height: 4),
               Text('Type: ${company.type}'),
               const SizedBox(height: 8),
-              Text('Phone: ${company.phone}'),
-              Text('Address: ${company.address}'),
+              Text('${AppLocalizations.of(context).phone}: ${company.phone}'),
+              Text(
+                '${AppLocalizations.of(context).address}: ${company.address}',
+              ),
             ],
           ),
         );
@@ -270,11 +275,19 @@ class _MapScreenState extends State<MapScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              Text('Weight: ${product.weight.toStringAsFixed(2)} kg'),
-              Text('Harvested: $dateLabel'),
+              Text(
+                AppLocalizations.of(
+                  context,
+                ).weightKg(product.weight.toStringAsFixed(2)),
+              ),
+              Text('${AppLocalizations.of(context).harvested}: $dateLabel'),
               const SizedBox(height: 8),
-              Text('Contact: ${product.contactNumber}'),
-              Text('Address: ${product.address}'),
+              Text(
+                '${AppLocalizations.of(context).contactLabel(product.contactNumber)}',
+              ),
+              Text(
+                '${AppLocalizations.of(context).address}: ${product.address}',
+              ),
             ],
           ),
         );
@@ -410,18 +423,16 @@ class _MapScreenState extends State<MapScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Remove profile?'),
-          content: const Text(
-            'This will remove your public profile from the map. You can publish it again later if needed.',
-          ),
+          title: Text(AppLocalizations.of(context).removeProfileTitle),
+          content: Text(AppLocalizations.of(context).removeProfileContent),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context).cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Delete'),
+              child: Text(AppLocalizations.of(context).delete),
             ),
           ],
         );
@@ -434,7 +445,7 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       await _farmersCollection.doc(farmer.id).delete();
-      _showSnack('Profile removed');
+      _showSnack(AppLocalizations.of(context).profileRemoved);
     } catch (error) {
       _showSnack('Failed to delete profile: $error');
     }
@@ -569,7 +580,7 @@ class _MapScreenState extends State<MapScreen> {
             }
 
             return AlertDialog(
-              title: const Text('Update your profile'),
+              title: Text(AppLocalizations.of(context).updateProfile),
               content: Form(
                 key: formKey,
                 child: Column(
@@ -577,30 +588,34 @@ class _MapScreenState extends State<MapScreen> {
                   children: [
                     TextFormField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Name'),
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).nameLabel,
+                      ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter your name';
+                          return AppLocalizations.of(context).enterYourName;
                         }
                         return null;
                       },
                     ),
                     TextFormField(
                       controller: phoneController,
-                      decoration: const InputDecoration(
-                        labelText: 'Contact Number',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).contactNumber,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter contact number';
+                          return AppLocalizations.of(
+                            context,
+                          ).enterContactNumber;
                         }
                         return null;
                       },
                     ),
                     TextFormField(
                       controller: descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).description,
                       ),
                       maxLines: 2,
                     ),
@@ -609,9 +624,9 @@ class _MapScreenState extends State<MapScreen> {
                       controller: addressController,
                       minLines: 1,
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Address',
-                        hintText: 'Street, city, state',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).address,
+                        hintText: AppLocalizations.of(context).streetCityState,
                       ),
                       onChanged: (_) {
                         setDialogState(() {
@@ -639,7 +654,9 @@ class _MapScreenState extends State<MapScreen> {
                                 ),
                               )
                             : const Icon(Icons.my_location),
-                        label: const Text('Use current location'),
+                        label: Text(
+                          AppLocalizations.of(context).useCurrentLocation,
+                        ),
                       ),
                     ),
                   ],
@@ -650,7 +667,7 @@ class _MapScreenState extends State<MapScreen> {
                   onPressed: saving
                       ? null
                       : () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
+                  child: Text(AppLocalizations.of(context).cancel),
                 ),
                 FilledButton(
                   onPressed: saving ? null : saveProfile,
@@ -660,7 +677,7 @@ class _MapScreenState extends State<MapScreen> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Save'),
+                      : Text(AppLocalizations.of(context).save),
                 ),
               ],
             );
@@ -670,7 +687,7 @@ class _MapScreenState extends State<MapScreen> {
     );
 
     if (updated == true) {
-      _showSnack('Profile updated');
+      _showSnack(AppLocalizations.of(context).profilePublished);
     }
   }
 
@@ -797,7 +814,7 @@ class _MapScreenState extends State<MapScreen> {
             }
 
             return AlertDialog(
-              title: const Text('Make your profile public?'),
+              title: Text(AppLocalizations.of(context).makeProfilePublic),
               content: Form(
                 key: formKey,
                 child: Column(
@@ -805,30 +822,34 @@ class _MapScreenState extends State<MapScreen> {
                   children: [
                     TextFormField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Name'),
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).nameLabel,
+                      ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter your name';
+                          return AppLocalizations.of(context).enterYourName;
                         }
                         return null;
                       },
                     ),
                     TextFormField(
                       controller: phoneController,
-                      decoration: const InputDecoration(
-                        labelText: 'Contact Number',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).contactNumber,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter contact number';
+                          return AppLocalizations.of(
+                            context,
+                          ).enterContactNumber;
                         }
                         return null;
                       },
                     ),
                     TextFormField(
                       controller: descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).description,
                       ),
                       maxLines: 2,
                     ),
@@ -837,9 +858,9 @@ class _MapScreenState extends State<MapScreen> {
                       controller: addressController,
                       minLines: 1,
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Address',
-                        hintText: 'Street, city, state',
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).address,
+                        hintText: AppLocalizations.of(context).streetCityState,
                       ),
                       onChanged: (_) {
                         setDialogState(() {
@@ -867,7 +888,9 @@ class _MapScreenState extends State<MapScreen> {
                                 ),
                               )
                             : const Icon(Icons.my_location),
-                        label: const Text('Use current location'),
+                        label: Text(
+                          AppLocalizations.of(context).useCurrentLocation,
+                        ),
                       ),
                     ),
                   ],
@@ -878,7 +901,7 @@ class _MapScreenState extends State<MapScreen> {
                   onPressed: saving
                       ? null
                       : () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
+                  child: Text(AppLocalizations.of(context).cancel),
                 ),
                 FilledButton(
                   onPressed: saving ? null : saveProfile,
@@ -888,7 +911,7 @@ class _MapScreenState extends State<MapScreen> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Save'),
+                      : Text(AppLocalizations.of(context).save),
                 ),
               ],
             );
@@ -898,7 +921,7 @@ class _MapScreenState extends State<MapScreen> {
     );
 
     if (confirmed == true) {
-      _showSnack('Profile published');
+      _showSnack(AppLocalizations.of(context).profilePublished);
     }
   }
 
@@ -969,7 +992,9 @@ class _MapScreenState extends State<MapScreen> {
                             controller: _searchController,
                             onSubmitted: _searchLocation,
                             decoration: InputDecoration(
-                              hintText: 'Search location',
+                              hintText: AppLocalizations.of(
+                                context,
+                              ).searchByCropOrLocation,
                               prefixIcon: const Icon(Icons.search),
                               suffixIcon: _searching
                                   ? const Padding(

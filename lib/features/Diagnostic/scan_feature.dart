@@ -4,6 +4,7 @@ import 'dart:io';
 // Make sure this import path matches your folder structure exactly!
 import 'package:kita_agro/features/Diagnostic/analysis_result_screen.dart';
 import 'package:kita_agro/core/services/gemini_api_service.dart';
+import 'package:kita_agro/core/services/app_localizations.dart';
 
 class ScanFeature extends StatefulWidget {
   const ScanFeature({super.key});
@@ -41,21 +42,36 @@ class _ScanFeatureState extends State<ScanFeature> {
 
     String mode = userWantsPestDetection ? "pest" : "nutrient";
 
-    // Call the API
-    String? result = await _apiService.analyzeImage(pickedFile.path, mode);
+    // Get the current language code
+    final langCode = LanguageServiceProvider.of(context).currentLanguage.code;
+
+    // Call the API with language
+    String? result = await _apiService.analyzeImage(
+      pickedFile.path,
+      mode,
+      languageCode: langCode,
+    );
 
     // 👉 SANITIZER 1: They wanted Pests, but AI gave Nutrients
     if (userWantsPestDetection && result != null) {
       final low = result.toLowerCase();
       if (low.contains('deficiency name') || low.contains('nutrient')) {
-        result = '''**Pest Name:** None detected\n\n**Threat:** Low\n\n**Symptoms:** No visible pest symptoms\n\n**Solutions:** No treatment needed\n\n**Short Advice:** No pests found''';
+        result =
+            '''**Pest Name:** None detected\n\n**Threat:** Low\n\n**Symptoms:** No visible pest symptoms\n\n**Solutions:** No treatment needed\n\n**Short Advice:** No pests found''';
       }
+<<<<<<< Updated upstream
     } 
     // 👉 SANITIZER 2: They wanted Nutrients, but AI gave Pests (The new fix!)
+=======
+    }
+    // 👉 SANITIZER 2: They wanted Nutrients, but AI gave Pests
+>>>>>>> Stashed changes
     else if (!userWantsPestDetection && result != null) {
       final low = result.toLowerCase();
-      if (low.contains('pest name') || (!low.contains('deficiency name') && low.contains('pest'))) {
-        result = '''**Deficiency Name:** None detected\n\n**Threat:** Low\n\n**Symptoms:** No visible nutrient deficiencies. Plant appears nutritionally healthy.\n\n**Solutions:** Maintain current care routine.\n\n**Short Advice:** Nutrition looks good.''';
+      if (low.contains('pest name') ||
+          (!low.contains('deficiency name') && low.contains('pest'))) {
+        result =
+            '''**Deficiency Name:** None detected\n\n**Threat:** Low\n\n**Symptoms:** No visible nutrient deficiencies. Plant appears nutritionally healthy.\n\n**Solutions:** Maintain current care routine.\n\n**Short Advice:** Nutrition looks good.''';
       }
     }
 
@@ -74,7 +90,7 @@ class _ScanFeatureState extends State<ScanFeature> {
           ),
         );
       } else {
-        // Success! Go to results. promote result to non-nullable since we're inside a null check
+        // Success! Go to results.
         final String analysis = result;
         Navigator.push(
           context,
@@ -92,16 +108,18 @@ class _ScanFeatureState extends State<ScanFeature> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Diagnostics')),
+      appBar: AppBar(title: Text(loc.aiDiagnostics)),
       body: _isAnalyzing
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Colors.green),
-                  SizedBox(height: 20),
-                  Text("Agro AI is analyzing..."),
+                  const CircularProgressIndicator(color: Colors.green),
+                  const SizedBox(height: 20),
+                  Text(loc.analyzing),
                 ],
               ),
             )
@@ -131,13 +149,13 @@ class _ScanFeatureState extends State<ScanFeature> {
                       ElevatedButton.icon(
                         onPressed: () => _pickImage(ImageSource.gallery),
                         icon: const Icon(Icons.photo),
-                        label: const Text('Gallery'),
+                        label: Text(loc.gallery),
                       ),
                       const SizedBox(width: 10),
                       ElevatedButton.icon(
                         onPressed: () => _pickImage(ImageSource.camera),
                         icon: const Icon(Icons.camera_alt),
-                        label: const Text('Camera'),
+                        label: Text(loc.camera),
                       ),
                     ],
                   ),
@@ -152,7 +170,7 @@ class _ScanFeatureState extends State<ScanFeature> {
                       ),
                       onPressed: () =>
                           _processImageForAnalysis(_selectedImage!, true),
-                      child: const Text('Identify Pests 🐞'),
+                      child: Text(loc.identifyPests),
                     ),
                     const SizedBox(height: 10),
                     ElevatedButton(
@@ -162,7 +180,7 @@ class _ScanFeatureState extends State<ScanFeature> {
                       ),
                       onPressed: () =>
                           _processImageForAnalysis(_selectedImage!, false),
-                      child: const Text('Identify Nutrients 🍃'),
+                      child: Text(loc.identifyNutrients),
                     ),
                   ],
                 ],

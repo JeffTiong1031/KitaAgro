@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import '../../core/services/app_localizations.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kita_agro/features/community/community_service.dart';
 import 'package:kita_agro/features/auth/auth_service.dart';
@@ -54,9 +55,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error creating post: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context).errorCreatingPost}: $e',
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) {
@@ -80,9 +85,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          "New Post",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context).newPostTitle,
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         iconTheme: const IconThemeData(color: Colors.black),
         actions: [
@@ -103,7 +111,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               : TextButton(
                   onPressed: _createPost,
                   child: Text(
-                    "Share",
+                    AppLocalizations.of(context).sharePost,
                     style: TextStyle(
                       color: Colors
                           .blueAccent[400], // Instagram uses a distinct blue for 'Share'
@@ -147,10 +155,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         controller: _captionController,
                         maxLines: null,
                         keyboardType: TextInputType.multiline,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           border: InputBorder.none,
-                          hintText: "Write a caption...",
-                          hintStyle: TextStyle(color: Colors.black45),
+                          hintText: AppLocalizations.of(context).writeACaption,
+                          hintStyle: const TextStyle(color: Colors.black45),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),
@@ -171,15 +179,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 Icons.person_add_alt_1_outlined,
                 color: Colors.black87,
               ),
-              title: const Text(
-                "Tag people",
-                style: TextStyle(color: Colors.black87, fontSize: 16),
+              title: Text(
+                AppLocalizations.of(context).tagPeople,
+                style: const TextStyle(color: Colors.black87, fontSize: 16),
               ),
               trailing: const Icon(Icons.chevron_right, color: Colors.grey),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Tag people feature coming soon!'),
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.person_add, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${AppLocalizations.of(context).tagPeople} feature coming soon!',
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -196,15 +212,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 Icons.location_on_outlined,
                 color: Colors.black87,
               ),
-              title: const Text(
-                "Add location",
-                style: TextStyle(color: Colors.black87, fontSize: 16),
+              title: Text(
+                AppLocalizations.of(context).addLocation,
+                style: const TextStyle(color: Colors.black87, fontSize: 16),
               ),
               trailing: const Icon(Icons.chevron_right, color: Colors.grey),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Add location feature coming soon!'),
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.location_on, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${AppLocalizations.of(context).addLocation} feature coming soon!',
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -221,15 +245,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 Icons.music_note_outlined,
                 color: Colors.black87,
               ),
-              title: const Text(
-                "Add audio",
-                style: TextStyle(color: Colors.black87, fontSize: 16),
+              title: Text(
+                AppLocalizations.of(context).addAudio,
+                style: const TextStyle(color: Colors.black87, fontSize: 16),
               ),
               trailing: const Icon(Icons.chevron_right, color: Colors.grey),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Add audio feature coming soon!'),
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.audiotrack, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${AppLocalizations.of(context).addAudio} feature coming soon!',
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },

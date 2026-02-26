@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,6 +12,8 @@ import '../../services/user_service.dart';
 import 'edit_profile_screen.dart';
 import '../community/create_post_screen.dart';
 import 'single_post_screen.dart';
+import '../../core/services/language_service.dart';
+import '../../core/services/app_localizations.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -80,8 +81,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _showLanguageSelector() {
+    final languageService = LanguageServiceProvider.of(context);
+    final loc = AppLocalizations.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 8.0,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.language, color: Colors.green, size: 28),
+                      const SizedBox(width: 12),
+                      Text(
+                        loc.selectLanguage,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+                ...AppLanguage.values.map((lang) {
+                  final isSelected = languageService.currentLanguage == lang;
+                  return ListTile(
+                    leading: Text(
+                      lang.flag,
+                      style: const TextStyle(fontSize: 28),
+                    ),
+                    title: Text(
+                      lang.displayName,
+                      style: TextStyle(
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isSelected ? Colors.green : Colors.black87,
+                        fontSize: 16,
+                      ),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(Icons.check_circle, color: Colors.green)
+                        : null,
+                    onTap: () {
+                      languageService.setLanguage(lang);
+                      Navigator.pop(sheetContext);
+                    },
+                  );
+                }),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final languageService = LanguageServiceProvider.of(context);
+
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.white,
@@ -90,9 +165,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     if (_user == null) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: Colors.white,
-        body: Center(child: Text("User not found")),
+        body: Center(child: Text(loc.userNotFound)),
       );
     }
 
@@ -128,7 +203,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: const Icon(Icons.settings, color: Colors.black),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Settings menu coming soon!")),
+                    SnackBar(content: Text(loc.settingsComingSoon)),
                   );
                 },
               ),
@@ -150,7 +225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         image: const DecorationImage(
                           image: NetworkImage(
                             "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=2070&auto=format&fit=crop",
-                          ), // Generic farm/nature cover
+                          ),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -208,7 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "${_user!.friends.length} friends • $myPostsCount posts",
+                      loc.friendsAndPosts(_user!.friends.length, myPostsCount),
                       style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black87,
@@ -244,17 +319,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           color: Colors.white,
                           size: 20,
                         ),
-                        label: const Text(
-                          'Create a post',
-                          style: TextStyle(
+                        label: Text(
+                          loc.createAPost,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             fontSize: 15,
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Colors.blueAccent[700], // Facebook blue
+                          backgroundColor: Colors.blueAccent[700],
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -273,9 +347,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           color: Colors.black87,
                           size: 20,
                         ),
-                        label: const Text(
-                          'Edit profile',
-                          style: TextStyle(
+                        label: Text(
+                          loc.editProfile,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                             fontSize: 15,
@@ -297,6 +371,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               Divider(thickness: 8, color: Colors.grey.shade300),
 
+              // ─── Language Setting ─────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.language,
+                    color: Colors.green,
+                    size: 28,
+                  ),
+                  title: Text(
+                    loc.languageSetting,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  subtitle: Text(
+                    languageService.currentLanguage.displayName,
+                    style: const TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        languageService.currentLanguage.flag,
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.chevron_right, color: Colors.grey),
+                    ],
+                  ),
+                  onTap: _showLanguageSelector,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  tileColor: Colors.grey.shade50,
+                ),
+              ),
+              Divider(thickness: 8, color: Colors.grey.shade300),
+
               // Personal Details Section
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -306,9 +424,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          "Personal details",
-                          style: TextStyle(
+                        Text(
+                          loc.personalDetails,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 20,
                             color: Colors.black,
@@ -325,7 +443,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildDetailRow(Icons.home_outlined, "${_user!.country}"),
                     _buildDetailRow(
                       Icons.cake_outlined,
-                      "${_user!.age} years old",
+                      "${_user!.age} ${loc.yearsOld}",
                     ),
                     _buildDetailRow(
                       _user!.gender == 'Male'
@@ -350,7 +468,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Friends",
+                      loc.friends,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
@@ -359,9 +477,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     TextButton(
                       onPressed: () {},
-                      child: const Text(
-                        'See all',
-                        style: TextStyle(color: Colors.blue, fontSize: 16),
+                      child: Text(
+                        loc.seeAll,
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ],
@@ -372,11 +493,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 builder: (context, friendsSnapshot) {
                   if (!friendsSnapshot.hasData ||
                       friendsSnapshot.data!.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Text(
-                        "No friends yet.",
-                        style: TextStyle(color: Colors.grey),
+                        loc.noFriendsYet,
+                        style: const TextStyle(color: Colors.grey),
                       ),
                     );
                   }
@@ -438,11 +559,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               Divider(thickness: 8, color: Colors.grey.shade300),
 
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 12.0,
+                ),
                 child: Text(
-                  "Posts",
-                  style: TextStyle(
+                  loc.posts,
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                     color: Colors.black,
@@ -459,10 +583,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 )
               else if (myPosts.isEmpty)
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(40),
-                    child: Text("No posts found."),
+                    padding: const EdgeInsets.all(40),
+                    child: Text(loc.noPostsFound),
                   ),
                 )
               else
@@ -478,14 +602,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       context: context,
                       builder: (BuildContext context) {
                         return AlertDialog(
-                          title: const Text("Logout"),
-                          content: const Text(
-                            "Are you sure you want to logout?",
-                          ),
+                          title: Text(loc.logout),
+                          content: Text(loc.logoutConfirm),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: const Text("Cancel"),
+                              child: Text(loc.cancel),
                             ),
                             TextButton(
                               onPressed: () async {
@@ -503,9 +625,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   );
                                 }
                               },
-                              child: const Text(
-                                "Log Out",
-                                style: TextStyle(color: Colors.red),
+                              child: Text(
+                                loc.logOut,
+                                style: const TextStyle(color: Colors.red),
                               ),
                             ),
                           ],
@@ -513,9 +635,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                     );
                   },
-                  child: const Text(
-                    'Log Out',
-                    style: TextStyle(
+                  child: Text(
+                    loc.logOut,
+                    style: const TextStyle(
                       color: Colors.red,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -551,6 +673,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Similar to HomeScreen implementation, but with Facebook styling
   Widget _buildRealCommunityPost(DocumentSnapshot postDoc) {
+    final loc = AppLocalizations.of(context);
     final data = postDoc.data() as Map<String, dynamic>;
     final publisherId = data['publisherId'] as String?;
     final username = data['publisherName'] ?? 'Unknown User';
@@ -624,7 +747,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Row(
                             children: [
                               Text(
-                                'Just now', // Ideally from timestamp
+                                loc.justNow,
                                 style: Theme.of(context).textTheme.labelSmall
                                     ?.copyWith(color: Colors.grey.shade600),
                               ),
@@ -648,11 +771,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }
                       },
                       itemBuilder: (context) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'delete',
                           child: Text(
-                            'Delete Post',
-                            style: TextStyle(color: Colors.red),
+                            loc.deletePost,
+                            style: const TextStyle(color: Colors.red),
                           ),
                         ),
                       ],
@@ -740,7 +863,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     if (commentsCount > 0)
                       Text(
-                        '$commentsCount comments',
+                        '$commentsCount ${loc.comments}',
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 13,
@@ -775,7 +898,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: isLiked
                         ? Icons.thumb_up
                         : Icons.thumb_up_alt_outlined,
-                    label: "Like",
+                    label: loc.like,
                     iconColor: isLiked ? Colors.blue : Colors.grey.shade700,
                     onTap: () {
                       if (currentUserId != null) {
@@ -789,7 +912,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _buildEngagementButton(
                     icon: Icons.chat_bubble_outline,
-                    label: "Comment",
+                    label: loc.comment,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -802,7 +925,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _buildEngagementButton(
                     icon: Icons.share_outlined,
-                    label: "Send",
+                    label: loc.send,
                   ),
                 ],
               ),
@@ -850,22 +973,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _confirmDeletePost(BuildContext context, String postId) {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Post'),
-        content: const Text('Are you sure you want to delete this post?'),
+        title: Text(loc.deletePost),
+        content: Text(loc.deletePostConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context); // Close dialog
               _communityService.deletePost(postId); // Delete the post
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(loc.delete, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),

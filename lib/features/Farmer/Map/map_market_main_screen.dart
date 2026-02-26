@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/services/app_localizations.dart';
 
 import 'map_screen.dart';
 import 'marketplace_screen.dart';
@@ -20,25 +21,26 @@ class _MapMarketMainScreenState extends State<MapMarketMainScreen> {
     MyProductScreen(),
   ];
 
-  static const List<BottomNavigationBarItem> _navItems = [
-    BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Map'),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.storefront_outlined),
-      label: 'Marketplace',
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.inventory_2_outlined),
-      label: 'My Product',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        items: _navItems,
+        items: [
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.map_outlined),
+            label: AppLocalizations.of(context).map,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.storefront_outlined),
+            label: AppLocalizations.of(context).marketplace,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.inventory_2_outlined),
+            label: AppLocalizations.of(context).myProduct,
+          ),
+        ],
         onTap: (index) {
           setState(() => _currentIndex = index);
         },

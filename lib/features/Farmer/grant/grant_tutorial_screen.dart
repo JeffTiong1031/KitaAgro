@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:kita_agro/core/services/app_localizations.dart';
 
 // Tutorial Step Model
 class TutorialStep {
@@ -216,9 +217,9 @@ class _GrantTutorialScreenState extends State<GrantTutorialScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Grant Application Tutorial',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context).grantTutorial,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
@@ -238,7 +239,9 @@ class _GrantTutorialScreenState extends State<GrantTutorialScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Step ${_currentPage + 1} of ${_tutorialSteps.length}',
+                  AppLocalizations.of(
+                    context,
+                  ).stepOf(_currentPage + 1, _tutorialSteps.length),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -414,8 +417,8 @@ class _GrantTutorialScreenState extends State<GrantTutorialScreen> {
                     onPressed: _goToNextPage,
                     icon: Text(
                       _currentPage == _tutorialSteps.length - 1
-                          ? 'Finish'
-                          : 'Next',
+                          ? AppLocalizations.of(context).finishButton
+                          : AppLocalizations.of(context).nextButton,
                     ),
                     label: Icon(
                       _currentPage == _tutorialSteps.length - 1

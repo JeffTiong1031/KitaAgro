@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:kita_agro/core/services/app_localizations.dart';
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -12,9 +13,15 @@ import 'package:kita_agro/features/Home/search_users_screen.dart';
 import 'package:kita_agro/features/Profile/single_post_screen.dart';
 import 'package:kita_agro/services/notification_service.dart';
 import 'package:kita_agro/features/community/community_service.dart';
-import 'package:kita_agro/features/Home/notification_screen.dart'; 
+import 'package:kita_agro/features/Home/notification_screen.dart';
 import 'package:kita_agro/core/services/notification_storage.dart';
+<<<<<<< Updated upstream
 import 'package:kita_agro/features/Home/ai_assistant_screen.dart'; 
+=======
+import 'package:kita_agro/features/Home/ai_assistant_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:kita_agro/features/community/create_post_screen.dart';
+>>>>>>> Stashed changes
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,7 +32,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTabIndex = 0;
-  final PageController _gardenCarouselController = PageController(viewportFraction: 0.85);
+  final PageController _gardenCarouselController = PageController(
+    viewportFraction: 0.85,
+  );
   int _currentGardenPage = 0;
   final ValueNotifier<int> _gardenPageNotifier = ValueNotifier<int>(0);
   Future<_WeatherData?>? _weatherFuture;
@@ -81,16 +90,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: AbsorbPointer(
                     child: TextField(
                       decoration: InputDecoration(
-                        hintText: 'Search people, crops, pests...',
+                        hintText: AppLocalizations.of(context).searchHint,
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 12,
                         ),
-                        suffixIcon: Icon(
-                          Icons.search,
-                          color: Colors.grey[600],
-                        ),
+                        suffixIcon: Icon(Icons.search, color: Colors.grey[600]),
                       ),
                     ),
                   ),
@@ -98,15 +104,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            
+
             // 👉 The Bell Icon Section
             GestureDetector(
               onTap: () async {
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationScreen(),
+                  ),
                 );
-                setState(() {}); 
+                setState(() {});
               },
               child: Container(
                 decoration: BoxDecoration(
@@ -115,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 padding: const EdgeInsets.all(8),
                 child: FutureBuilder<int>(
-                  future: NotificationStorage.getUnreadCount(), 
+                  future: NotificationStorage.getUnreadCount(),
                   builder: (context, snapshot) {
                     int unseenCount = snapshot.data ?? 0;
                     return Stack(
@@ -158,13 +166,9 @@ class _HomeScreenState extends State<HomeScreen> {
       body: CustomScrollView(
         slivers: [
           // Dashboard Section
-          SliverToBoxAdapter(
-            child: _buildDashboard(),
-          ),
+          SliverToBoxAdapter(child: _buildDashboard()),
           // My Garden Carousel
-          SliverToBoxAdapter(
-            child: _buildMyGardenCarousel(),
-          ),
+          SliverToBoxAdapter(child: _buildMyGardenCarousel()),
           // Action Buttons Section
           SliverToBoxAdapter(child: _buildActionButtons()),
           // Tab Navigation
@@ -186,10 +190,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(40.0),
+                  return Padding(
+                    padding: const EdgeInsets.all(40.0),
                     child: Center(
-                      child: Text("No posts yet. Be the first to share!"),
+                      child: Text(AppLocalizations.of(context).noPostsYet),
                     ),
                   );
                 }
@@ -219,22 +223,21 @@ class _HomeScreenState extends State<HomeScreen> {
         final plants = snapshot.data ?? <Map<String, dynamic>>[];
 
         // Calculate total carbon reduction
-        final totalCarbonReduction = plants.fold<double>(
-          0.0,
-          (sum, plant) {
-            final carbon = plant['carbonReduction'];
-            if (carbon is num) {
-              return sum + carbon.toDouble();
-            }
-            return sum;
-          },
-        );
+        final totalCarbonReduction = plants.fold<double>(0.0, (sum, plant) {
+          final carbon = plant['carbonReduction'];
+          if (carbon is num) {
+            return sum + carbon.toDouble();
+          }
+          return sum;
+        });
 
         const double carbonPerLevel = 30.0;
         final int carbonLevel = (totalCarbonReduction ~/ carbonPerLevel) + 1;
         final double currentLevelCarbon = totalCarbonReduction % carbonPerLevel;
-        final double levelProgress = (currentLevelCarbon / carbonPerLevel).clamp(0.0, 1.0);
-        final double remainToNextLevel = (carbonPerLevel - currentLevelCarbon) % carbonPerLevel;
+        final double levelProgress = (currentLevelCarbon / carbonPerLevel)
+            .clamp(0.0, 1.0);
+        final double remainToNextLevel =
+            (carbonPerLevel - currentLevelCarbon) % carbonPerLevel;
 
         return Container(
           color: Colors.grey[50],
@@ -260,7 +263,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white.withOpacity(0.20)),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.20),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,7 +288,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Carbon Emission Reduction',
+                                    AppLocalizations.of(
+                                      context,
+                                    ).carbonEmissionReduction,
                                     style: TextStyle(
                                       color: Colors.white.withOpacity(0.92),
                                       fontSize: 11,
@@ -298,7 +305,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text(
                               totalCarbonReduction > 0
                                   ? '${totalCarbonReduction.toStringAsFixed(1)} kg CO₂e/yr'
-                                  : 'Start planting to earn impact',
+                                  : AppLocalizations.of(
+                                      context,
+                                    ).startPlantingToEarn,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -311,7 +320,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.20),
                                     borderRadius: BorderRadius.circular(999),
@@ -328,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    '${remainToNextLevel == 0 ? carbonPerLevel.toStringAsFixed(0) : remainToNextLevel.toStringAsFixed(1)} kg to L${carbonLevel + 1}',
+                                    '${remainToNextLevel == 0 ? carbonPerLevel.toStringAsFixed(0) : remainToNextLevel.toStringAsFixed(1)} ${AppLocalizations.of(context).kgToNextLevel((remainToNextLevel == 0 ? carbonPerLevel.toStringAsFixed(0) : remainToNextLevel.toStringAsFixed(1)), carbonLevel + 1).substring((remainToNextLevel == 0 ? carbonPerLevel.toStringAsFixed(0) : remainToNextLevel.toStringAsFixed(1)).length + 1)}',
                                     style: const TextStyle(
                                       color: Colors.white70,
                                       fontSize: 10,
@@ -348,13 +360,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                 value: levelProgress,
                                 minHeight: 6,
                                 backgroundColor: Colors.white24,
-                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             ),
                             if (plants.isNotEmpty) ...[
                               const SizedBox(height: 6),
                               Text(
-                                '${plants.length} ${plants.length == 1 ? 'plant' : 'plants'} contributing',
+                                AppLocalizations.of(
+                                  context,
+                                ).plantsContributing(plants.length),
                                 style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 10,
@@ -375,14 +391,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             stream: _gardenLocationStream(),
                             builder: (context, locationSnapshot) {
                               final locationData = locationSnapshot.data;
-                              final locationText = _formatGardenLocation(locationData);
-                              final weatherFuture = _weatherFutureForLocation(locationData);
+                              final locationText = _formatGardenLocation(
+                                locationData,
+                              );
+                              final weatherFuture = _weatherFutureForLocation(
+                                locationData,
+                              );
 
                               return FutureBuilder<_WeatherData?>(
                                 future: weatherFuture,
                                 builder: (context, weatherSnapshot) {
                                   final weather = weatherSnapshot.data;
-                                  final isLoading = weatherSnapshot.connectionState == ConnectionState.waiting;
+                                  final isLoading =
+                                      weatherSnapshot.connectionState ==
+                                      ConnectionState.waiting;
                                   final hasError = weatherSnapshot.hasError;
 
                                   return Container(
@@ -392,20 +414,28 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     padding: const EdgeInsets.all(12.0),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
-                                            const Text(
-                                              'Today',
+                                            Text(
+                                              AppLocalizations.of(
+                                                context,
+                                              ).today,
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.white70,
                                               ),
                                             ),
                                             Icon(
-                                              weather != null ? _weatherIconForCode(weather.weatherCode) : Icons.cloud_outlined,
+                                              weather != null
+                                                  ? _weatherIconForCode(
+                                                      weather.weatherCode,
+                                                    )
+                                                  : Icons.cloud_outlined,
                                               color: Colors.white,
                                               size: 20,
                                             ),
@@ -413,8 +443,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         const SizedBox(height: 4),
                                         if (isLoading)
-                                          const Text(
-                                            'Loading...',
+                                          Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            ).loading,
                                             style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
@@ -433,8 +465,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                         else
                                           Text(
                                             hasError
-                                                ? 'Unavailable'
-                                                : 'Set location',
+                                                ? AppLocalizations.of(
+                                                    context,
+                                                  ).unavailable
+                                                : AppLocalizations.of(
+                                                    context,
+                                                  ).setLocation,
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
@@ -444,7 +480,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                         const SizedBox(height: 2),
                                         Text(
                                           weather != null
-                                              ? _weatherConditionLabel(weather.weatherCode)
+                                              ? _weatherConditionLabel(
+                                                  weather.weatherCode,
+                                                )
                                               : locationText,
                                           style: const TextStyle(
                                             fontSize: 12,
@@ -456,7 +494,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                         if (weather != null) ...[
                                           const SizedBox(height: 4),
                                           Text(
-                                            _getWeatherAdvice(weather.temperatureCelsius, weather.weatherCode),
+                                            _getWeatherAdvice(
+                                              weather.temperatureCelsius,
+                                              weather.weatherCode,
+                                            ),
                                             style: const TextStyle(
                                               fontSize: 10,
                                               color: Colors.white,
@@ -494,22 +535,26 @@ class _HomeScreenState extends State<HomeScreen> {
       return Stream.value(null);
     }
 
-    return FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots().map((snapshot) {
-      final data = snapshot.data();
-      final location = data?['gardenLocation'];
-      if (location is Map<String, dynamic>) {
-        return location;
-      }
-      if (location is Map) {
-        return location.cast<String, dynamic>();
-      }
-      return null;
-    });
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .snapshots()
+        .map((snapshot) {
+          final data = snapshot.data();
+          final location = data?['gardenLocation'];
+          if (location is Map<String, dynamic>) {
+            return location;
+          }
+          if (location is Map) {
+            return location.cast<String, dynamic>();
+          }
+          return null;
+        });
   }
 
   String _formatGardenLocation(Map<String, dynamic>? locationData) {
     if (locationData == null) {
-      return 'Set in My Journey';
+      return AppLocalizations.of(context).setInMyJourney;
     }
 
     final address = locationData['address'] as String?;
@@ -524,19 +569,23 @@ class _HomeScreenState extends State<HomeScreen> {
       return '${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
     }
 
-    return 'Set in My Journey';
+    return AppLocalizations.of(context).setInMyJourney;
   }
 
-  Future<_WeatherData?> _weatherFutureForLocation(Map<String, dynamic>? locationData) {
+  Future<_WeatherData?> _weatherFutureForLocation(
+    Map<String, dynamic>? locationData,
+  ) {
     final latitude = (locationData?['latitude'] as num?)?.toDouble();
     final longitude = (locationData?['longitude'] as num?)?.toDouble();
     if (latitude == null || longitude == null) {
       return Future.value(null);
     }
 
-    final key = '${latitude.toStringAsFixed(3)},${longitude.toStringAsFixed(3)}';
+    final key =
+        '${latitude.toStringAsFixed(3)},${longitude.toStringAsFixed(3)}';
     final now = DateTime.now();
-    final shouldRefresh = _weatherFuture == null ||
+    final shouldRefresh =
+        _weatherFuture == null ||
         _weatherLocationKey != key ||
         _weatherFetchedAt == null ||
         now.difference(_weatherFetchedAt!) > const Duration(minutes: 20);
@@ -544,7 +593,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (shouldRefresh) {
       _weatherLocationKey = key;
       _weatherFetchedAt = now;
-      _weatherFuture = _fetchCurrentWeather(latitude: latitude, longitude: longitude);
+      _weatherFuture = _fetchCurrentWeather(
+        latitude: latitude,
+        longitude: longitude,
+      );
     }
 
     return _weatherFuture!;
@@ -589,19 +641,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _weatherConditionLabel(int code) {
-    if (code == 0) return 'Clear sky';
-    if (code == 1 || code == 2) return 'Partly cloudy';
-    if (code == 3) return 'Cloudy';
-    if (code == 45 || code == 48) return 'Fog';
-    if (code == 51 || code == 53 || code == 55) return 'Drizzle';
-    if (code == 56 || code == 57) return 'Freezing drizzle';
-    if (code == 61 || code == 63 || code == 65) return 'Rain';
-    if (code == 66 || code == 67) return 'Freezing rain';
-    if (code == 71 || code == 73 || code == 75 || code == 77) return 'Snow';
-    if (code == 80 || code == 81 || code == 82) return 'Rain showers';
-    if (code == 85 || code == 86) return 'Snow showers';
-    if (code == 95 || code == 96 || code == 99) return 'Thunderstorm';
-    return 'Unknown';
+    final loc = AppLocalizations.of(context);
+    if (code == 0) return loc.clearSky;
+    if (code == 1 || code == 2) return loc.partlyCloudy;
+    if (code == 3) return loc.cloudy;
+    if (code == 45 || code == 48) return loc.fog;
+    if (code == 51 || code == 53 || code == 55) return loc.drizzle;
+    if (code == 56 || code == 57) return loc.freezingDrizzle;
+    if (code == 61 || code == 63 || code == 65) return loc.rain;
+    if (code == 66 || code == 67) return loc.freezingRain;
+    if (code == 71 || code == 73 || code == 75 || code == 77) return loc.snow;
+    if (code == 80 || code == 81 || code == 82) return loc.rainShowers;
+    if (code == 85 || code == 86) return loc.snowShowers;
+    if (code == 95 || code == 96 || code == 99) return loc.thunderstorm;
+    return loc.unknownWeather;
   }
 
   IconData _weatherIconForCode(int code) {
@@ -612,10 +665,22 @@ class _HomeScreenState extends State<HomeScreen> {
     if (code == 51 || code == 53 || code == 55 || code == 56 || code == 57) {
       return Icons.grain;
     }
-    if (code == 61 || code == 63 || code == 65 || code == 66 || code == 67 || code == 80 || code == 81 || code == 82) {
+    if (code == 61 ||
+        code == 63 ||
+        code == 65 ||
+        code == 66 ||
+        code == 67 ||
+        code == 80 ||
+        code == 81 ||
+        code == 82) {
       return Icons.umbrella;
     }
-    if (code == 71 || code == 73 || code == 75 || code == 77 || code == 85 || code == 86) {
+    if (code == 71 ||
+        code == 73 ||
+        code == 75 ||
+        code == 77 ||
+        code == 85 ||
+        code == 86) {
       return Icons.ac_unit;
     }
     if (code == 95 || code == 96 || code == 99) return Icons.flash_on;
@@ -632,19 +697,21 @@ class _HomeScreenState extends State<HomeScreen> {
         spacing: 8,
         children: [
           _buildActionButton(
-            label: 'My Journey',
+            label: AppLocalizations.of(context).myJourney,
             color: Colors.teal[100]!,
             icon: Icons.favorite,
             iconColor: Colors.teal,
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const MyJourneyScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const MyJourneyScreen(),
+                ),
               );
             },
           ),
           _buildActionButton(
-            label: 'Dictionary',
+            label: AppLocalizations.of(context).dictionary,
             color: Colors.orange[100]!,
             icon: Icons.description,
             iconColor: Colors.orange,
@@ -658,7 +725,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           _buildActionButton(
-            label: 'AI Assistant',
+            label: AppLocalizations.of(context).aiAssistant,
             color: Colors.purple[100]!,
             icon: Icons.smart_toy,
             iconColor: Colors.purple,
@@ -710,7 +777,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTabNavigation() {
-    final tabs = ['Community', 'Recommend', 'Market', 'Q&A'];
+    final loc = AppLocalizations.of(context);
+    final tabs = [loc.community, loc.recommend, loc.market, loc.qAndA];
     return Container(
       color: Colors.white,
       child: Row(
@@ -727,7 +795,10 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12.0,
+                      horizontal: 4.0,
+                    ),
                     // 👉 Added FittedBox to scale down the text/icon if it exceeds the column width
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -835,7 +906,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            'Community Member',
+                            AppLocalizations.of(context).communityMember,
                             style: Theme.of(context).textTheme.labelSmall
                                 ?.copyWith(color: Colors.grey),
                           ),
@@ -851,14 +922,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
-                              title: const Text('Delete Post'),
-                              content: const Text(
-                                'Are you sure you want to delete this post?',
+                              title: Text(
+                                AppLocalizations.of(context).deletePost,
+                              ),
+                              content: Text(
+                                AppLocalizations.of(context).deletePostConfirm,
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
-                                  child: const Text('Cancel'),
+                                  child: Text(
+                                    AppLocalizations.of(context).cancel,
+                                  ),
                                 ),
                                 TextButton(
                                   onPressed: () {
@@ -867,9 +942,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       postDoc.id,
                                     ); // Delete the post
                                   },
-                                  child: const Text(
-                                    'Delete',
-                                    style: TextStyle(color: Colors.red),
+                                  child: Text(
+                                    AppLocalizations.of(context).delete,
+                                    style: const TextStyle(color: Colors.red),
                                   ),
                                 ),
                               ],
@@ -878,11 +953,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         }
                       },
                       itemBuilder: (context) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'delete',
                           child: Text(
-                            'Delete Post',
-                            style: TextStyle(color: Colors.red),
+                            AppLocalizations.of(context).deletePost,
+                            style: const TextStyle(color: Colors.red),
                           ),
                         ),
                       ],
@@ -1009,9 +1084,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'My Garden',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context).myGarden,
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
@@ -1019,10 +1094,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       Text(
                         '${pageIndex + 1}/${plants.length}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   );
@@ -1047,7 +1119,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   final String healthStatus = _healthStatusLabel(health);
                   final Color healthColor = _healthStatusColor(health);
                   final String latestPhotoStatus =
-                    ((plant['latestPhotoStatus'] as String?) ?? '').trim();
+                      ((plant['latestPhotoStatus'] as String?) ?? '').trim();
                   final double progress = totalDays <= 0
                       ? 0.0
                       : (daysPlanted / totalDays).clamp(0.0, 1.0);
@@ -1056,7 +1128,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       : (totalDays - daysPlanted);
 
                   return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -1092,7 +1167,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Icon(
                                     plant['icon'] as IconData,
@@ -1109,7 +1185,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
-                                      '$daysPlanted days',
+                                      AppLocalizations.of(
+                                        context,
+                                      ).daysLabel(daysPlanted),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 12,
@@ -1158,8 +1236,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                     child: LinearProgressIndicator(
                                       value: health / 100,
-                                      backgroundColor: Colors.white.withOpacity(0.3),
-                                      valueColor: AlwaysStoppedAnimation<Color>(healthColor),
+                                      backgroundColor: Colors.white.withOpacity(
+                                        0.3,
+                                      ),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        healthColor,
+                                      ),
                                       minHeight: 8,
                                     ),
                                   ),
@@ -1189,10 +1271,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                     child: LinearProgressIndicator(
                                       value: progress,
-                                      backgroundColor: Colors.white.withOpacity(0.3),
-                                      valueColor: const AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
+                                      backgroundColor: Colors.white.withOpacity(
+                                        0.3,
                                       ),
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                            Colors.white,
+                                          ),
                                       minHeight: 8,
                                     ),
                                   ),
@@ -1260,9 +1345,8 @@ class _HomeScreenState extends State<HomeScreen> {
         .collection('plantations')
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => _mapGardenPlant(doc.data()))
-              .toList(),
+          (snapshot) =>
+              snapshot.docs.map((doc) => _mapGardenPlant(doc.data())).toList(),
         );
   }
 
@@ -1282,7 +1366,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final int daysPlanted = _resolveDaysPlanted(data, totalDays);
     final Color color = _parseColor(data['color']) ?? const Color(0xFF2E7D32);
     final IconData icon = _iconFromName(data['icon'] as String?);
-    final double carbonReduction = (data['carbonReduction'] as num?)?.toDouble() ??
+    final double carbonReduction =
+        (data['carbonReduction'] as num?)?.toDouble() ??
         _estimateCarbonReduction(
           name: name,
           category: category,
@@ -1350,13 +1435,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final normalized = status.toLowerCase();
     if (normalized.contains('healthy')) return 90;
     if (normalized.contains('critical')) return 20;
-    if (normalized.contains('attention') || normalized.contains('warning')) return 55;
+    if (normalized.contains('attention') || normalized.contains('warning'))
+      return 55;
     if (normalized.contains('unknown')) return 50;
     return 60;
   }
 
   int _calculateHealthFromPlant(Map<String, dynamic> plant) {
-    final String latestStatus = ((plant['latestPhotoStatus'] as String?) ?? '').trim();
+    final String latestStatus = ((plant['latestPhotoStatus'] as String?) ?? '')
+        .trim();
     if (latestStatus.isNotEmpty) {
       return _healthFromStatus(latestStatus);
     }
@@ -1405,21 +1492,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const Text(
                     'Reminder',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
-                  Icon(Icons.add_circle_outline, color: Colors.orange, size: 20),
+                  Icon(
+                    Icons.add_circle_outline,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
                 ],
               ),
               const SizedBox(height: 4),
               const Text(
                 'Add your first plant',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -1437,7 +1522,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final totalTasks = taskData['total'] ?? 0;
 
         final reminderColor = totalPending == 0 ? Colors.green : Colors.orange;
-        final reminderIcon = totalPending == 0 ? Icons.check_circle : Icons.task_alt;
+        final reminderIcon = totalPending == 0
+            ? Icons.check_circle
+            : Icons.task_alt;
         final reminderTitle = totalPending == 0
             ? 'All tasks done today!'
             : '$totalPending task${totalPending > 1 ? 's' : ''} pending';
@@ -1463,10 +1550,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     const Text(
                       'Daily Tasks',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     Icon(reminderIcon, color: reminderColor, size: 20),
                   ],
@@ -1502,28 +1586,26 @@ class _HomeScreenState extends State<HomeScreen> {
         .collection('plantations')
         .snapshots()
         .map((snapshot) {
-      int totalTasks = 0;
-      int completedTasks = 0;
+          int totalTasks = 0;
+          int completedTasks = 0;
 
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final dailyTasks = data['dailyTasks'] as Map<String, dynamic>?;
-        if (dailyTasks != null) {
-          final todayData = dailyTasks[todayKey] as Map<String, dynamic>?;
-          if (todayData != null) {
-            final tasks = (todayData['tasks'] as List<dynamic>?) ?? [];
-            final completed = (todayData['completed'] as List<dynamic>?) ?? [];
-            totalTasks += tasks.length;
-            completedTasks += completed.length;
+          for (final doc in snapshot.docs) {
+            final data = doc.data();
+            final dailyTasks = data['dailyTasks'] as Map<String, dynamic>?;
+            if (dailyTasks != null) {
+              final todayData = dailyTasks[todayKey] as Map<String, dynamic>?;
+              if (todayData != null) {
+                final tasks = (todayData['tasks'] as List<dynamic>?) ?? [];
+                final completed =
+                    (todayData['completed'] as List<dynamic>?) ?? [];
+                totalTasks += tasks.length;
+                completedTasks += completed.length;
+              }
+            }
           }
-        }
-      }
 
-      return {
-        'total': totalTasks,
-        'pending': totalTasks - completedTasks,
-      };
-    });
+          return {'total': totalTasks, 'pending': totalTasks - completedTasks};
+        });
   }
 
   String _getWeatherAdvice(double temp, int weatherCode) {
@@ -1534,7 +1616,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (weatherCode >= 80 && weatherCode <= 82) {
       return '🌧️ Natural watering expected';
     }
-    
+
     // Temperature-based advice
     if (temp > 35) {
       return '🔥 Too hot, provide shade';
@@ -1554,7 +1636,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (temp < 20) {
       return '❄️ Cool, reduce watering';
     }
-    
+
     return '🌱 Check plant needs';
   }
 
@@ -1644,10 +1726,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFFE8F5E9),
-            Color(0xFFC8E6C9),
-          ],
+          colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1679,9 +1758,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const PlantingScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const PlantingScreen()),
                 );
               },
               icon: const Icon(Icons.add),

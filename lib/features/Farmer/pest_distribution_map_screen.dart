@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import '../../core/services/app_localizations.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'dart:typed_data';
 
 // 👉 Make sure this import path matches exactly where you saved the new screen!
-import 'my_reports_screen.dart'; 
+import 'my_reports_screen.dart';
 
 class PestDistributionMapScreen extends StatefulWidget {
   const PestDistributionMapScreen({super.key});
@@ -62,14 +63,22 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
   // The bulletproof image loader
   Future<Uint8List> getBytesFromAsset(String path, int width) async {
     ByteData data = await rootBundle.load(path);
-    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(), targetWidth: width);
+    ui.Codec codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+      targetWidth: width,
+    );
     ui.FrameInfo fi = await codec.getNextFrame();
-    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+    return (await fi.image.toByteData(
+      format: ui.ImageByteFormat.png,
+    ))!.buffer.asUint8List();
   }
 
   Future<void> _loadWindArrow() async {
     try {
-      final Uint8List markerIcon = await getBytesFromAsset('assets/images/wind_arrow.png', 200);
+      final Uint8List markerIcon = await getBytesFromAsset(
+        'assets/images/wind_arrow.png',
+        200,
+      );
       setState(() {
         customWindArrowBytes = markerIcon;
       });
@@ -83,7 +92,8 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
-    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always) {
       if (mounted) {
         setState(() {
           _hasLocationPermission = true;
@@ -118,36 +128,53 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
     showDialog(
       context: parentContext,
       builder: (context) => AlertDialog(
-        title: const Text('Clear Outbreak?'),
-        content: const Text('Has this pest outbreak been resolved? This will permanently remove the danger zone from the map for all farmers.'),
+        title: Text(AppLocalizations.of(context).clearOutbreakTitle),
+        content: Text(AppLocalizations.of(context).clearOutbreakContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              AppLocalizations.of(context).cancel,
+              style: const TextStyle(color: Colors.grey),
+            ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () async {
               Navigator.pop(context); // Close the dialog
               // Update the database to hide it!
-              await FirebaseFirestore.instance.collection('pest_reports').doc(docId).update({
-                'status': 'cleared',
-              });
+              await FirebaseFirestore.instance
+                  .collection('pest_reports')
+                  .doc(docId)
+                  .update({'status': 'cleared'});
               // use the outer context (not the dialog's) for the snackbar
               if (mounted) {
                 ScaffoldMessenger.of(parentContext).showSnackBar(
-                  const SnackBar(content: Text('Outbreak cleared! Map updated.'), backgroundColor: Colors.green),
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(parentContext).outbreakCleared,
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
                 );
               }
             },
-            child: const Text('Yes, Clear It'),
+            child: Text(AppLocalizations.of(context).yesClearIt),
           ),
         ],
       ),
     );
   }
 
-  List<LatLng> _createWindEllipse(LatLng center, double radiusY, double radiusX, double windAngleDegrees) {
+  List<LatLng> _createWindEllipse(
+    LatLng center,
+    double radiusY,
+    double radiusX,
+    double windAngleDegrees,
+  ) {
     List<LatLng> points = [];
     const double earthRadius = 6378137.0;
     final double radAngle = windAngleDegrees * (math.pi / 180);
@@ -156,42 +183,52 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
       final double t = i * (math.pi / 180);
       final double x = radiusX * math.cos(t);
       final double y = radiusY * math.sin(t);
-      
+
       // Clockwise rotation matrix to fix the crisscrossing shapes
       final double xRotated = x * math.cos(radAngle) + y * math.sin(radAngle);
       final double yRotated = -x * math.sin(radAngle) + y * math.cos(radAngle);
-      
+
       final double dLat = yRotated / earthRadius;
-      final double dLng = xRotated / (earthRadius * math.cos(math.pi * center.latitude / 180));
-      points.add(LatLng(
+      final double dLng =
+          xRotated / (earthRadius * math.cos(math.pi * center.latitude / 180));
+      points.add(
+        LatLng(
           center.latitude + (dLat * 180 / math.pi),
-          center.longitude + (dLng * 180 / math.pi)));
+          center.longitude + (dLng * 180 / math.pi),
+        ),
+      );
     }
     return points;
   }
 
-  LatLng _calculateArrowPosition(LatLng center, double distanceInMeters, double bearingDegrees) {
+  LatLng _calculateArrowPosition(
+    LatLng center,
+    double distanceInMeters,
+    double bearingDegrees,
+  ) {
     const double earthRadius = 6378137.0;
     final double radBearing = bearingDegrees * (math.pi / 180.0);
     final double dx = distanceInMeters * math.sin(radBearing);
     final double dy = distanceInMeters * math.cos(radBearing);
     final double dLat = dy / earthRadius;
-    final double dLng = dx / (earthRadius * math.cos(center.latitude * math.pi / 180.0));
+    final double dLng =
+        dx / (earthRadius * math.cos(center.latitude * math.pi / 180.0));
     return LatLng(
-        center.latitude + (dLat * 180.0 / math.pi),
-        center.longitude + (dLng * 180.0 / math.pi));
+      center.latitude + (dLat * 180.0 / math.pi),
+      center.longitude + (dLng * 180.0 / math.pi),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pest Distribution Map'),
+        title: Text(AppLocalizations.of(context).pestDistributionMap),
         // 👉 NEW: Add the history button to the top right of the map
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
-            tooltip: 'My Reports',
+            tooltip: AppLocalizations.of(context).myReportsTitle,
             onPressed: () {
               Navigator.push(
                 context,
@@ -210,9 +247,12 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Recent Pest Alerts in Malaysia',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  AppLocalizations.of(context).recentPestAlerts,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
@@ -224,22 +264,32 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                         return const Center(child: CircularProgressIndicator());
                       }
                       if (snapshot.hasError) {
-                        return const Center(child: Text('Error loading alerts.'));
+                        return Center(
+                          child: Text(
+                            AppLocalizations.of(context).errorLoadingAlerts,
+                          ),
+                        );
                       }
 
                       final docs = snapshot.data?.docs ?? [];
                       if (docs.isEmpty) {
-                        return const Center(child: Text('No recent alerts.'));
+                        return Center(
+                          child: Text(
+                            AppLocalizations.of(context).noRecentAlerts,
+                          ),
+                        );
                       }
 
                       return ListView.builder(
                         itemCount: docs.length,
                         itemBuilder: (context, index) {
-                          final data = docs[index].data() as Map<String, dynamic>;
+                          final data =
+                              docs[index].data() as Map<String, dynamic>;
                           final String pestName = data['pestName'] ?? 'Unknown';
                           final String severity = data['severity'] ?? 'Unknown';
                           final GeoPoint? loc = data['location'];
-                          final bool cleared = (data['status'] ?? '') == 'cleared';
+                          final bool cleared =
+                              (data['status'] ?? '') == 'cleared';
 
                           Color color;
                           switch (severity.toLowerCase()) {
@@ -260,11 +310,14 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                             // show coordinates initially, then replace with city/state when available
                             alertWidget = FutureBuilder<List<Placemark>>(
                               future: placemarkFromCoordinates(
-                                  loc.latitude, loc.longitude),
+                                loc.latitude,
+                                loc.longitude,
+                              ),
                               builder: (ctx, snap) {
                                 String locationStr =
                                     'Lat: ${loc.latitude.toStringAsFixed(2)}, Lng: ${loc.longitude.toStringAsFixed(2)}';
-                                if (snap.connectionState == ConnectionState.done) {
+                                if (snap.connectionState ==
+                                    ConnectionState.done) {
                                   if (snap.hasData && snap.data!.isNotEmpty) {
                                     final pl = snap.data![0];
                                     String city = pl.locality ?? '';
@@ -288,7 +341,7 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                           } else {
                             alertWidget = _buildPestAlert(
                               pestName,
-                              'Location unknown',
+                              AppLocalizations.of(context).locationUnknown,
                               severity,
                               color,
                               Icons.bug_report,
@@ -321,8 +374,11 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (snapshot.hasError) {
-                      return const Center(
-                        child: Text("Network error.", style: TextStyle(color: Colors.red)),
+                      return Center(
+                        child: Text(
+                          AppLocalizations.of(context).networkError,
+                          style: const TextStyle(color: Colors.red),
+                        ),
                       );
                     }
 
@@ -346,34 +402,58 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                             LatLng center = LatLng(loc.latitude, loc.longitude);
                             String docId = doc.id;
                             double windStretch = windSpeed * 20.0;
-                            
+
                             // Weather APIs state where wind comes FROM. Flip 180 degrees to show where pests blow TO.
                             double downwindAngle = (windAngle + 180) % 360;
 
                             // Check ownership of the report
-                            String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+                            String currentUserId =
+                                FirebaseAuth.instance.currentUser?.uid ?? '';
                             String reporterId = data['reporterId'] ?? '';
-                            bool isMyReport = reporterId == currentUserId && currentUserId.isNotEmpty;
+                            bool isMyReport =
+                                reporterId == currentUserId &&
+                                currentUserId.isNotEmpty;
 
                             // 1. Draw Polygons using downwindAngle
-                            polygons.add(Polygon(
-                              polygonId: PolygonId("${docId}_safe"),
-                              points: _createWindEllipse(center, 500 + windStretch, 500, downwindAngle),
-                              strokeWidth: 0,
-                              fillColor: Colors.green.withOpacity(0.2),
-                            ));
-                            polygons.add(Polygon(
-                              polygonId: PolygonId("${docId}_warning"),
-                              points: _createWindEllipse(center, 200 + (windStretch * 0.5), 200, downwindAngle),
-                              strokeWidth: 0,
-                              fillColor: Colors.orange.withOpacity(0.5),
-                            ));
-                            polygons.add(Polygon(
-                              polygonId: PolygonId("${docId}_danger"),
-                              points: _createWindEllipse(center, 50 + (windStretch * 0.1), 50, downwindAngle),
-                              strokeWidth: 0,
-                              fillColor: Colors.red.withOpacity(0.8),
-                            ));
+                            polygons.add(
+                              Polygon(
+                                polygonId: PolygonId("${docId}_safe"),
+                                points: _createWindEllipse(
+                                  center,
+                                  500 + windStretch,
+                                  500,
+                                  downwindAngle,
+                                ),
+                                strokeWidth: 0,
+                                fillColor: Colors.green.withOpacity(0.2),
+                              ),
+                            );
+                            polygons.add(
+                              Polygon(
+                                polygonId: PolygonId("${docId}_warning"),
+                                points: _createWindEllipse(
+                                  center,
+                                  200 + (windStretch * 0.5),
+                                  200,
+                                  downwindAngle,
+                                ),
+                                strokeWidth: 0,
+                                fillColor: Colors.orange.withOpacity(0.5),
+                              ),
+                            );
+                            polygons.add(
+                              Polygon(
+                                polygonId: PolygonId("${docId}_danger"),
+                                points: _createWindEllipse(
+                                  center,
+                                  50 + (windStretch * 0.1),
+                                  50,
+                                  downwindAngle,
+                                ),
+                                strokeWidth: 0,
+                                fillColor: Colors.red.withOpacity(0.8),
+                              ),
+                            );
 
                             // 2. Add Red Pin Marker
                             // choose hue based on threat level
@@ -390,39 +470,55 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
                                 hue = BitmapDescriptor.hueRed;
                             }
 
-                            markers.add(Marker(
-                              markerId: MarkerId("${docId}_pin"),
-                              position: center,
-                              infoWindow: InfoWindow(
-                                title: '🚨 $pestName',
-                                // Change text and logic based on ownership
-                                snippet: isMyReport ? 'Tap here to mark as CLEARED ✅' : 'Reported Outbreak Center',
-                                onTap: () {
-                                  if (isMyReport) {
-                                    _showClearOutbreakDialog(docId);
-                                  }
-                                },
+                            markers.add(
+                              Marker(
+                                markerId: MarkerId("${docId}_pin"),
+                                position: center,
+                                infoWindow: InfoWindow(
+                                  title: '🚨 $pestName',
+                                  // Change text and logic based on ownership
+                                  snippet: isMyReport
+                                      ? AppLocalizations.of(context).tapToClear
+                                      : AppLocalizations.of(
+                                          context,
+                                        ).reportedOutbreakCenter,
+                                  onTap: () {
+                                    if (isMyReport) {
+                                      _showClearOutbreakDialog(docId);
+                                    }
+                                  },
+                                ),
+                                icon: BitmapDescriptor.defaultMarkerWithHue(
+                                  hue,
+                                ),
                               ),
-                              icon: BitmapDescriptor.defaultMarkerWithHue(hue),
-                            ));
+                            );
 
                             // 3. Add Wind Arrow using downwindAngle
                             if (windSpeed > 0 && customWindArrowBytes != null) {
-                              LatLng arrowPosition = _calculateArrowPosition(center, 300, downwindAngle);
+                              LatLng arrowPosition = _calculateArrowPosition(
+                                center,
+                                300,
+                                downwindAngle,
+                              );
 
-                              groundOverlays.add(GroundOverlay.fromPosition(
-                                groundOverlayId: GroundOverlayId("${docId}_arrow_overlay"),
-                                image: BytesMapBitmap(
-                                  customWindArrowBytes!,
-                                  bitmapScaling: MapBitmapScaling.none, 
-                                ), 
-                                position: arrowPosition,
-                                width: 600, 
-                                bearing: downwindAngle, 
-                                anchor: const Offset(0.5, 0.5), 
-                                transparency: 0.2, 
-                                zIndex: 1, 
-                              ));
+                              groundOverlays.add(
+                                GroundOverlay.fromPosition(
+                                  groundOverlayId: GroundOverlayId(
+                                    "${docId}_arrow_overlay",
+                                  ),
+                                  image: BytesMapBitmap(
+                                    customWindArrowBytes!,
+                                    bitmapScaling: MapBitmapScaling.none,
+                                  ),
+                                  position: arrowPosition,
+                                  width: 600,
+                                  bearing: downwindAngle,
+                                  anchor: const Offset(0.5, 0.5),
+                                  transparency: 0.2,
+                                  zIndex: 1,
+                                ),
+                              );
                             }
                           }
                         } catch (e) {
@@ -486,8 +582,8 @@ class _PestDistributionMapScreenState extends State<PestDistributionMapScreen> {
               color: Colors.white.withOpacity(0.7),
               alignment: Alignment.center,
               child: Text(
-                'CLEARED',
-                style: TextStyle(
+                AppLocalizations.of(context).cleared,
+                style: const TextStyle(
                   color: Colors.green,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

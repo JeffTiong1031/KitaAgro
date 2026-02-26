@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/services/app_localizations.dart';
 import '../../core/models/user_model.dart';
 import '../../services/user_service.dart';
 import '../Profile/other_user_profile_screen.dart';
@@ -58,7 +59,7 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
             autofocus: true,
             onChanged: _performSearch,
             decoration: InputDecoration(
-              hintText: 'Search people...',
+              hintText: AppLocalizations.of(context).searchPeople,
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -81,8 +82,8 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
           ? Center(
               child: Text(
                 _searchController.text.isEmpty
-                    ? "Type to search for users."
-                    : "No users found.",
+                    ? AppLocalizations.of(context).typeToSearch
+                    : AppLocalizations.of(context).noUsersFound,
                 style: TextStyle(color: Colors.grey[600]),
               ),
             )

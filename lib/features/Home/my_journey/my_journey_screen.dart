@@ -10,6 +10,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:kita_agro/core/services/gemini_api_service.dart';
+import 'package:kita_agro/core/services/app_localizations.dart';
 
 class MyJourneyScreen extends StatefulWidget {
   const MyJourneyScreen({super.key});
@@ -24,7 +25,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     defaultValue: '',
   );
 
-  final GeminiApiService _geminiApi = GeminiApiService('AIzaSyBM5iu-EhSPggjAcQffEVUFLTq655xHea4');
+  final GeminiApiService _geminiApi = GeminiApiService(
+    'AIzaSyBM5iu-EhSPggjAcQffEVUFLTq655xHea4',
+  );
 
   String _sortBy = 'newest'; // 'newest', 'name', 'daysPlanted', 'health'
   bool _gardenLocationLoading = false;
@@ -36,11 +39,12 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   // Expandable task dropdown state
   String? _expandedPlantId;
   final Map<String, List<Map<String, String>>> _plantTasks = {};
-  final ValueNotifier<Map<String, Set<int>>> _completedTasksNotifier = ValueNotifier({});
+  final ValueNotifier<Map<String, Set<int>>> _completedTasksNotifier =
+      ValueNotifier({});
   final Map<String, bool> _taskLoading = {};
   // Cache key: plantId + date string to avoid re-fetching same day
   final Map<String, String> _taskCacheDate = {};
-  
+
   // Helper getter for backward compatibility
   Map<String, Set<int>> get _completedTasks => _completedTasksNotifier.value;
 
@@ -122,10 +126,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
             .collection('plantations')
             .doc(plantDoc.id)
             .set({
-          'latestPhotoStatus': status,
-          'latestPhotoDiagnosis': diagnosis,
-          'latestPhotoDate': date,
-        }, SetOptions(merge: true));
+              'latestPhotoStatus': status,
+              'latestPhotoDiagnosis': diagnosis,
+              'latestPhotoDate': date,
+            }, SetOptions(merge: true));
       }
     } catch (e) {
       print('Error backfilling latest photo status: $e');
@@ -190,15 +194,19 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       for (final doc in snapshot.docs) {
         final data = doc.data();
         final existingCarbon = data['carbonReduction'];
-        
+
         // Skip if carbonReduction already exists
         if (existingCarbon != null) continue;
 
         final name = (data['name'] as String?)?.trim() ?? 'Unnamed Plant';
         final category = (data['category'] as String?)?.trim() ?? 'Unknown';
         final totalDays = (data['totalDays'] as num?)?.toInt() ?? 90;
-        
-        final carbonReduction = _estimateCarbonReduction(name, category, totalDays);
+
+        final carbonReduction = _estimateCarbonReduction(
+          name,
+          category,
+          totalDays,
+        );
 
         batch.set(doc.reference, {
           'carbonReduction': carbonReduction,
@@ -240,17 +248,17 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
           resolvedPlantedAt = plantedAt;
         } else {
           final safeDays = storedDays < 0 ? 0 : storedDays;
-          final inferredDate = DateTime.now().subtract(Duration(days: safeDays));
+          final inferredDate = DateTime.now().subtract(
+            Duration(days: safeDays),
+          );
           resolvedPlantedAt = Timestamp.fromDate(
             DateTime(inferredDate.year, inferredDate.month, inferredDate.day),
           );
         }
 
-        final syncedDays = (DateTime.now()
-              .difference(resolvedPlantedAt.toDate())
-              .inDays +
-            1)
-          .clamp(1, 99999);
+        final syncedDays =
+            (DateTime.now().difference(resolvedPlantedAt.toDate()).inDays + 1)
+                .clamp(1, 99999);
 
         final needsPlantedAt = plantedAt is! Timestamp;
         final needsDaysSync = syncedDays != storedDays;
@@ -278,17 +286,17 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   /// Estimate annual carbon reduction in kg CO2 per year based on plant type
   double _estimateCarbonReduction(String name, String category, int totalDays) {
     final nameLower = name.toLowerCase();
-    
+
     // Trees absorb the most CO2
     if (nameLower.contains('apple') || nameLower.contains('tree')) {
       return 25.0; // Large trees: ~25kg CO2/year
     }
-    
+
     // Medium plants
     if (nameLower.contains('papaya') || nameLower.contains('banana')) {
       return 12.0; // Medium plants: ~12kg CO2/year
     }
-    
+
     // Vegetables and herbs based on category
     switch (category.toLowerCase()) {
       case 'vegetable':
@@ -318,7 +326,8 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   /// Check if cached tasks are still valid (same date)
   /// Tasks automatically refresh at midnight when _todayKey changes
   bool _areTasksValidForToday(String plantId) {
-    return _taskCacheDate[plantId] == _todayKey && _plantTasks.containsKey(plantId);
+    return _taskCacheDate[plantId] == _todayKey &&
+        _plantTasks.containsKey(plantId);
   }
 
   /// Load completed tasks from Firestore for today
@@ -349,10 +358,12 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
             final cachedTasks = (todayData['tasks'] as List<dynamic>?);
             if (cachedTasks != null) {
               _plantTasks[doc.id] = cachedTasks
-                  .map<Map<String, String>>((t) => {
-                        'task': (t['task'] as String?) ?? '',
-                        'icon': (t['icon'] as String?) ?? 'inspect',
-                      })
+                  .map<Map<String, String>>(
+                    (t) => {
+                      'task': (t['task'] as String?) ?? '',
+                      'icon': (t['icon'] as String?) ?? 'inspect',
+                    },
+                  )
                   .toList();
               _taskCacheDate[doc.id] = _todayKey;
             }
@@ -383,7 +394,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
 
       for (final doc in snapshot.docs) {
         final plantId = doc.id;
-        
+
         // Skip if already have today's tasks
         if (_areTasksValidForToday(plantId)) {
           continue;
@@ -405,6 +416,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
         };
 
         try {
+          final langCode = mounted
+              ? LanguageServiceProvider.of(context).currentLanguage.code
+              : 'en';
           final tasks = await _geminiApi.generateDailyTasks(
             plantName: plant['name'] as String,
             scientificName: plant['scientificName'] as String,
@@ -414,12 +428,13 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
             location: location,
             temperature: temp,
             weatherCondition: condition,
+            languageCode: langCode,
           );
 
           if (tasks != null && tasks.isNotEmpty) {
             _plantTasks[plantId] = tasks;
             _taskCacheDate[plantId] = _todayKey;
-            
+
             // Initialize completed set if absent
             final current = _completedTasksNotifier.value;
             current.putIfAbsent(plantId, () => <int>{});
@@ -476,7 +491,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: Color(0xFF2E7D32)),
+                leading: const Icon(
+                  Icons.photo_library,
+                  color: Color(0xFF2E7D32),
+                ),
                 title: const Text('Choose from Gallery'),
                 subtitle: const Text('Upload an existing photo'),
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
@@ -505,11 +523,13 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     setState(() => _photoAnalyzing[plantId] = true);
 
     try {
+      final langCode = LanguageServiceProvider.of(context).currentLanguage.code;
       final result = await _geminiApi.analyzeAndSuggestTasks(
         imagePath: image.path,
         plantName: plant['name'] as String,
         daysPlanted: plant['daysPlanted'] as int,
         totalDays: plant['totalDays'] as int,
+        languageCode: langCode,
       );
 
       if (!mounted) return;
@@ -543,7 +563,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _photoAnalyzing[plantId] = false);
-        
+
         final errorMessage = e.toString().contains('API limit reached')
             ? 'API limit reached. Please try again later.'
             : 'Analysis error: $e';
@@ -583,7 +603,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [statusColor.withOpacity(0.08), statusColor.withOpacity(0.04)],
+            colors: [
+              statusColor.withOpacity(0.08),
+              statusColor.withOpacity(0.04),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -609,7 +632,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                 Icon(statusIcon, size: 16, color: statusColor),
                 const SizedBox(width: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(8),
@@ -665,12 +691,15 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       'isLocal': true,
     };
     _photoTimeline[plantId]!.add(localEntry);
-    _photoTimeline[plantId]!.sort((a, b) => (a['day'] as int).compareTo(b['day'] as int));
+    _photoTimeline[plantId]!.sort(
+      (a, b) => (a['day'] as int).compareTo(b['day'] as int),
+    );
 
     try {
       final file = File(imagePath);
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final storagePath = 'users/${user.uid}/plants/$plantId/photos/$timestamp.jpg';
+      final storagePath =
+          'users/${user.uid}/plants/$plantId/photos/$timestamp.jpg';
 
       // Upload to Firebase Storage
       final ref = FirebaseStorage.instance.ref().child(storagePath);
@@ -701,10 +730,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
           .collection('plantations')
           .doc(plantId)
           .set({
-        'latestPhotoStatus': status,
-        'latestPhotoDiagnosis': diagnosis,
-        'latestPhotoDate': _todayKey,
-      }, SetOptions(merge: true));
+            'latestPhotoStatus': status,
+            'latestPhotoDiagnosis': diagnosis,
+            'latestPhotoDate': _todayKey,
+          }, SetOptions(merge: true));
 
       // Update the local entry with the remote URL
       localEntry['url'] = downloadUrl;
@@ -754,10 +783,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
           .collection('plantations')
           .doc(plantId)
           .set({
-        'latestPhotoStatus': status,
-        'latestPhotoDiagnosis': diagnosis,
-        'latestPhotoDate': data['date'] as String? ?? _todayKey,
-      }, SetOptions(merge: true));
+            'latestPhotoStatus': status,
+            'latestPhotoDiagnosis': diagnosis,
+            'latestPhotoDate': data['date'] as String? ?? _todayKey,
+          }, SetOptions(merge: true));
     } catch (e) {
       print('Error restoring analysis: $e');
     }
@@ -766,7 +795,8 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   /// Load photo timeline for a plant
   Future<List<Map<String, dynamic>>> _loadPhotoTimeline(String plantId) async {
     // Return cached if available (includes photos just taken but not yet synced)
-    if (_photoTimeline.containsKey(plantId) && _photoTimeline[plantId]!.isNotEmpty) {
+    if (_photoTimeline.containsKey(plantId) &&
+        _photoTimeline[plantId]!.isNotEmpty) {
       return _photoTimeline[plantId]!;
     }
 
@@ -927,6 +957,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
       final temp = weather['temperature'] as double;
       final condition = weather['condition'] as String;
 
+      final langCode = LanguageServiceProvider.of(context).currentLanguage.code;
       final tasks = await _geminiApi.generateDailyTasks(
         plantName: plant['name'] as String,
         scientificName: plant['scientificName'] as String,
@@ -936,6 +967,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
         location: location,
         temperature: temp,
         weatherCondition: condition,
+        languageCode: langCode,
       );
 
       if (!mounted) return;
@@ -972,7 +1004,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   }
 
   /// Save tasks and completed state to Firestore
-  Future<void> _saveTasksToFirestore(String plantId, List<Map<String, String>> tasks) async {
+  Future<void> _saveTasksToFirestore(
+    String plantId,
+    List<Map<String, String>> tasks,
+  ) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -983,13 +1018,14 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
           .collection('plantations')
           .doc(plantId)
           .set({
-        'dailyTasks': {
-          _todayKey: {
-            'tasks': tasks,
-            'completed': (_completedTasksNotifier.value[plantId] ?? <int>{}).toList(),
-          }
-        }
-      }, SetOptions(merge: true));
+            'dailyTasks': {
+              _todayKey: {
+                'tasks': tasks,
+                'completed': (_completedTasksNotifier.value[plantId] ?? <int>{})
+                    .toList(),
+              },
+            },
+          }, SetOptions(merge: true));
     } catch (e) {
       print('Error saving tasks: $e');
     }
@@ -1000,13 +1036,13 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     // Update using ValueNotifier to avoid full page rebuild
     final current = Map<String, Set<int>>.from(_completedTasksNotifier.value);
     current.putIfAbsent(plantId, () => <int>{});
-    
+
     if (current[plantId]!.contains(taskIndex)) {
       current[plantId]!.remove(taskIndex);
     } else {
       current[plantId]!.add(taskIndex);
     }
-    
+
     _completedTasksNotifier.value = current;
 
     // Persist to Firestore (async, non-blocking)
@@ -1143,18 +1179,15 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     });
 
     try {
-      await userDocRef.set(
-        {
-          'gardenLocation': {
-            'latitude': result.latitude,
-            'longitude': result.longitude,
-            'address': result.address,
-            'placeId': result.placeId,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
+      await userDocRef.set({
+        'gardenLocation': {
+          'latitude': result.latitude,
+          'longitude': result.longitude,
+          'address': result.address,
+          'placeId': result.placeId,
+          'updatedAt': FieldValue.serverTimestamp(),
         },
-        SetOptions(merge: true),
-      );
+      }, SetOptions(merge: true));
 
       if (!mounted) {
         return;
@@ -1240,19 +1273,13 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                 ? (_gardenAddress ??
                       'Lat: ${_gardenLatitude!.toStringAsFixed(5)}, Lng: ${_gardenLongitude!.toStringAsFixed(5)}')
                 : 'Set your garden location to get localized suggestions and weather context.',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade700,
-            ),
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
           ),
           if (hasLocation) ...[
             const SizedBox(height: 6),
             Text(
               'Lat: ${_gardenLatitude!.toStringAsFixed(5)}, Lng: ${_gardenLongitude!.toStringAsFixed(5)}',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
           const SizedBox(height: 12),
@@ -1285,7 +1312,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
         .collection('plantations')
         .snapshots()
         .map((snapshot) {
-          final plants = snapshot.docs.map((doc) => _mapGardenPlant(doc)).toList();
+          final plants = snapshot.docs
+              .map((doc) => _mapGardenPlant(doc))
+              .toList();
           // Sort based on selected criteria
           switch (_sortBy) {
             case 'newest':
@@ -1305,7 +1334,11 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
               });
               break;
             case 'daysPlanted':
-              plants.sort((a, b) => (b['daysPlanted'] as int).compareTo(a['daysPlanted'] as int));
+              plants.sort(
+                (a, b) => (b['daysPlanted'] as int).compareTo(
+                  a['daysPlanted'] as int,
+                ),
+              );
               break;
             case 'health':
               plants.sort((a, b) {
@@ -1316,7 +1349,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
               break;
             case 'name':
             default:
-              plants.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+              plants.sort(
+                (a, b) => (a['name'] as String).compareTo(b['name'] as String),
+              );
           }
           return plants;
         });
@@ -1340,7 +1375,8 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
 
     int actualDaysPlanted = daysPlanted;
     if (plantedAt != null) {
-      actualDaysPlanted = DateTime.now().difference(plantedAt.toDate()).inDays + 1;
+      actualDaysPlanted =
+          DateTime.now().difference(plantedAt.toDate()).inDays + 1;
     }
     if (actualDaysPlanted < 1) {
       actualDaysPlanted = 1;
@@ -1411,7 +1447,8 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     final normalized = status.toLowerCase();
     if (normalized.contains('healthy')) return 90;
     if (normalized.contains('critical')) return 20;
-    if (normalized.contains('attention') || normalized.contains('warning')) return 55;
+    if (normalized.contains('attention') || normalized.contains('warning'))
+      return 55;
     if (normalized.contains('unknown')) return 50;
     return 60;
   }
@@ -1423,7 +1460,8 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     }
 
     final plantId = plant['id'] as String;
-    final cachedStatus = (_photoAnalysis[plantId]?['status'] as String?)?.trim();
+    final cachedStatus = (_photoAnalysis[plantId]?['status'] as String?)
+        ?.trim();
     if (cachedStatus != null && cachedStatus.isNotEmpty) {
       return _healthFromStatus(cachedStatus);
     }
@@ -1504,10 +1542,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
               Navigator.pop(context);
               _deletePlant(plant['id'] as String);
             },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -1556,9 +1591,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF2E7D32),
-                    ),
+                    child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
                   );
                 }
 
@@ -1567,7 +1600,11 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red[300],
+                        ),
                         const SizedBox(height: 16),
                         const Text('Error loading your garden'),
                       ],
@@ -1576,7 +1613,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                 }
 
                 final plants = snapshot.data ?? [];
-                
+
                 if (plants.isEmpty) {
                   return Center(
                     child: Column(
@@ -1653,7 +1690,8 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     final growthPercent = (growthProgress * 100).round();
     final healthStatus = _getHealthStatus(health);
     final healthColor = _getHealthColor(health);
-    final daysRemaining = (plant['totalDays'] as int) - (plant['daysPlanted'] as int);
+    final daysRemaining =
+        (plant['totalDays'] as int) - (plant['daysPlanted'] as int);
     final plantId = plant['id'] as String;
     final latestPhotoStatus = (plant['latestPhotoStatus'] as String?)?.trim();
     final isExpanded = _expandedPlantId == plantId;
@@ -1734,7 +1772,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFE8F5E9),
                                     borderRadius: BorderRadius.circular(8),
@@ -1789,7 +1830,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                           value: health / 100,
                           minHeight: 8,
                           backgroundColor: Colors.grey[200],
-                          valueColor: AlwaysStoppedAnimation<Color>(healthColor),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            healthColor,
+                          ),
                         ),
                       ),
 
@@ -1825,7 +1868,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                           value: growthProgress,
                           minHeight: 8,
                           backgroundColor: Colors.grey[200],
-                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF2E7D32),
+                          ),
                         ),
                       ),
 
@@ -1835,7 +1880,11 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                       Row(
                         children: [
                           if (daysRemaining > 0) ...[
-                            Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
+                            Icon(
+                              Icons.schedule,
+                              size: 16,
+                              color: Colors.grey[600],
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -1849,7 +1898,11 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                               ),
                             ),
                           ] else ...[
-                            Icon(Icons.check_circle, size: 16, color: Colors.green),
+                            Icon(
+                              Icons.check_circle,
+                              size: 16,
+                              color: Colors.green,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -1866,16 +1919,20 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                           ValueListenableBuilder<Map<String, Set<int>>>(
                             valueListenable: _completedTasksNotifier,
                             builder: (context, completedMap, _) {
-                              final completed = completedMap[plantId] ?? <int>{};
+                              final completed =
+                                  completedMap[plantId] ?? <int>{};
                               final completedCount = completed.length;
                               final totalTasks = tasks.length;
-                              
+
                               return Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   if (totalTasks > 0 && !isExpanded)
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: completedCount == totalTasks
                                             ? const Color(0xFFE8F5E9)
@@ -1995,7 +2052,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
             AnimatedCrossFade(
               firstChild: const SizedBox.shrink(),
               secondChild: _buildTasksDropdown(plantId, tasks, isLoading),
-              crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              crossFadeState: isExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
               duration: const Duration(milliseconds: 300),
             ),
           ],
@@ -2060,7 +2119,8 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
           if (analysis != null) ...[
             _buildAnalysisCard(analysis),
             // Photo-based tasks
-            if (analysis['tasks'] != null && (analysis['tasks'] as List).isNotEmpty) ...[
+            if (analysis['tasks'] != null &&
+                (analysis['tasks'] as List).isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
                 child: Row(
@@ -2083,8 +2143,14 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                 final taskStr = (task['task'] as String?) ?? '';
                 final iconStr = (task['icon'] as String?) ?? 'inspect';
                 return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 3,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 9,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue[50],
                     borderRadius: BorderRadius.circular(10),
@@ -2108,7 +2174,11 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                           ),
                         ),
                       ),
-                      Icon(Icons.auto_awesome, size: 12, color: Colors.blue[300]),
+                      Icon(
+                        Icons.auto_awesome,
+                        size: 12,
+                        color: Colors.blue[300],
+                      ),
                     ],
                   ),
                 );
@@ -2126,7 +2196,11 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                 child: Row(
                   children: [
-                    const Icon(Icons.auto_awesome, size: 16, color: Color(0xFF2E7D32)),
+                    const Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: Color(0xFF2E7D32),
+                    ),
                     const SizedBox(width: 6),
                     const Text(
                       "Today's AI Tasks",
@@ -2199,13 +2273,23 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                     return GestureDetector(
                       onTap: () => _toggleTaskCompletion(plantId, index),
                       child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
-                          color: isDone ? Colors.white.withOpacity(0.6) : Colors.white,
+                          color: isDone
+                              ? Colors.white.withOpacity(0.6)
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isDone ? const Color(0xFFA5D6A7) : Colors.grey[200]!,
+                            color: isDone
+                                ? const Color(0xFFA5D6A7)
+                                : Colors.grey[200]!,
                           ),
                         ),
                         child: Row(
@@ -2216,15 +2300,23 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                               width: 24,
                               height: 24,
                               decoration: BoxDecoration(
-                                color: isDone ? const Color(0xFF2E7D32) : Colors.white,
+                                color: isDone
+                                    ? const Color(0xFF2E7D32)
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                  color: isDone ? const Color(0xFF2E7D32) : Colors.grey[400]!,
+                                  color: isDone
+                                      ? const Color(0xFF2E7D32)
+                                      : Colors.grey[400]!,
                                   width: 2,
                                 ),
                               ),
                               child: isDone
-                                  ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                  ? const Icon(
+                                      Icons.check,
+                                      size: 16,
+                                      color: Colors.white,
+                                    )
                                   : null,
                             ),
                             const SizedBox(width: 10),
@@ -2243,9 +2335,15 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                                 task['task'] ?? '',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: isDone ? Colors.grey[400] : Colors.grey[800],
-                                  decoration: isDone ? TextDecoration.lineThrough : null,
-                                  fontWeight: isDone ? FontWeight.normal : FontWeight.w500,
+                                  color: isDone
+                                      ? Colors.grey[400]
+                                      : Colors.grey[800],
+                                  decoration: isDone
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  fontWeight: isDone
+                                      ? FontWeight.normal
+                                      : FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -2301,7 +2399,9 @@ class _PhotoTimelineScreen extends StatelessWidget {
         fit: fit,
         errorBuilder: (_, __, ___) => Container(
           color: Colors.grey[200],
-          child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+          child: const Center(
+            child: Icon(Icons.broken_image, color: Colors.grey),
+          ),
         ),
       );
     }
@@ -2318,7 +2418,9 @@ class _PhotoTimelineScreen extends StatelessWidget {
       },
       errorBuilder: (_, __, ___) => Container(
         color: Colors.grey[200],
-        child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+        child: const Center(
+          child: Icon(Icons.broken_image, color: Colors.grey),
+        ),
       ),
     );
   }
@@ -2333,10 +2435,16 @@ class _PhotoTimelineScreen extends StatelessWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(plantName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              plantName,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             Text(
               '${photos.length} photos · $totalDays day journey',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.normal,
+              ),
             ),
           ],
         ),
@@ -2392,7 +2500,8 @@ class _PhotoTimelineScreen extends StatelessWidget {
               // ── Photo card ──
               Expanded(
                 child: GestureDetector(
-                  onTap: () => _openFullImage(context, photo, day, status, diagnosis),
+                  onTap: () =>
+                      _openFullImage(context, photo, day, status, diagnosis),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
@@ -2411,7 +2520,9 @@ class _PhotoTimelineScreen extends StatelessWidget {
                       children: [
                         // Image
                         ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
                           child: AspectRatio(
                             aspectRatio: 16 / 10,
                             child: _buildImage(photo),
@@ -2425,7 +2536,10 @@ class _PhotoTimelineScreen extends StatelessWidget {
                               Icon(_statusIcon(status), size: 16, color: color),
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: color.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
@@ -2442,7 +2556,10 @@ class _PhotoTimelineScreen extends StatelessWidget {
                               const Spacer(),
                               Text(
                                 date,
-                                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[500],
+                                ),
                               ),
                             ],
                           ),
@@ -2471,7 +2588,13 @@ class _PhotoTimelineScreen extends StatelessWidget {
     );
   }
 
-  void _openFullImage(BuildContext context, Map<String, dynamic> photo, int day, String status, String diagnosis) {
+  void _openFullImage(
+    BuildContext context,
+    Map<String, dynamic> photo,
+    int day,
+    String status,
+    String diagnosis,
+  ) {
     final color = _statusColor(status);
     Navigator.push(
       context,
@@ -2487,9 +2610,7 @@ class _PhotoTimelineScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: InteractiveViewer(
-                  child: Center(
-                    child: _buildImage(photo, fit: BoxFit.contain),
-                  ),
+                  child: Center(child: _buildImage(photo, fit: BoxFit.contain)),
                 ),
               ),
               Container(
@@ -2517,7 +2638,11 @@ class _PhotoTimelineScreen extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         diagnosis,
-                        style: const TextStyle(fontSize: 13, color: Colors.white70, height: 1.4),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white70,
+                          height: 1.4,
+                        ),
                       ),
                     ],
                   ],
@@ -2559,10 +2684,12 @@ class _GardenLocationPickerScreen extends StatefulWidget {
   final String? initialAddress;
 
   @override
-  State<_GardenLocationPickerScreen> createState() => _GardenLocationPickerScreenState();
+  State<_GardenLocationPickerScreen> createState() =>
+      _GardenLocationPickerScreenState();
 }
 
-class _GardenLocationPickerScreenState extends State<_GardenLocationPickerScreen> {
+class _GardenLocationPickerScreenState
+    extends State<_GardenLocationPickerScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   GoogleMapController? _mapController;
@@ -2577,7 +2704,10 @@ class _GardenLocationPickerScreenState extends State<_GardenLocationPickerScreen
   void initState() {
     super.initState();
     if (widget.initialLatitude != null && widget.initialLongitude != null) {
-      _selectedPoint = LatLng(widget.initialLatitude!, widget.initialLongitude!);
+      _selectedPoint = LatLng(
+        widget.initialLatitude!,
+        widget.initialLongitude!,
+      );
       _selectedAddress = widget.initialAddress;
     }
   }
@@ -2631,9 +2761,7 @@ class _GardenLocationPickerScreenState extends State<_GardenLocationPickerScreen
       _resolvingAddress = true;
     });
 
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(target, 16),
-    );
+    _mapController?.animateCamera(CameraUpdate.newLatLngZoom(target, 16));
 
     final address = await _reverseGeocode(target);
     if (!mounted) {
@@ -2641,7 +2769,8 @@ class _GardenLocationPickerScreenState extends State<_GardenLocationPickerScreen
     }
     setState(() {
       _selectedAddress =
-          address ?? 'Lat: ${target.latitude.toStringAsFixed(5)}, Lng: ${target.longitude.toStringAsFixed(5)}';
+          address ??
+          'Lat: ${target.latitude.toStringAsFixed(5)}, Lng: ${target.longitude.toStringAsFixed(5)}';
       _resolvingAddress = false;
     });
   }
@@ -2660,7 +2789,8 @@ class _GardenLocationPickerScreenState extends State<_GardenLocationPickerScreen
     }
     setState(() {
       _selectedAddress =
-          address ?? 'Lat: ${point.latitude.toStringAsFixed(5)}, Lng: ${point.longitude.toStringAsFixed(5)}';
+          address ??
+          'Lat: ${point.latitude.toStringAsFixed(5)}, Lng: ${point.longitude.toStringAsFixed(5)}';
       _resolvingAddress = false;
     });
   }
@@ -2683,10 +2813,11 @@ class _GardenLocationPickerScreenState extends State<_GardenLocationPickerScreen
     });
 
     try {
-      final uri = Uri.https('maps.googleapis.com', '/maps/api/place/autocomplete/json', {
-        'input': query,
-        'key': widget.apiKey,
-      });
+      final uri = Uri.https(
+        'maps.googleapis.com',
+        '/maps/api/place/autocomplete/json',
+        {'input': query, 'key': widget.apiKey},
+      );
       final response = await http.get(uri);
       if (response.statusCode != 200) {
         if (mounted) {
@@ -2715,7 +2846,11 @@ class _GardenLocationPickerScreenState extends State<_GardenLocationPickerScreen
                 description: (item['description'] as String?) ?? '',
               ),
             )
-            .where((item) => (item.placeId?.isNotEmpty ?? false) && item.description.isNotEmpty)
+            .where(
+              (item) =>
+                  (item.placeId?.isNotEmpty ?? false) &&
+                  item.description.isNotEmpty,
+            )
             .toList();
         _searching = false;
       });
@@ -2820,11 +2955,12 @@ class _GardenLocationPickerScreenState extends State<_GardenLocationPickerScreen
     });
 
     try {
-      final uri = Uri.https('maps.googleapis.com', '/maps/api/place/details/json', {
-        'place_id': suggestion.placeId!,
-        'fields': 'geometry,formatted_address,place_id',
-        'key': widget.apiKey,
-      });
+      final uri =
+          Uri.https('maps.googleapis.com', '/maps/api/place/details/json', {
+            'place_id': suggestion.placeId!,
+            'fields': 'geometry,formatted_address,place_id',
+            'key': widget.apiKey,
+          });
       final response = await http.get(uri);
       if (response.statusCode != 200) {
         if (!mounted) {
@@ -2986,10 +3122,8 @@ class _GardenLocationPickerScreenState extends State<_GardenLocationPickerScreen
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: _suggestions.length,
-                separatorBuilder: (context, index) => Divider(
-                  height: 1,
-                  color: Colors.grey.shade300,
-                ),
+                separatorBuilder: (context, index) =>
+                    Divider(height: 1, color: Colors.grey.shade300),
                 itemBuilder: (context, index) {
                   final suggestion = _suggestions[index];
                   return ListTile(

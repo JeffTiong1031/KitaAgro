@@ -3,6 +3,7 @@ import 'package:kita_agro/features/Farmer/grant/grant_intro_screen.dart';
 import 'package:kita_agro/features/Farmer/Rental/land_listing_screen.dart';
 import 'package:kita_agro/features/Farmer/Map/map_market_main_screen.dart';
 import 'package:kita_agro/features/Farmer/pest_distribution_map_screen.dart';
+import 'package:kita_agro/core/services/app_localizations.dart';
 
 class FarmerScreen extends StatelessWidget {
   const FarmerScreen({super.key});
@@ -13,8 +14,10 @@ class FarmerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Farmer Hub')),
+      appBar: AppBar(title: Text(loc.farmerHub)),
       body: GridView.count(
         crossAxisCount: 2,
         padding: const EdgeInsets.all(12),
@@ -24,28 +27,28 @@ class FarmerScreen extends StatelessWidget {
           _buildFunctionCard(
             context,
             icon: Icons.school,
-            title: 'Agropreneur\nGuideline',
+            title: loc.agropreneurGuideline,
             color: Colors.blue,
             onTap: () => _navigateTo(context, const GrantIntroScreen()),
           ),
           _buildFunctionCard(
             context,
             icon: Icons.agriculture,
-            title: 'Farm Land\nRental',
+            title: loc.farmLandRental,
             color: Colors.green,
             onTap: () => _navigateTo(context, const LandListingScreen()),
           ),
           _buildFunctionCard(
             context,
             icon: Icons.shopping_bag,
-            title: 'Marketplace &\nMap',
+            title: loc.marketplaceAndMap,
             color: Colors.orange,
             onTap: () => _navigateTo(context, const MapMarketMainScreen()),
           ),
           _buildFunctionCard(
             context,
             icon: Icons.bug_report,
-            title: 'Pest\nDistribution',
+            title: loc.pestDistribution,
             color: Colors.red,
             onTap: () =>
                 _navigateTo(context, const PestDistributionMapScreen()),

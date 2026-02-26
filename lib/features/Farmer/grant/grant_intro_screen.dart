@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'grant_requirements_screen.dart';
+import 'package:kita_agro/core/services/app_localizations.dart';
 
 class GrantIntroScreen extends StatelessWidget {
   const GrantIntroScreen({super.key});
@@ -57,7 +58,7 @@ class GrantIntroScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Young Agropreneur\nGrant',
+                  AppLocalizations.of(context).youngAgropreneurGrant,
                   style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
@@ -74,7 +75,7 @@ class GrantIntroScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 _outlinedText(
-                  'Accelerating Your Career in Agriculture',
+                  AppLocalizations.of(context).acceleratingCareer,
                   const TextStyle(
                     fontSize: 18,
                     color: Colors.white,
@@ -129,9 +130,9 @@ class GrantIntroScreen extends StatelessWidget {
                           const SizedBox(height: 24),
 
                           // Intro Title
-                          const Text(
-                            'Program Overview',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context).programOverview,
+                            style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
@@ -141,7 +142,7 @@ class GrantIntroScreen extends StatelessWidget {
 
                           // Intro Description
                           Text(
-                            'The Young Agropreneur Program (PAM) is designed for young individuals aged 18 to 45. It aims to support and encourage youth involvement in agri-entrepreneurship across the entire agricultural value chain.',
+                            AppLocalizations.of(context).programOverviewDesc,
                             style: TextStyle(
                               fontSize: 16,
                               height: 1.6,
@@ -171,7 +172,9 @@ class GrantIntroScreen extends StatelessWidget {
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Text(
-                                    'Empowering the next generation of agricultural entrepreneurs',
+                                    AppLocalizations.of(
+                                      context,
+                                    ).empoweringNextGen,
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: Colors.green[900],
@@ -228,9 +231,9 @@ class GrantIntroScreen extends StatelessWidget {
                     ),
                     elevation: 2,
                   ),
-                  child: const Text(
-                    'VIEW REQUIREMENTS',
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context).viewRequirements,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,

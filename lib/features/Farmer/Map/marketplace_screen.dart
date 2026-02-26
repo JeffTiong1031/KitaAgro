@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../core/services/app_localizations.dart';
 
 import 'package:kita_agro/models/product_listing.dart';
 import 'package:kita_agro/widgets/dynamic_contact_button.dart';
@@ -112,9 +113,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('Weight: ${product.weight.toStringAsFixed(2)} kg'),
-                Text('Harvest Date: $dateLabel'),
-                Text('Contact: ${product.contactNumber}'),
+                Text(
+                  AppLocalizations.of(
+                    context,
+                  ).weightKg(product.weight.toStringAsFixed(2)),
+                ),
+                Text(AppLocalizations.of(context).harvestDateLabel(dateLabel)),
+                Text(
+                  AppLocalizations.of(
+                    context,
+                  ).contactLabel(product.contactNumber),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +152,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Marketplace'),
+        title: Text(AppLocalizations.of(context).marketplace),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(64),
           child: Padding(
@@ -151,7 +160,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search by crop or location',
+                hintText: AppLocalizations.of(context).searchByCropOrLocation,
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Theme.of(context).colorScheme.surface,
@@ -185,8 +194,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             return Center(
               child: Text(
                 _searchQuery.isEmpty
-                    ? 'No products yet. Check back soon!'
-                    : 'No results for "$_searchQuery"',
+                    ? AppLocalizations.of(context).noProductsYet
+                    : AppLocalizations.of(context).noResultsFor(_searchQuery),
               ),
             );
           }

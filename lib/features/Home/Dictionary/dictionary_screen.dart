@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kita_agro/core/services/gemini_api_service.dart';
+import 'package:kita_agro/core/services/app_localizations.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -17,14 +18,11 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   String _selectedCost = 'All';
   String _selectedDifficulty = 'All';
   final ScrollController _gridController = ScrollController();
-  final GeminiApiService _geminiService = GeminiApiService('AIzaSyBM5iu-EhSPggjAcQffEVUFLTq655xHea4');
+  final GeminiApiService _geminiService = GeminiApiService(
+    'AIzaSyBM5iu-EhSPggjAcQffEVUFLTq655xHea4',
+  );
 
-  final List<String> _categories = [
-    'All',
-    'Vegetables',
-    'Fruits',
-    'Herbs',
-  ];
+  final List<String> _categories = ['All', 'Vegetables', 'Fruits', 'Herbs'];
 
   final List<String> _costFilters = ['All', 'Low', 'Medium', 'High'];
   final List<String> _difficultyFilters = ['All', 'Easy', 'Medium', 'Hard'];
@@ -40,7 +38,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'icon': Icons.circle,
       'color': Color(0xFFE53935),
       'growthTime': '80-100 days',
-      'description': 'A popular garden vegetable rich in vitamins A and C. Tomatoes are used in salads, sauces, and many cuisines worldwide.',
+      'description':
+          'A popular garden vegetable rich in vitamins A and C. Tomatoes are used in salads, sauces, and many cuisines worldwide.',
     },
     {
       'name': 'Chili',
@@ -51,7 +50,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'icon': Icons.local_fire_department,
       'color': Color(0xFFD32F2F),
       'growthTime': '90-120 days',
-      'description': 'Spicy fruit used in many cuisines worldwide. Contains capsaicin which gives the heat.',
+      'description':
+          'Spicy fruit used in many cuisines worldwide. Contains capsaicin which gives the heat.',
     },
     // Fruits
     {
@@ -63,7 +63,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'icon': Icons.spa,
       'color': Color(0xFFFFB300),
       'growthTime': '240-330 days',
-      'description': 'Tropical fruit with sweet orange flesh. Rich in enzymes and vitamins.',
+      'description':
+          'Tropical fruit with sweet orange flesh. Rich in enzymes and vitamins.',
     },
     {
       'name': 'Banana',
@@ -74,7 +75,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'icon': Icons.nature,
       'color': Color(0xFFFFEB3B),
       'growthTime': '270-360 days',
-      'description': 'Tropical fruit rich in potassium. Requires warm frost-free climate (above 10°C year-round). Dies at 0°C. NOT suitable for temperate zones with winter frost.',
+      'description':
+          'Tropical fruit rich in potassium. Requires warm frost-free climate (above 10°C year-round). Dies at 0°C. NOT suitable for temperate zones with winter frost.',
     },
     {
       'name': 'Strawberry',
@@ -85,7 +87,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'icon': Icons.local_florist,
       'color': Color(0xFFE91E63),
       'growthTime': '90-120 days',
-      'description': 'Sweet red fruit rich in vitamin C and antioxidants. Best with good drainage and regular care.',
+      'description':
+          'Sweet red fruit rich in vitamin C and antioxidants. Best with good drainage and regular care.',
     },
     {
       'name': 'Apple',
@@ -96,7 +99,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'icon': Icons.apple,
       'color': Color(0xFFEF5350),
       'growthTime': '4-5 years',
-      'description': 'Temperate fruit tree requiring 800-1000 chill hours (below 7°C). NOT suitable for tropical lowlands. Best in highland areas above 1000m elevation.',
+      'description':
+          'Temperate fruit tree requiring 800-1000 chill hours (below 7°C). NOT suitable for tropical lowlands. Best in highland areas above 1000m elevation.',
     },
     // Herbs
     {
@@ -108,16 +112,20 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       'icon': Icons.grass,
       'color': Color(0xFF388E3C),
       'growthTime': '120-180 days',
-      'description': 'Fragrant leaves used in Southeast Asian desserts and rice dishes.',
+      'description':
+          'Fragrant leaves used in Southeast Asian desserts and rice dishes.',
     },
   ];
 
   List<Map<String, dynamic>> get _filteredPlants {
     return _plants.where((plant) {
-      final categoryMatch = _selectedCategory == 'All' || plant['category'] == _selectedCategory;
-      final costMatch = _selectedCost == 'All' || plant['cost'] == _selectedCost;
+      final categoryMatch =
+          _selectedCategory == 'All' || plant['category'] == _selectedCategory;
+      final costMatch =
+          _selectedCost == 'All' || plant['cost'] == _selectedCost;
       final difficultyMatch =
-          _selectedDifficulty == 'All' || plant['difficulty'] == _selectedDifficulty;
+          _selectedDifficulty == 'All' ||
+          plant['difficulty'] == _selectedDifficulty;
       return categoryMatch && costMatch && difficultyMatch;
     }).toList();
   }
@@ -212,17 +220,17 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   /// Estimate annual carbon reduction in kg CO2 per year based on plant type
   double _estimateCarbonReduction(String name, String category, int totalDays) {
     final nameLower = name.toLowerCase();
-    
+
     // Trees absorb the most CO2
     if (nameLower.contains('apple') || nameLower.contains('tree')) {
       return 25.0; // Large trees: ~25kg CO2/year
     }
-    
+
     // Medium plants
     if (nameLower.contains('papaya') || nameLower.contains('banana')) {
       return 12.0; // Medium plants: ~12kg CO2/year
     }
-    
+
     // Vegetables and herbs based on category
     switch (category.toLowerCase()) {
       case 'vegetable':
@@ -577,7 +585,8 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
         return;
       }
 
-      final locationData = userDoc.data()!['gardenLocation'] as Map<String, dynamic>;
+      final locationData =
+          userDoc.data()!['gardenLocation'] as Map<String, dynamic>;
       final latitude = locationData['latitude'] as double;
       final longitude = locationData['longitude'] as double;
       _locationName = locationData['address'] ?? 'Your location';
@@ -590,7 +599,8 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
 
       if (weatherResponse.statusCode == 200) {
         final weatherJson = jsonDecode(weatherResponse.body);
-        _temperature = (weatherJson['current']?['temperature_2m'] ?? 25.0).toDouble();
+        _temperature = (weatherJson['current']?['temperature_2m'] ?? 25.0)
+            .toDouble();
         final weatherCode = weatherJson['current']?['weather_code'] ?? 0;
         _weatherCondition = _weatherCodeToCondition(weatherCode);
       }
@@ -607,7 +617,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
     try {
       final plantName = widget.plant['name'];
       final cacheKey = '$plantName-$_locationName';
-      
+
       // Check cache first
       if (_aiCache.containsKey(cacheKey)) {
         print('💾 Using cached data for $plantName in $_locationName');
@@ -620,7 +630,8 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
       }
 
       final now = DateTime.now();
-      if (_aiQuotaCooldownUntil != null && now.isBefore(_aiQuotaCooldownUntil!)) {
+      if (_aiQuotaCooldownUntil != null &&
+          now.isBefore(_aiQuotaCooldownUntil!)) {
         final fallback = _buildFallbackAdvice(plantName);
         _aiCache[cacheKey] = fallback;
         setState(() {
@@ -630,13 +641,14 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
         });
         return;
       }
-      
+
       print('🤖 Calling Gemini AI for $plantName...');
       print('📍 Location: $_locationName');
       print('🌡️ Temperature: $_temperature°C');
       print('🌤️ Weather: $_weatherCondition');
-      
+
       // Fetch AI advice
+      final langCode = LanguageServiceProvider.of(context).currentLanguage.code;
       final advice = await widget.geminiService.getLocalizedAdvice(
         plantName: plantName,
         scientificName: widget.plant['scientificName'],
@@ -644,6 +656,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
         location: _locationName,
         temperature: _temperature,
         weatherCondition: _weatherCondition,
+        languageCode: langCode,
       );
 
       print('✅ AI Response received: ${advice != null}');
@@ -651,7 +664,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
         print('📊 Local Match Score: ${advice['localMatchScore']}');
         print('🌱 Growth Time: ${advice['growthTime']}');
         print('☀️ Sunlight: ${advice['sunlight']}');
-        
+
         // Cache the result
         _aiCache[cacheKey] = advice;
         _debugError = 'Data: OK ✓';
@@ -697,9 +710,12 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
       'growthTime': widget.plant['growthTime'] ?? '60-120 days',
       'difficulty': 'Moderate - monitor weather and pests',
       'sunlight': '4-6 hours sunlight daily',
-      'watering': _temperature >= 30 ? 'Water morning and late afternoon' : 'Water once daily',
+      'watering': _temperature >= 30
+          ? 'Water morning and late afternoon'
+          : 'Water once daily',
       'soil': 'Well-drained soil with compost',
-      'carbonReduction': carbonByCategory[category] ?? 'About 3-5 kg CO₂/year reduction',
+      'carbonReduction':
+          carbonByCategory[category] ?? 'About 3-5 kg CO₂/year reduction',
       'materialsNeeded': [
         {'item': 'Organic compost', 'purpose': 'Improve soil fertility'},
         {'item': 'Mulch', 'purpose': 'Keep moisture stable'},
@@ -707,10 +723,30 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
         {'item': 'Neem spray', 'purpose': 'Prevent pests naturally'},
       ],
       'growthStages': [
-        {'stage': 'Seedling', 'startDay': 1, 'endDay': 14, 'description': 'Establish roots'},
-        {'stage': 'Vegetative', 'startDay': 15, 'endDay': 45, 'description': 'Leaf and stem growth'},
-        {'stage': 'Flowering', 'startDay': 46, 'endDay': 75, 'description': 'Flower formation'},
-        {'stage': 'Maturity', 'startDay': 76, 'endDay': 120, 'description': 'Harvest ready'},
+        {
+          'stage': 'Seedling',
+          'startDay': 1,
+          'endDay': 14,
+          'description': 'Establish roots',
+        },
+        {
+          'stage': 'Vegetative',
+          'startDay': 15,
+          'endDay': 45,
+          'description': 'Leaf and stem growth',
+        },
+        {
+          'stage': 'Flowering',
+          'startDay': 46,
+          'endDay': 75,
+          'description': 'Flower formation',
+        },
+        {
+          'stage': 'Maturity',
+          'startDay': 76,
+          'endDay': 120,
+          'description': 'Harvest ready',
+        },
       ],
     };
   }
@@ -729,33 +765,33 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
   String _getDetailedInfo(String key) {
     final plantName = widget.plant['name'];
     final location = _locationName;
-    
+
     switch (key) {
       case 'growthTime':
         return 'Growth time varies based on your local climate conditions in $location. '
-               'Factors like temperature (${_temperature.toStringAsFixed(1)}°C), daylight hours, '
-               'and seasonal patterns all affect how quickly $plantName matures.';
-               
+            'Factors like temperature (${_temperature.toStringAsFixed(1)}°C), daylight hours, '
+            'and seasonal patterns all affect how quickly $plantName matures.';
+
       case 'difficulty':
         return 'Difficulty rating considers climate compatibility, maintenance requirements, '
-               'pest resistance, and how well $plantName adapts to $location conditions. '
-               'Beginners should start with "Easy" rated plants.';
-               
+            'pest resistance, and how well $plantName adapts to $location conditions. '
+            'Beginners should start with "Easy" rated plants.';
+
       case 'sunlight':
         return 'Sunlight requirements are crucial for photosynthesis and healthy growth. '
-               'In $location, consider seasonal variations and provide shade during extremely hot periods. '
-               'Morning sun is generally gentler than harsh afternoon sun.';
-               
+            'In $location, consider seasonal variations and provide shade during extremely hot periods. '
+            'Morning sun is generally gentler than harsh afternoon sun.';
+
       case 'watering':
         return 'Current weather: $_weatherCondition at ${_temperature.toStringAsFixed(1)}°C. '
-               'Adjust watering frequency based on rainfall, humidity, and soil moisture. '
-               'Overwatering is a common mistake - check soil before watering.';
-               
+            'Adjust watering frequency based on rainfall, humidity, and soil moisture. '
+            'Overwatering is a common mistake - check soil before watering.';
+
       case 'soil':
         return 'Soil quality directly impacts nutrient availability and root health. '
-               'In $location, amend soil based on local conditions. Good drainage prevents root rot, '
-               'while organic matter improves fertility and water retention.';
-               
+            'In $location, amend soil based on local conditions. Good drainage prevents root rot, '
+            'while organic matter improves fertility and water retention.';
+
       default:
         return '';
     }
@@ -803,7 +839,11 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.orange.shade700,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -843,25 +883,40 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                         const SizedBox(height: 4),
                         Text(
                           'Loading: $_isLoadingAI',
-                          style: TextStyle(fontSize: 11, color: Colors.blue.shade800),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.blue.shade800,
+                          ),
                         ),
                         Text(
                           'AI Data: ${_aiAdvice != null ? "✅ Received" : "❌ Null"}',
-                          style: TextStyle(fontSize: 11, color: Colors.blue.shade800),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.blue.shade800,
+                          ),
                         ),
                         Text(
                           'Location: $_locationName',
-                          style: TextStyle(fontSize: 11, color: Colors.blue.shade800),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.blue.shade800,
+                          ),
                         ),
                         if (_aiAdvice != null)
                           Text(
                             'Score: ${_aiAdvice!['localMatchScore']}',
-                            style: TextStyle(fontSize: 11, color: Colors.blue.shade800),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.blue.shade800,
+                            ),
                           ),
                         if (_debugError.isNotEmpty)
                           Text(
                             'Error: $_debugError',
-                            style: TextStyle(fontSize: 11, color: Colors.red.shade800),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.red.shade800,
+                            ),
                           ),
                       ],
                     ),
@@ -895,9 +950,11 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                     const SizedBox(height: 24),
 
                   // AI SECTION 3.6: Materials Needed
-                  if (_aiAdvice != null && _aiAdvice!['materialsNeeded'] != null)
+                  if (_aiAdvice != null &&
+                      _aiAdvice!['materialsNeeded'] != null)
                     _buildMaterialsNeeded(_aiAdvice!['materialsNeeded']),
-                  if (_aiAdvice != null && _aiAdvice!['materialsNeeded'] != null)
+                  if (_aiAdvice != null &&
+                      _aiAdvice!['materialsNeeded'] != null)
                     const SizedBox(height: 24),
 
                   // AI SECTION 4: Carbon Reduction
@@ -1008,11 +1065,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 1.5),
                   ),
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                    size: 14,
-                  ),
+                  child: const Icon(Icons.add, color: Colors.white, size: 14),
                 ),
               ),
             ),
@@ -1042,7 +1095,10 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
               ),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Color(0xFFE8F5E9),
                   borderRadius: BorderRadius.circular(12),
@@ -1116,10 +1172,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
               children: [
                 Text(
                   'Local Climate Match',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
                 Text(
                   scoreLabel,
@@ -1132,10 +1185,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                 const SizedBox(height: 4),
                 Text(
                   'for $_locationName',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                 ),
               ],
             ),
@@ -1212,7 +1262,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                 color: Color(0xFF1B5E20),
               ),
             ),
-            if (_aiAdvice != null) ...[ 
+            if (_aiAdvice != null) ...[
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1240,33 +1290,33 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
           ],
         ),
         const SizedBox(height: 12),
-        
+
         _buildInfoCard(
-          Icons.schedule, 
+          Icons.schedule,
           'Growth Time',
           'growthTime',
           _aiAdvice?['growthTime'] ?? '',
         ),
         _buildInfoCard(
-          Icons.trending_up, 
+          Icons.trending_up,
           'Difficulty',
           'difficulty',
           _aiAdvice?['difficulty'] ?? '',
         ),
         _buildInfoCard(
-          Icons.wb_sunny, 
+          Icons.wb_sunny,
           'Sunlight',
           'sunlight',
           _aiAdvice?['sunlight'] ?? '',
         ),
         _buildInfoCard(
-          Icons.water_drop, 
+          Icons.water_drop,
           'Water',
           'watering',
           _aiAdvice?['watering'] ?? '',
         ),
         _buildInfoCard(
-          Icons.landscape, 
+          Icons.landscape,
           'Soil',
           'soil',
           _aiAdvice?['soil'] ?? '',
@@ -1303,7 +1353,9 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
 
     if (stages.isEmpty) return const SizedBox.shrink();
 
-    stages.sort((a, b) => (a['startDay'] as int).compareTo(b['startDay'] as int));
+    stages.sort(
+      (a, b) => (a['startDay'] as int).compareTo(b['startDay'] as int),
+    );
 
     final int totalDays = stages.last['endDay'] as int;
 
@@ -1372,7 +1424,8 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
             child: Row(
               children: List.generate(stages.length, (i) {
                 final s = stages[i];
-                final int days = (s['endDay'] as int) - (s['startDay'] as int) + 1;
+                final int days =
+                    (s['endDay'] as int) - (s['startDay'] as int) + 1;
                 final double fraction = days / totalDays;
                 return Expanded(
                   flex: (fraction * 1000).round().clamp(1, 1000),
@@ -1452,7 +1505,10 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: color.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(8),
@@ -1472,7 +1528,10 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                           const SizedBox(height: 4),
                           Text(
                             s['description'] as String,
-                            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
                           ),
                         ],
                         const SizedBox(height: 4),
@@ -1507,15 +1566,43 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
     IconData _materialIcon(String item) {
       final lower = item.toLowerCase();
       if (lower.contains('seed')) return Icons.grain;
-      if (lower.contains('fertiliz') || lower.contains('compost') || lower.contains('manure')) return Icons.science;
-      if (lower.contains('pot') || lower.contains('container') || lower.contains('tray')) return Icons.inventory_2;
-      if (lower.contains('water') || lower.contains('hose') || lower.contains('can')) return Icons.water_drop;
-      if (lower.contains('soil') || lower.contains('mulch') || lower.contains('peat')) return Icons.terrain;
-      if (lower.contains('trellis') || lower.contains('stake') || lower.contains('support')) return Icons.vertical_align_top;
-      if (lower.contains('net') || lower.contains('cover') || lower.contains('shade')) return Icons.shield;
-      if (lower.contains('prun') || lower.contains('scissor') || lower.contains('shear')) return Icons.content_cut;
-      if (lower.contains('pesticide') || lower.contains('spray') || lower.contains('insect')) return Icons.bug_report;
-      if (lower.contains('shovel') || lower.contains('spade') || lower.contains('tool') || lower.contains('hoe')) return Icons.handyman;
+      if (lower.contains('fertiliz') ||
+          lower.contains('compost') ||
+          lower.contains('manure'))
+        return Icons.science;
+      if (lower.contains('pot') ||
+          lower.contains('container') ||
+          lower.contains('tray'))
+        return Icons.inventory_2;
+      if (lower.contains('water') ||
+          lower.contains('hose') ||
+          lower.contains('can'))
+        return Icons.water_drop;
+      if (lower.contains('soil') ||
+          lower.contains('mulch') ||
+          lower.contains('peat'))
+        return Icons.terrain;
+      if (lower.contains('trellis') ||
+          lower.contains('stake') ||
+          lower.contains('support'))
+        return Icons.vertical_align_top;
+      if (lower.contains('net') ||
+          lower.contains('cover') ||
+          lower.contains('shade'))
+        return Icons.shield;
+      if (lower.contains('prun') ||
+          lower.contains('scissor') ||
+          lower.contains('shear'))
+        return Icons.content_cut;
+      if (lower.contains('pesticide') ||
+          lower.contains('spray') ||
+          lower.contains('insect'))
+        return Icons.bug_report;
+      if (lower.contains('shovel') ||
+          lower.contains('spade') ||
+          lower.contains('tool') ||
+          lower.contains('hoe'))
+        return Icons.handyman;
       return Icons.check_circle_outline;
     }
 
@@ -1551,7 +1638,11 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.auto_awesome, size: 12, color: Colors.amber[800]),
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 12,
+                      color: Colors.amber[800],
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'AI Powered',
@@ -1576,7 +1667,10 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
               return Tooltip(
                 message: purpose,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
@@ -1592,7 +1686,11 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(_materialIcon(item), size: 16, color: Colors.amber[700]),
+                      Icon(
+                        _materialIcon(item),
+                        size: 16,
+                        color: Colors.amber[700],
+                      ),
                       const SizedBox(width: 6),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1649,10 +1747,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
               children: [
                 const Text(
                   'Carbon Impact',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.white70),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -1686,25 +1781,26 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
         const SizedBox(height: 8),
         Text(
           content,
-          style: TextStyle(
-            fontSize: 15,
-            color: Colors.grey[700],
-            height: 1.5,
-          ),
+          style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.5),
         ),
       ],
     );
   }
 
-  Widget _buildInfoCard(IconData icon, String label, String key, String? value) {
+  Widget _buildInfoCard(
+    IconData icon,
+    String label,
+    String key,
+    String? value,
+  ) {
     // Only show card if value exists and is not empty
     if (value == null || value.isEmpty) {
       return const SizedBox.shrink();
     }
-    
+
     final isExpanded = _expandedCards.contains(key);
     final detailedInfo = _getDetailedInfo(key);
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -1746,10 +1842,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                     children: [
                       Text(
                         label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                       Text(
                         value,
@@ -1763,7 +1856,9 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                   ),
                 ),
                 Icon(
-                  isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  isExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
                   color: Color(0xFF2E7D32),
                   size: 24,
                 ),
@@ -1793,4 +1888,3 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
     );
   }
 }
-

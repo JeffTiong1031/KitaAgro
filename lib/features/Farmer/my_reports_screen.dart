@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/services/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -21,13 +22,14 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
 
   Future<void> _markAsCleared(String docId) async {
     try {
-      await FirebaseFirestore.instance.collection('pest_reports').doc(docId).update({
-        'status': 'cleared',
-      });
+      await FirebaseFirestore.instance
+          .collection('pest_reports')
+          .doc(docId)
+          .update({'status': 'cleared'});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Outbreak marked as cleared!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).outbreakMarkedCleared),
             backgroundColor: Colors.green,
           ),
         );
@@ -36,7 +38,9 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error clearing outbreak: $e'),
+            content: Text(
+              '${AppLocalizations.of(context).errorClearingOutbreak}: $e',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -48,12 +52,12 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Outbreak Reports'),
+        title: Text(AppLocalizations.of(context).myOutbreakReports),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
       body: currentUserId.isEmpty
-          ? const Center(child: Text("Please log in to view your reports."))
+          ? Center(child: Text(AppLocalizations.of(context).pleaseLoginReports))
           : StreamBuilder<QuerySnapshot>(
               stream: _myReportsStream,
               builder: (context, snapshot) {
@@ -61,21 +65,28 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return const Center(child: Text("Error loading reports."));
+                  return Center(
+                    child: Text(
+                      AppLocalizations.of(context).errorLoadingReports,
+                    ),
+                  );
                 }
 
                 final docs = snapshot.data?.docs ?? [];
 
                 if (docs.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.history, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
+                        const Icon(Icons.history, size: 64, color: Colors.grey),
+                        const SizedBox(height: 16),
                         Text(
-                          "You haven't reported any outbreaks yet.",
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                          AppLocalizations.of(context).noOutbreaksYet,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
@@ -98,14 +109,17 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                   itemBuilder: (context, index) {
                     final doc = docs[index];
                     final data = doc.data() as Map<String, dynamic>;
-                    
+
                     final String pestName = data['pestName'] ?? 'Unknown Pest';
                     final String status = data['status'] ?? 'active';
-                    final Timestamp? timestamp = data['timestamp'] as Timestamp?;
-                    
+                    final Timestamp? timestamp =
+                        data['timestamp'] as Timestamp?;
+
                     String dateString = 'Pending...';
                     if (timestamp != null) {
-                      dateString = DateFormat('MMM d, yyyy - h:mm a').format(timestamp.toDate());
+                      dateString = DateFormat(
+                        'MMM d, yyyy - h:mm a',
+                      ).format(timestamp.toDate());
                     }
 
                     final bool isActive = status == 'active';
@@ -128,23 +142,36 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: isActive ? Colors.black87 : Colors.grey,
-                                      decoration: isActive ? null : TextDecoration.lineThrough,
+                                      color: isActive
+                                          ? Colors.black87
+                                          : Colors.grey,
+                                      decoration: isActive
+                                          ? null
+                                          : TextDecoration.lineThrough,
                                     ),
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: isActive ? Colors.red.shade100 : Colors.green.shade100,
+                                    color: isActive
+                                        ? Colors.red.shade100
+                                        : Colors.green.shade100,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
-                                    isActive ? 'ACTIVE' : 'CLEARED',
+                                    isActive
+                                        ? AppLocalizations.of(context).active
+                                        : AppLocalizations.of(context).cleared,
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
-                                      color: isActive ? Colors.red.shade800 : Colors.green.shade800,
+                                      color: isActive
+                                          ? Colors.red.shade800
+                                          : Colors.green.shade800,
                                     ),
                                   ),
                                 ),
@@ -153,11 +180,18 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                                const Icon(
+                                  Icons.access_time,
+                                  size: 16,
+                                  color: Colors.grey,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   dateString,
-                                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ],
                             ),
@@ -167,10 +201,13 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                                 width: double.infinity,
                                 child: OutlinedButton.icon(
                                   onPressed: () => _markAsCleared(doc.id),
-                                  icon: const Icon(Icons.check_circle_outline, color: Colors.green),
-                                  label: const Text(
-                                    'Mark Outbreak as Cleared',
-                                    style: TextStyle(color: Colors.green),
+                                  icon: const Icon(
+                                    Icons.check_circle_outline,
+                                    color: Colors.green,
+                                  ),
+                                  label: Text(
+                                    AppLocalizations.of(context).markAsCleared,
+                                    style: const TextStyle(color: Colors.green),
                                   ),
                                   style: OutlinedButton.styleFrom(
                                     side: const BorderSide(color: Colors.green),

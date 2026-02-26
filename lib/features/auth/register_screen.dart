@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../features/auth/auth_service.dart';
 import '../../main_layout.dart';
+import '../../core/services/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -58,6 +59,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _nextPage() async {
+    final loc = AppLocalizations.of(context);
+
     // Validation logic for each step
     if (_currentStep == 0) {
       String email = _emailController.text.trim();
@@ -65,36 +68,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
       String password = _passwordController.text.trim();
 
       if (email.isEmpty || password.isEmpty || username.isEmpty) {
-        _showError("Please fill in all fields");
+        _showError(loc.pleaseFillAllFields);
         return;
       }
       if (!_isValidEmail(email)) {
-        _showError("Please enter a valid email address");
+        _showError(loc.pleaseEnterValidEmail);
         return;
       }
       if (password.length < 6) {
-        _showError("Password must be at least 6 characters");
+        _showError(loc.passwordMinLength);
         return;
       }
 
-      // Check username uniqueness (Optional UX improvement: show loading indicator here)
+      // Check username uniqueness
       bool isAvailable = await _authService.isUsernameAvailable(username);
       if (!isAvailable) {
-        _showError("Username is already taken. Please choose another.");
+        _showError(loc.usernameTaken);
         return;
       }
     } else if (_currentStep == 1) {
       if (_nameController.text.isEmpty ||
           _ageController.text.isEmpty ||
           _selectedGender == null) {
-        _showError("Please fill in all fields");
+        _showError(loc.pleaseFillAllFields);
         return;
       }
     } else if (_currentStep == 2) {
       if (_townController.text.isEmpty ||
           _stateController.text.isEmpty ||
           _countryController.text.isEmpty) {
-        _showError("Please fill in all fields");
+        _showError(loc.pleaseFillAllFields);
         return;
       }
     }
@@ -121,8 +124,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _finishRegistration() async {
+    final loc = AppLocalizations.of(context);
+
     if (_selectedRole == null) {
-      _showError("Please select a role");
+      _showError(loc.pleaseSelectRole);
       return;
     }
 
@@ -169,6 +174,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -217,7 +224,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   child: Text(
-                    _currentStep == _totalSteps - 1 ? "Finish" : "Next",
+                    _currentStep == _totalSteps - 1 ? loc.finish : loc.next,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -241,16 +248,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildAccountPage() {
+    final loc = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(30.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildStepTitle("Create your account"),
+          _buildStepTitle(loc.createAccount),
           const SizedBox(height: 30),
           _buildTextField(
             controller: _emailController,
-            label: "Email",
+            label: loc.email,
             icon: Icons.email,
             type: TextInputType.emailAddress,
             action: TextInputAction.next,
@@ -258,14 +266,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SizedBox(height: 20),
           _buildTextField(
             controller: _usernameController,
-            label: "Username",
+            label: loc.username,
             icon: Icons.person,
             action: TextInputAction.next,
           ),
           const SizedBox(height: 20),
           _buildTextField(
             controller: _passwordController,
-            label: "Password",
+            label: loc.password,
             icon: Icons.lock,
             obscure: true,
             action: TextInputAction.done,
@@ -277,34 +285,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildPersonalPage() {
+    final loc = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(30.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildStepTitle("Tell us about yourself"),
+          _buildStepTitle(loc.tellAboutYourself),
           const SizedBox(height: 30),
           _buildTextField(
             controller: _nameController,
-            label: "Full Name",
+            label: loc.fullName,
             icon: Icons.badge,
             action: TextInputAction.next,
           ),
           const SizedBox(height: 20),
           _buildTextField(
             controller: _ageController,
-            label: "Age",
+            label: loc.age,
             icon: Icons.calendar_today,
             type: TextInputType.number,
             action: TextInputAction.done,
-            // Not calling _nextPage() here because gender dropdown is next
           ),
           const SizedBox(height: 20),
           _buildDropdown(
-            items: ["Male", "Female", "Prefer not to say"],
+            items: [loc.male, loc.female, loc.preferNotToSay],
             value: _selectedGender,
             onChanged: (val) => setState(() => _selectedGender = val),
-            hint: "Select Gender",
+            hint: loc.selectGender,
             icon: Icons.people,
           ),
         ],
@@ -313,30 +321,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildLocationPage() {
+    final loc = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(30.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildStepTitle("Where are you located?"),
+          _buildStepTitle(loc.whereAreYou),
           const SizedBox(height: 30),
           _buildTextField(
             controller: _townController,
-            label: "Town/City",
+            label: loc.townCity,
             icon: Icons.location_city,
             action: TextInputAction.next,
           ),
           const SizedBox(height: 20),
           _buildTextField(
             controller: _stateController,
-            label: "State",
+            label: loc.state,
             icon: Icons.map,
             action: TextInputAction.next,
           ),
           const SizedBox(height: 20),
           _buildTextField(
             controller: _countryController,
-            label: "Country",
+            label: loc.country,
             icon: Icons.flag,
             action: TextInputAction.done,
             onSubmitted: (_) => _nextPage(),
@@ -347,18 +356,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildRolePage() {
+    final loc = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(30.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildStepTitle("What best describes you?"),
+          _buildStepTitle(loc.whatDescribesYou),
           const SizedBox(height: 30),
           _buildDropdown(
-            items: ["Farmer", "Home Grower", "Agronomist", "Business Company"],
+            items: [
+              loc.farmer,
+              loc.homeGrower,
+              loc.agronomist,
+              loc.businessCompany,
+            ],
             value: _selectedRole,
             onChanged: (val) => setState(() => _selectedRole = val),
-            hint: "Select Role",
+            hint: loc.selectRole,
             icon: Icons.work,
           ),
         ],

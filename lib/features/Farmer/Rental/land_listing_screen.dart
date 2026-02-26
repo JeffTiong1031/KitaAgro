@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'land_model.dart';
+import 'package:kita_agro/core/services/app_localizations.dart';
 
 class LandListingScreen extends StatefulWidget {
   const LandListingScreen({super.key});
@@ -101,17 +102,17 @@ class _LandListingScreenState extends State<LandListingScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Contact Owner'),
+        title: Text(AppLocalizations.of(context).contactOwner),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Contact owner for further information',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+            Text(
+              AppLocalizations.of(context).contactOwnerInfo,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 16),
-            const Text('Owner Phone Number:'),
+            Text(AppLocalizations.of(context).ownerPhoneNumber),
             const SizedBox(height: 12),
             Text(
               ownerPhone,
@@ -122,7 +123,7 @@ class _LandListingScreenState extends State<LandListingScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context).close),
           ),
         ],
       ),
@@ -132,7 +133,10 @@ class _LandListingScreenState extends State<LandListingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Farm Land Rental'), elevation: 0),
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context).farmLandRentalTitle),
+        elevation: 0,
+      ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _landsStream,
         builder: (context, snapshot) {
@@ -175,7 +179,9 @@ class _LandListingScreenState extends State<LandListingScreen> {
                 child: TextField(
                   onChanged: _onSearchChanged,
                   decoration: InputDecoration(
-                    hintText: 'Search by title or location...',
+                    hintText: AppLocalizations.of(
+                      context,
+                    ).searchByTitleOrLocation,
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -279,7 +285,7 @@ class _LandListingScreenState extends State<LandListingScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No lands found',
+                              AppLocalizations.of(context).noLandsFound,
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(color: Colors.grey[600]),
                             ),
@@ -433,9 +439,9 @@ class _LandListingScreenState extends State<LandListingScreen> {
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text(
-                    'For Rent',
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context).forRent,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -542,14 +548,17 @@ class _LandListingScreenState extends State<LandListingScreen> {
                   ),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.phone, size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.phone, size: 20),
+                  const SizedBox(width: 8),
                   Text(
-                    'Contact Owner',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    AppLocalizations.of(context).contactOwner,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),

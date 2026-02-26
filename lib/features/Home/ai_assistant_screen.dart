@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../core/services/gemini_api_service.dart';
+import '../../core/services/app_localizations.dart';
 import '../VideoCall/video_call_landing_screen.dart';
 
 class AiAssistantScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
-  
+
   late GeminiApiService _geminiService;
   String? _userLocation;
   double? _currentTemp;
@@ -29,7 +30,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   @override
   void initState() {
     super.initState();
-    _geminiService = GeminiApiService('AIzaSyBM5iu-EhSPggjAcQffEVUFLTq655xHea4');
+    _geminiService = GeminiApiService(
+      'AIzaSyBM5iu-EhSPggjAcQffEVUFLTq655xHea4',
+    );
     _loadUserContext();
     _addWelcomeMessage();
   }
@@ -51,7 +54,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           .collection('users')
           .doc(user.uid)
           .get();
-      
+
       if (userDoc.exists) {
         _userLocation = userDoc.data()?['address'] as String?;
       }
@@ -62,7 +65,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           .doc(user.uid)
           .collection('plantations')
           .get();
-      
+
       _userPlants = plantations.docs
           .map((doc) => doc.data()['name'] as String)
           .toList();
@@ -74,17 +77,33 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   void _addWelcomeMessage() {
-    _messages.add(ChatMessage(
-      text: "🌱 Hello! I'm your AI Plantation Assistant. I can help you with:\n\n"
-            "• Plant care advice\n"
-            "• Pest & disease diagnosis\n"
-            "• Growing tips for your region\n"
-            "• Watering & fertilizer guidance\n"
-            "• Weather-based recommendations\n\n"
-            "What would you like to know?",
-      isUser: false,
-      timestamp: DateTime.now(),
-    ));
+    // We'll rebuild this in didChangeDependencies for localization
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Rebuild welcome message with current language
+    if (_messages.isEmpty ||
+        (_messages.length == 1 && !_messages.first.isUser)) {
+      final loc = AppLocalizations.of(context);
+      final welcomeText = '🌱 ${loc.aiWelcomeMessage}';
+      if (_messages.isEmpty) {
+        _messages.add(
+          ChatMessage(
+            text: welcomeText,
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+      } else {
+        _messages[0] = ChatMessage(
+          text: welcomeText,
+          isUser: false,
+          timestamp: DateTime.now(),
+        );
+      }
+    }
   }
 
   Future<void> _sendMessage() async {
@@ -92,11 +111,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     if (message.isEmpty) return;
 
     setState(() {
-      _messages.add(ChatMessage(
-        text: message,
-        isUser: true,
-        timestamp: DateTime.now(),
-      ));
+      _messages.add(
+        ChatMessage(text: message, isUser: true, timestamp: DateTime.now()),
+      );
       _isLoading = true;
       _messageController.clear();
     });
@@ -105,24 +122,24 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
     try {
       final response = await _getAIResponse(message);
-      
+
       setState(() {
-        _messages.add(ChatMessage(
-          text: response,
-          isUser: false,
-          timestamp: DateTime.now(),
-        ));
+        _messages.add(
+          ChatMessage(text: response, isUser: false, timestamp: DateTime.now()),
+        );
         _isLoading = false;
       });
 
       _scrollToBottom();
     } catch (e) {
       setState(() {
-        _messages.add(ChatMessage(
-          text: "Sorry, I encountered an error: $e\n\nPlease try again.",
-          isUser: false,
-          timestamp: DateTime.now(),
-        ));
+        _messages.add(
+          ChatMessage(
+            text: "Sorry, I encountered an error: $e\n\nPlease try again.",
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
         _isLoading = false;
       });
       _scrollToBottom();
@@ -132,25 +149,36 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   Future<String> _getAIResponse(String userMessage) async {
     // Build context-aware system prompt
     String contextInfo = "";
-    
+
     if (_userLocation != null && _userLocation!.isNotEmpty) {
       contextInfo += "User location: $_userLocation\n";
     }
-    
+
     if (_userPlants.isNotEmpty) {
       contextInfo += "User's garden plants: ${_userPlants.join(', ')}\n";
     }
-    
+
     if (_currentTemp != null) {
-      contextInfo += "Current temperature: ${_currentTemp!.toStringAsFixed(1)}°C\n";
+      contextInfo +=
+          "Current temperature: ${_currentTemp!.toStringAsFixed(1)}°C\n";
     }
-    
+
     if (_weatherCondition != null) {
       contextInfo += "Current weather: $_weatherCondition\n";
     }
 
-    final String systemPrompt = '''
-You are an expert plantation and agricultural advisor with deep knowledge of:
+    final langCode = LanguageServiceProvider.of(context).currentLanguage.code;
+    final langName = langCode == 'ms'
+        ? 'Bahasa Melayu'
+        : langCode == 'zh'
+        ? 'Chinese (Simplified)'
+        : 'English';
+
+    final String systemPrompt =
+        '''
+You are an expert plantation and agricultural advisor. IMPORTANT: You MUST respond ENTIRELY in $langName.
+
+Your knowledge covers:
 - Plant biology and cultivation techniques
 - Pest and disease management
 - Soil health and fertilization
@@ -160,14 +188,14 @@ You are an expert plantation and agricultural advisor with deep knowledge of:
 
 $contextInfo
 
-Provide helpful, accurate, and practical advice. Format your responses clearly with:
+Provide helpful, accurate, and practical advice in $langName. Format your responses clearly with:
 - Use bullet points for lists
 - Use **bold** for important terms
 - Keep advice concise but informative
 - Always consider the user's local context when giving recommendations
 - If the user asks about plants in their garden, reference them specifically
 
-Answer the user's question:''';
+Answer the user's question in $langName:''';
 
     final String urlString =
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${_geminiService.apiKey}';
@@ -199,7 +227,8 @@ Answer the user's question:''';
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
-        final text = jsonResponse['candidates']?[0]?['content']?['parts']?[0]?['text'];
+        final text =
+            jsonResponse['candidates']?[0]?['content']?['parts']?[0]?['text'];
         return text ?? "I couldn't generate a response. Please try again.";
       } else {
         return "Server error (${response.statusCode}). Please try again later.";
@@ -226,9 +255,9 @@ Answer the user's question:''';
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text(
-          'AI Plantation Assistant',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          AppLocalizations.of(context).aiAssistantTitle,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
@@ -258,10 +287,7 @@ Answer the user's question:''';
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: Colors.grey[200],
-            height: 1,
-          ),
+          child: Container(color: Colors.grey[200], height: 1),
         ),
       ),
       body: Column(
@@ -288,16 +314,15 @@ Answer the user's question:''';
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green[600]!),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.green[600]!,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Thinking...',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
+                    AppLocalizations.of(context).thinking,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                 ],
               ),
@@ -336,11 +361,7 @@ Answer the user's question:''';
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.smart_toy,
-                      size: 16,
-                      color: Colors.green[700],
-                    ),
+                    Icon(Icons.smart_toy, size: 16, color: Colors.green[700]),
                     const SizedBox(width: 4),
                     Text(
                       'AI Assistant',
@@ -376,10 +397,7 @@ Answer the user's question:''';
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
-                  listBullet: TextStyle(
-                    color: Colors.black87,
-                    fontSize: 15,
-                  ),
+                  listBullet: TextStyle(color: Colors.black87, fontSize: 15),
                 ),
               ),
           ],
@@ -412,7 +430,7 @@ Answer the user's question:''';
             child: TextField(
               controller: _messageController,
               decoration: InputDecoration(
-                hintText: 'Ask about your plants...',
+                hintText: AppLocalizations.of(context).askAboutPlants,
                 hintStyle: TextStyle(color: Colors.grey[400]),
                 filled: true,
                 fillColor: Colors.grey[100],

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/models/user_model.dart';
 import '../auth/auth_service.dart';
 import '../community/community_service.dart'; // Reusing image upload
+import '../../core/services/app_localizations.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -74,6 +75,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
+    final loc = AppLocalizations.of(context);
+
     setState(() {
       _isSaving = true;
     });
@@ -116,9 +119,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving profile: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${loc.errorSavingProfile}: $e')),
+        );
       }
     } finally {
       if (mounted) {
@@ -131,6 +134,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     // Colors matching the dark UI reference
     const bgColor = Color(0xFF121212); // Very dark gray/black
     const cardColor = Color(0xFF262626); // Slightly lighter gray for cards
@@ -144,9 +149,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: bgColor,
         elevation: 0,
         iconTheme: const IconThemeData(color: textColor),
-        title: const Text(
-          "Edit profile",
-          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+        title: Text(
+          loc.editProfileTitle,
+          style: const TextStyle(color: textColor, fontWeight: FontWeight.bold),
         ),
         actions: [
           if (_isSaving)
@@ -166,9 +171,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           else
             TextButton(
               onPressed: _saveProfile,
-              child: const Text(
-                "Save",
-                style: TextStyle(
+              child: Text(
+                loc.save,
+                style: const TextStyle(
                   color: Colors.blue,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -252,9 +257,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         vertical: 10,
                       ),
                     ),
-                    child: const Text(
-                      "Change photo",
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    child: Text(
+                      loc.changePhoto,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -263,19 +268,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 24),
 
             // Name Field
-            _buildSectionLabel("Name"),
+            _buildSectionLabel(loc.name),
             _buildTextFieldCard(
               controller: _nameController,
-              hint: "Name",
+              hint: loc.name,
               cardColor: cardColor,
             ),
             const SizedBox(height: 20),
 
             // Bio Field
-            _buildSectionLabel("Bio"),
+            _buildSectionLabel(loc.bio),
             _buildTextFieldCard(
               controller: _bioController,
-              hint: "Bio",
+              hint: loc.bio,
               cardColor: cardColor,
               maxLines: 3,
               maxLength: 150,
@@ -283,44 +288,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 20),
 
             // Age Field
-            _buildSectionLabel("Age"),
+            _buildSectionLabel(loc.age),
             _buildTextFieldCard(
               controller: _ageController,
-              hint: "Age",
+              hint: loc.age,
               cardColor: cardColor,
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 20),
 
             // Town Field
-            _buildSectionLabel("Town"),
+            _buildSectionLabel(loc.town),
             _buildTextFieldCard(
               controller: _townController,
-              hint: "Town",
+              hint: loc.town,
               cardColor: cardColor,
             ),
             const SizedBox(height: 20),
 
             // State Field
-            _buildSectionLabel("State"),
+            _buildSectionLabel(loc.state),
             _buildTextFieldCard(
               controller: _stateController,
-              hint: "State",
+              hint: loc.state,
               cardColor: cardColor,
             ),
             const SizedBox(height: 20),
 
             // Country Field
-            _buildSectionLabel("Country"),
+            _buildSectionLabel(loc.country),
             _buildTextFieldCard(
               controller: _countryController,
-              hint: "Country",
+              hint: loc.country,
               cardColor: cardColor,
             ),
             const SizedBox(height: 20),
 
             // Role Field
-            _buildSectionLabel("Role"),
+            _buildSectionLabel(loc.role),
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16.0,

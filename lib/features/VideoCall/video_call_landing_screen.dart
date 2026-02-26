@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/services/app_localizations.dart';
 import '../../core/services/ai_video_call_service.dart';
 import 'ai_video_call_screen.dart';
 
@@ -19,7 +20,7 @@ class _VideoCallLandingScreenState extends State<VideoCallLandingScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('AI Video Call'),
+        title: Text(AppLocalizations.of(context).aiVideoCall),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
@@ -48,9 +49,9 @@ class _VideoCallLandingScreenState extends State<VideoCallLandingScreen> {
 
             const SizedBox(height: 24),
 
-            const Text(
-              'Talk to AI in Your Language',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context).talkToAiInYourLanguage,
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
@@ -61,7 +62,7 @@ class _VideoCallLandingScreenState extends State<VideoCallLandingScreen> {
             const SizedBox(height: 12),
 
             Text(
-              'Show your crops through the camera and speak in your preferred language. The AI will understand and respond in the same language.',
+              AppLocalizations.of(context).videoCallDescription,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -76,7 +77,7 @@ class _VideoCallLandingScreenState extends State<VideoCallLandingScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Select your language',
+                AppLocalizations.of(context).selectYourLanguage,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -95,23 +96,23 @@ class _VideoCallLandingScreenState extends State<VideoCallLandingScreen> {
             // Features list
             _buildFeatureItem(
               Icons.camera_alt,
-              'Show Crops',
-              'Point your camera at leaves, pests, or soil',
+              AppLocalizations.of(context).showCrops,
+              AppLocalizations.of(context).showCropsDesc,
             ),
             _buildFeatureItem(
               Icons.mic,
-              'Speak Naturally',
-              'Describe problems in your own language',
+              AppLocalizations.of(context).speakNaturally,
+              AppLocalizations.of(context).speakNaturallyDesc,
             ),
             _buildFeatureItem(
               Icons.smart_toy,
-              'AI Analysis',
-              'Get instant diagnosis and treatment advice',
+              AppLocalizations.of(context).aiAnalysis,
+              AppLocalizations.of(context).aiAnalysisDesc,
             ),
             _buildFeatureItem(
               Icons.volume_up,
-              'Voice Response',
-              'AI speaks back to you in your language',
+              AppLocalizations.of(context).voiceResponse,
+              AppLocalizations.of(context).voiceResponseDesc,
             ),
 
             const SizedBox(height: 32),
@@ -123,9 +124,12 @@ class _VideoCallLandingScreenState extends State<VideoCallLandingScreen> {
               child: ElevatedButton.icon(
                 onPressed: _startVideoCall,
                 icon: const Icon(Icons.videocam, size: 24),
-                label: const Text(
-                  'Start Video Call',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                label: Text(
+                  AppLocalizations.of(context).startVideoCall,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
@@ -141,7 +145,7 @@ class _VideoCallLandingScreenState extends State<VideoCallLandingScreen> {
             const SizedBox(height: 16),
 
             Text(
-              'Requires camera and microphone access',
+              AppLocalizations.of(context).requiresCameraMic,
               style: TextStyle(fontSize: 12, color: Colors.grey[500]),
             ),
 
@@ -200,15 +204,14 @@ class _VideoCallLandingScreenState extends State<VideoCallLandingScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.green.shade700 : Colors.black87,
+                      color: isSelected
+                          ? Colors.green.shade700
+                          : Colors.black87,
                     ),
                   ),
                   Text(
                     lang.englishName,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -216,8 +219,11 @@ class _VideoCallLandingScreenState extends State<VideoCallLandingScreen> {
             if (isSelected)
               Icon(Icons.check_circle, color: Colors.green.shade600, size: 24)
             else
-              Icon(Icons.radio_button_unchecked,
-                  color: Colors.grey.shade300, size: 24),
+              Icon(
+                Icons.radio_button_unchecked,
+                color: Colors.grey.shade300,
+                size: 24,
+              ),
           ],
         ),
       ),
@@ -252,10 +258,7 @@ class _VideoCallLandingScreenState extends State<VideoCallLandingScreen> {
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
               ],
             ),
@@ -269,9 +272,8 @@ class _VideoCallLandingScreenState extends State<VideoCallLandingScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AiVideoCallScreen(
-          initialLanguage: _selectedLanguage,
-        ),
+        builder: (context) =>
+            AiVideoCallScreen(initialLanguage: _selectedLanguage),
       ),
     );
   }

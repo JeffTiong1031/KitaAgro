@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../../../core/services/app_localizations.dart';
 
 import 'package:kita_agro/data/plant_data.dart';
 import 'package:kita_agro/models/product_listing.dart';
@@ -27,9 +28,7 @@ class _MyProductScreenState extends State<MyProductScreen> {
       'https://placehold.co/600x400?text=Crop';
 
   Stream<QuerySnapshot<Map<String, dynamic>>> _productsStream(String userId) {
-    return _productsCollection
-        .where('userId', isEqualTo: userId)
-        .snapshots();
+    return _productsCollection.where('userId', isEqualTo: userId).snapshots();
   }
 
   Future<void> _openProductForm({
@@ -62,17 +61,19 @@ class _MyProductScreenState extends State<MyProductScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Delete product?'),
-          content: const Text('This action cannot be undone.'),
+          title: Text(AppLocalizations.of(dialogContext).deleteProductTitle),
+          content: Text(
+            AppLocalizations.of(dialogContext).actionCannotBeUndone,
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(dialogContext).cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
+              child: Text(AppLocalizations.of(dialogContext).delete),
             ),
           ],
         );
@@ -82,9 +83,9 @@ class _MyProductScreenState extends State<MyProductScreen> {
     if (confirm == true) {
       await snapshot.reference.delete();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Product deleted')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).productDeleted)),
+        );
       }
     }
   }
@@ -128,19 +129,19 @@ class _MyProductScreenState extends State<MyProductScreen> {
 
     if (currentUser == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('My Products')),
-        body: const Center(
-          child: Text('Please log in to view your products.'),
+        appBar: AppBar(title: Text(AppLocalizations.of(context).myProducts)),
+        body: Center(
+          child: Text(AppLocalizations.of(context).pleaseLoginProducts),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Products')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).myProducts)),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openProductForm(),
         icon: const Icon(Icons.add),
-        label: const Text('Add Product'),
+        label: Text(AppLocalizations.of(context).addProduct),
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _productsStream(currentUser.uid),
@@ -155,21 +156,22 @@ class _MyProductScreenState extends State<MyProductScreen> {
             );
           }
 
-          final docs = List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(
-            snapshot.data?.docs ?? const [],
-          )..sort((first, second) {
-            final firstHarvest =
+          final docs =
+              List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(
+                snapshot.data?.docs ?? const [],
+              )..sort((first, second) {
+                final firstHarvest =
                     (first.data()['harvestDate'] as Timestamp?)?.toDate() ??
-                DateTime.fromMillisecondsSinceEpoch(0);
-            final secondHarvest =
+                    DateTime.fromMillisecondsSinceEpoch(0);
+                final secondHarvest =
                     (second.data()['harvestDate'] as Timestamp?)?.toDate() ??
-                DateTime.fromMillisecondsSinceEpoch(0);
-            return secondHarvest.compareTo(firstHarvest);
-          });
+                    DateTime.fromMillisecondsSinceEpoch(0);
+                return secondHarvest.compareTo(firstHarvest);
+              });
 
           if (docs.isEmpty) {
-            return const Center(
-              child: Text('No products yet. Tap "+" to add one.'),
+            return Center(
+              child: Text(AppLocalizations.of(context).noProductsAddOne),
             );
           }
 
@@ -221,10 +223,18 @@ class _MyProductScreenState extends State<MyProductScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Weight: ${product.weight.toStringAsFixed(2)} kg',
+                            AppLocalizations.of(
+                              context,
+                            ).weightKg(product.weight.toStringAsFixed(2)),
                           ),
-                          Text('Harvested: $dateLabel'),
-                          Text('Contact: ${product.contactNumber}'),
+                          Text(
+                            '${AppLocalizations.of(context).harvested}: $dateLabel',
+                          ),
+                          Text(
+                            AppLocalizations.of(
+                              context,
+                            ).contactLabel(product.contactNumber),
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             product.address,
@@ -240,7 +250,7 @@ class _MyProductScreenState extends State<MyProductScreen> {
                                   initialProduct: product,
                                 ),
                                 icon: const Icon(Icons.edit),
-                                label: const Text('Edit'),
+                                label: Text(AppLocalizations.of(context).edit),
                               ),
                               const SizedBox(width: 8),
                               TextButton.icon(
@@ -249,7 +259,9 @@ class _MyProductScreenState extends State<MyProductScreen> {
                                 style: TextButton.styleFrom(
                                   foregroundColor: Colors.red,
                                 ),
-                                label: const Text('Delete'),
+                                label: Text(
+                                  AppLocalizations.of(context).delete,
+                                ),
                               ),
                             ],
                           ),
@@ -506,23 +518,23 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
 
     final selectedPlant = _selectedPlant;
     if (selectedPlant == null && widget.initialProduct == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Select a crop.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).selectACrop)),
+      );
       return;
     }
 
     if (_harvestDate == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Pick harvest date.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).pickHarvestDate)),
+      );
       return;
     }
 
     if (_latitude == null || _longitude == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Fetch location.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).fetchLocation)),
+      );
       return;
     }
 
@@ -585,9 +597,9 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
 
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Product saved')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).productSaved)),
+        );
       }
     } catch (error) {
       if (mounted) {
@@ -629,16 +641,18 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                 ),
               ),
               Text(
-                widget.initialProduct == null ? 'Add Product' : 'Edit Product',
+                widget.initialProduct == null
+                    ? AppLocalizations.of(context).addProduct
+                    : AppLocalizations.of(context).editProduct,
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               DropdownButtonFormField<Map<String, dynamic>>(
-                decoration: const InputDecoration(
-                  labelText: 'Crop',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context).crop,
+                  border: const OutlineInputBorder(),
                 ),
                 initialValue: _selectedPlant,
                 items: PlantData.allPlants
@@ -672,7 +686,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                 },
                 validator: (value) {
                   if (value == null && widget.initialProduct == null) {
-                    return 'Select a crop';
+                    return AppLocalizations.of(context).selectCrop;
                   }
                   return null;
                 },
@@ -708,14 +722,14 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Weight (kg)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context).weightKgLabel,
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (value) {
                   final parsed = double.tryParse(value ?? '');
                   if (parsed == null || parsed <= 0) {
-                    return 'Enter a valid weight';
+                    return AppLocalizations.of(context).enterValidWeight;
                   }
                   return null;
                 },
@@ -724,10 +738,10 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
               TextFormField(
                 controller: _harvestDateController,
                 readOnly: true,
-                decoration: const InputDecoration(
-                  labelText: 'Harvest Date',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_month),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context).harvestDate,
+                  border: const OutlineInputBorder(),
+                  suffixIcon: const Icon(Icons.calendar_month),
                 ),
                 onTap: _selectHarvestDate,
               ),
@@ -735,13 +749,13 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
               TextFormField(
                 controller: _contactController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Contact Number',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context).contactNumber,
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Enter a contact number';
+                    return AppLocalizations.of(context).enterContactNumber;
                   }
                   return null;
                 },
@@ -754,9 +768,9 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                       controller: _addressController,
                       readOnly: true,
                       maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Address',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context).address,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
@@ -772,7 +786,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.my_location),
-                    label: const Text('Use Current'),
+                    label: Text(AppLocalizations.of(context).useCurrent),
                   ),
                 ],
               ),
@@ -800,7 +814,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                             ),
                           ),
                         )
-                      : const Text('Save Product'),
+                      : Text(AppLocalizations.of(context).productSaved),
                 ),
               ),
               const SizedBox(height: 12),

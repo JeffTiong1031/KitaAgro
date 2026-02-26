@@ -5,6 +5,7 @@ import '../../services/user_service.dart';
 import '../../services/chat_service.dart';
 import 'chat_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/services/app_localizations.dart';
 
 class MessageScreen extends StatefulWidget {
   const MessageScreen({super.key});
@@ -20,12 +21,14 @@ class _MessageScreenState extends State<MessageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white, // Changed to white
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white, // Changed to white
+        backgroundColor: Colors.white,
         elevation: 0,
-        toolbarHeight: 0, 
+        toolbarHeight: 0,
       ),
       body: Column(
         children: [
@@ -38,16 +41,16 @@ class _MessageScreenState extends State<MessageScreen> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.grey[200], // Changed to light grey
+                color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(20),
               ),
               child: TextField(
-                style: const TextStyle(color: Colors.black87), // Changed to black
+                style: const TextStyle(color: Colors.black87),
                 decoration: InputDecoration(
-                  hintText: 'Search',
-                  hintStyle: TextStyle(color: Colors.grey[600]), // Changed to darker grey
+                  hintText: loc.search,
+                  hintStyle: TextStyle(color: Colors.grey[600]),
                   border: InputBorder.none,
-                  prefixIcon: Icon(Icons.search, color: Colors.grey[600]), // Changed to darker grey
+                  prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
                 ),
               ),
@@ -63,8 +66,8 @@ class _MessageScreenState extends State<MessageScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildTabButton('Chats', !_showingRequests),
-                _buildTabButton('Requests', _showingRequests),
+                _buildTabButton(loc.chats, !_showingRequests),
+                _buildTabButton(loc.requests, _showingRequests),
               ],
             ),
           ),
@@ -78,22 +81,23 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Widget _buildTabButton(String text, bool isSelected) {
+    final loc = AppLocalizations.of(context);
     return GestureDetector(
       onTap: () {
         setState(() {
-          _showingRequests = text == 'Requests';
+          _showingRequests = text == loc.requests;
         });
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.grey[200] : Colors.transparent, // Light grey for selected
+          color: isSelected ? Colors.grey[200] : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           text,
           style: TextStyle(
-            color: isSelected ? Colors.black87 : Colors.grey[600], // Black for selected, grey for unselected
+            color: isSelected ? Colors.black87 : Colors.grey[600],
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -102,6 +106,8 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Widget _buildRequestsList() {
+    final loc = AppLocalizations.of(context);
+
     return StreamBuilder<List<UserModel>>(
       stream: _userService.streamFriendRequests(),
       builder: (context, snapshot) {
@@ -109,20 +115,20 @@ class _MessageScreenState extends State<MessageScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return const Center(
+          return Center(
             child: Text(
-              "Error loading requests",
-              style: TextStyle(color: Colors.black54), // Changed to black54
+              loc.errorLoadingRequests,
+              style: const TextStyle(color: Colors.black54),
             ),
           );
         }
 
         final requests = snapshot.data ?? [];
         if (requests.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
-              "No friend requests yet",
-              style: TextStyle(color: Colors.grey),
+              loc.noFriendRequestsYet,
+              style: const TextStyle(color: Colors.grey),
             ),
           );
         }
@@ -137,11 +143,11 @@ class _MessageScreenState extends State<MessageScreen> {
                 backgroundImage: user.profilePicUrl.isNotEmpty
                     ? NetworkImage(user.profilePicUrl)
                     : null,
-                backgroundColor: Colors.grey[300], // Lighter grey avatar background
+                backgroundColor: Colors.grey[300],
                 child: user.profilePicUrl.isEmpty
                     ? Text(
                         user.fullName[0].toUpperCase(),
-                        style: const TextStyle(color: Colors.black87), // Black letter
+                        style: const TextStyle(color: Colors.black87),
                       )
                     : null,
               ),
@@ -149,12 +155,12 @@ class _MessageScreenState extends State<MessageScreen> {
                 user.fullName,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87, // Changed to black
+                  color: Colors.black87,
                 ),
               ),
-              subtitle: const Text(
-                'Sent you a friend request',
-                style: TextStyle(color: Colors.grey),
+              subtitle: Text(
+                loc.sentFriendRequest,
+                style: const TextStyle(color: Colors.grey),
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -180,6 +186,8 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Widget _buildChatsList() {
+    final loc = AppLocalizations.of(context);
+
     return StreamBuilder<List<UserModel>>(
       stream: _userService.streamFriends(),
       builder: (context, snapshot) {
@@ -189,10 +197,10 @@ class _MessageScreenState extends State<MessageScreen> {
 
         final friends = snapshot.data ?? [];
         if (friends.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
-              "Add friends to start chatting!",
-              style: TextStyle(color: Colors.grey),
+              loc.addFriendsToChat,
+              style: const TextStyle(color: Colors.grey),
             ),
           );
         }
@@ -211,7 +219,7 @@ class _MessageScreenState extends State<MessageScreen> {
                 final data = chatSnapshot.hasData && chatSnapshot.data!.exists
                     ? chatSnapshot.data!.data() as Map<String, dynamic>
                     : {};
-                final lastMessage = data['lastMessage'] ?? 'Tap to chat';
+                final lastMessage = data['lastMessage'] ?? loc.tapToChat;
                 final unreadCountData =
                     data['unreadCount'] as Map<String, dynamic>?;
                 final unreadCount = unreadCountData?[currentUserId] ?? 0;
@@ -227,11 +235,11 @@ class _MessageScreenState extends State<MessageScreen> {
                     backgroundImage: friend.profilePicUrl.isNotEmpty
                         ? NetworkImage(friend.profilePicUrl)
                         : null,
-                    backgroundColor: Colors.grey[300], // Lighter avatar background
+                    backgroundColor: Colors.grey[300],
                     child: friend.profilePicUrl.isEmpty
                         ? Text(
                             friend.fullName[0].toUpperCase(),
-                            style: const TextStyle(color: Colors.black87), // Black letter
+                            style: const TextStyle(color: Colors.black87),
                           )
                         : null,
                   ),
@@ -239,14 +247,14 @@ class _MessageScreenState extends State<MessageScreen> {
                     friend.fullName,
                     style: TextStyle(
                       fontWeight: isUnread ? FontWeight.w900 : FontWeight.bold,
-                      color: Colors.black87, // Changed to black
+                      color: Colors.black87,
                       fontSize: 16,
                     ),
                   ),
                   subtitle: Text(
                     lastMessage,
                     style: TextStyle(
-                      color: isUnread ? Colors.black87 : Colors.grey[600], // Adjusted colors
+                      color: isUnread ? Colors.black87 : Colors.grey[600],
                       fontWeight: isUnread
                           ? FontWeight.bold
                           : FontWeight.normal,

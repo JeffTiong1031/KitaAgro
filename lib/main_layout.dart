@@ -7,6 +7,7 @@ import 'features/Diagnostic/scan_feature.dart'; // Import the new ScanFeature
 import 'features/Message/message_screen.dart';
 import 'features/Profile/profile_screen.dart';
 import 'services/chat_service.dart';
+import 'core/services/app_localizations.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key, this.initialIndex = 0});
@@ -64,6 +65,8 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: NavigationBar(
@@ -71,19 +74,19 @@ class _MainLayoutState extends State<MainLayout> {
         onDestinationSelected: _onItemTapped,
         indicatorColor: Colors.green.shade100,
         destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+          NavigationDestination(
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
+            label: loc.navHome,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.agriculture_outlined),
-            selectedIcon: Icon(Icons.agriculture),
-            label: 'Farmer',
+          NavigationDestination(
+            icon: const Icon(Icons.agriculture_outlined),
+            selectedIcon: const Icon(Icons.agriculture),
+            label: loc.navFarmer,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.qr_code_scanner),
-            label: 'Scan',
+          NavigationDestination(
+            icon: const Icon(Icons.qr_code_scanner),
+            label: loc.navScan,
           ),
           NavigationDestination(
             icon: StreamBuilder<int>(
@@ -112,12 +115,12 @@ class _MainLayoutState extends State<MainLayout> {
                 return const Icon(Icons.mail);
               },
             ),
-            label: 'Message',
+            label: loc.navMessage,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outlined),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
+          NavigationDestination(
+            icon: const Icon(Icons.person_outlined),
+            selectedIcon: const Icon(Icons.person),
+            label: loc.navProfile,
           ),
         ],
       ),

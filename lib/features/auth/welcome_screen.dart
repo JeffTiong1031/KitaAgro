@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
+import '../../core/services/app_localizations.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -31,9 +34,9 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                const Text(
-                  "Welcome to Kita Agro",
-                  style: TextStyle(
+                Text(
+                  loc.welcomeTitle,
+                  style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.green,
@@ -41,9 +44,9 @@ class WelcomeScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 15),
-                const Text(
-                  "Empowering the next generation of farmers and agropreneurs.",
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                Text(
+                  loc.welcomeSubtitle,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 60),
@@ -67,9 +70,12 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                     elevation: 2,
                   ),
-                  child: const Text(
-                    "Get Started",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  child: Text(
+                    loc.getStarted,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),

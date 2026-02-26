@@ -31,74 +31,63 @@ class _GrantTutorialScreenState extends State<GrantTutorialScreen> {
   int _currentPage = 0;
 
   // Tutorial Steps Data
-  final List<TutorialStep> _tutorialSteps = [
+  late final List<TutorialStep> _tutorialSteps = [
     TutorialStep(
       imagePaths: ['assets/images/Step1_createAccount.jpg'],
-      title: 'Create e-GAN Account',
-      description:
-          'First, register on the official e-GAN portal. Fill in your Full Name (as per MyKad), IC Number, Email, and create a Password.\n\n💡 Pro Tip: Use an active email address as you need to verify it immediately.',
+      title: AppLocalizations.of(context).tutorialStepTitle(0),
+      description: AppLocalizations.of(context).tutorialStepDescription(0),
       link: 'https://app-egam.kpkm.gov.my/user/register/create',
-      linkLabel: 'Open e-GAN Registration Portal',
+      linkLabel: AppLocalizations.of(context).openPortal,
     ),
     TutorialStep(
       imagePaths: ['assets/images/Step2_verifyEmail.jpg'],
-      title: 'Verify Your Email',
-      description:
-          'Check your inbox for a verification link. Click the blue button \'Pengesahan Akaun\' to activate.\n\n⚠️ Important: Link expires in 60 minutes. Check Spam folder if missing.',
+      title: AppLocalizations.of(context).tutorialStepTitle(1),
+      description: AppLocalizations.of(context).tutorialStepDescription(1),
     ),
     TutorialStep(
       imagePaths: ['assets/images/Step3_loginEGam.jpg'],
-      title: 'Login to Portal',
-      description:
-          'Once verified, return to the portal. Enter your IC Number and the Password you just created to log in for the first time.',
+      title: AppLocalizations.of(context).tutorialStepTitle(2),
+      description: AppLocalizations.of(context).tutorialStepDescription(2),
     ),
     TutorialStep(
       imagePaths: ['assets/images/Step4_chooseProgram&ApplyNow.jpg'],
-      title: 'Select The Grant',
-      description:
-          'On the sidebar menu, click \'Permohonan Geran Agropreneur NextGen\'. Then, click \'Mohon Sekarang\' (Apply Now) to open the form.',
+      title: AppLocalizations.of(context).tutorialStepTitle(3),
+      description: AppLocalizations.of(context).tutorialStepDescription(3),
     ),
     TutorialStep(
       imagePaths: ['assets/images/Step5_selectRequirement.jpg'],
-      title: 'Confirm Eligibility',
-      description:
-          'You must tick the boxes to declare your eligibility:\n\n1. Malaysian Citizen (18-45 years old).\n2. Can read, count, and write.\n3. Have attended training OR have a relevant Diploma/Degree OR have experience.\n\nAction: Click \'Lengkapkan Permohonan\' to proceed to the main form.',
+      title: AppLocalizations.of(context).tutorialStepTitle(4),
+      description: AppLocalizations.of(context).tutorialStepDescription(4),
     ),
     TutorialStep(
       imagePaths: ['assets/images/Step6a_fillInformation.jpg'],
-      title: 'Step 1: Personal Details',
-      description:
-          'Fill in your personal information (Marital Status, Phone, Address, etc).\n\n📄 Documents Required:\n• Passport-sized Photo of applicant.\n• Copy of MyKad (IC) - Must be Certified.\n• SSM Registration or Business License - Must be Certified.',
+      title: AppLocalizations.of(context).tutorialStepTitle(5),
+      description: AppLocalizations.of(context).tutorialStepDescription(5),
     ),
     TutorialStep(
       imagePaths: ['assets/images/Step6b_ProjectDetails.jpg'],
-      title: 'Step 2: Project Information',
-      description:
-          'Select your project type and the Supervising Agency (Agensi Pembimbing), e.g., DOA for Crops.\n\n📄 Documents Required:\n• Proof of Land Ownership (Certified).\n• Stamped Tenancy Agreement (if renting).\n• Consent Letter (if using parents\' land).',
+      title: AppLocalizations.of(context).tutorialStepTitle(6),
+      description: AppLocalizations.of(context).tutorialStepDescription(6),
     ),
     TutorialStep(
       imagePaths: ['assets/images/Step6c_updateListNeeded.jpg'],
-      title: 'Step 3: Request for Aid',
-      description:
-          'List the specific items or machinery you need to buy.\n\n💰 Maximum Limit: RM30,000 (for Crops, Livestock, Fisheries).\n\n⚠️ Important: You MUST upload current price quotations from three (3) different suppliers for the items you are requesting.',
+      title: AppLocalizations.of(context).tutorialStepTitle(7),
+      description: AppLocalizations.of(context).tutorialStepDescription(7),
     ),
     TutorialStep(
       imagePaths: ['assets/images/Step6d_fillBusinessDetails.jpg'],
-      title: 'Step 4: Business Plan',
-      description:
-          'This is the most critical section. Describe your business vision.\n\nKey Details to Fill:\n• Introduction: Purpose, Mission, and Vision.\n• Management: Employee roles.\n• Marketing: Sales channels (Online/Wholesalers).\n• Operations: Daily farm activities.\n\n📸 Requirement: You MUST upload at least 3 photos of your project site.',
+      title: AppLocalizations.of(context).tutorialStepTitle(8),
+      description: AppLocalizations.of(context).tutorialStepDescription(8),
     ),
     TutorialStep(
       imagePaths: ['assets/images/Step6e_updateBudgetPlan.jpg'],
-      title: 'Step 5: Financial Plan',
-      description:
-          'Calculate your project\'s profitability. Provide realistic estimates.\n\nCash Inflow:\n• Capital (Grant vs Own Money)\n• Sales Projection (Year 1, 2, 3)\n\nCash Outflow:\n• Development Costs (Machinery)\n• Operational Costs (Fertilizer, Feed, Labor)\n\n💡 Pro Tip: Ensure Sales Projection is higher than Operational Costs.',
+      title: AppLocalizations.of(context).tutorialStepTitle(9),
+      description: AppLocalizations.of(context).tutorialStepDescription(9),
     ),
     TutorialStep(
       imagePaths: ['assets/images/Step6f_fillDeclaration.jpg'],
-      title: 'Step 6: Final Declaration',
-      description:
-          'You must agree to the terms before submitting:\n\n✅ Acknowledge that the application will be rejected if you do not respond to queries within 3 months.\n✅ Declare that all information provided is TRUE.\n\n⚠️ Warning: Providing false information is a serious offense under Clause 463 of the Penal Code.',
+      title: AppLocalizations.of(context).tutorialStepTitle(10),
+      description: AppLocalizations.of(context).tutorialStepDescription(10),
     ),
     TutorialStep(
       imagePaths: [
@@ -106,9 +95,8 @@ class _GrantTutorialScreenState extends State<GrantTutorialScreen> {
         'assets/images/Step6h_checkDraft&allInformation.jpg',
         'assets/images/Step6i_submitApplication.jpg',
       ],
-      title: 'Save, Review & Submit',
-      description:
-          'Do not submit immediately! Follow this safe process:\n\n1. Click \'Simpan Draf\' (Save Draft) to save your progress.\n2. Check your Dashboard. You can click the Green Pencil Icon to edit if needed.\n3. Once you are 100% satisfied, click the green \'Hantar\' (Submit) button.\n\n✅ Success: Your application is now sent to the Ministry for processing. Good luck!',
+      title: AppLocalizations.of(context).tutorialStepTitle(11),
+      description: AppLocalizations.of(context).tutorialStepDescription(11),
     ),
   ];
 

@@ -1053,14 +1053,14 @@ class _MapScreenState extends State<MapScreen> {
                         _mode = MapMode.values[index];
                       });
                     },
-                    children: const [
+                    children: [
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('Business'),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(AppLocalizations.of(context).business),
                       ),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('Product'),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(AppLocalizations.of(context).product),
                       ),
                     ],
                   ),

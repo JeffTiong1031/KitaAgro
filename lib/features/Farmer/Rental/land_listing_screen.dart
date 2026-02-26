@@ -209,7 +209,13 @@ class _LandListingScreenState extends State<LandListingScreen> {
                                 .map(
                                   (state) => DropdownMenuItem(
                                     value: state,
-                                    child: Text(state),
+                                    child: Text(
+                                      state == _allStatesLabel
+                                          ? AppLocalizations.of(
+                                              context,
+                                            ).allStates
+                                          : state,
+                                    ),
                                   ),
                                 )
                                 .toList(),
@@ -239,7 +245,7 @@ class _LandListingScreenState extends State<LandListingScreen> {
                                   (price) => DropdownMenuItem(
                                     value: price,
                                     child: Text(
-                                      price,
+                                      _getLocalizedPriceLabel(price),
                                       softWrap: true,
                                       maxLines: 2,
                                     ),
@@ -259,7 +265,7 @@ class _LandListingScreenState extends State<LandListingScreen> {
                               (size) => Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: ChoiceChip(
-                                  label: Text(size),
+                                  label: Text(_getLocalizedSizeLabel(size)),
                                   selected: _selectedSize == size,
                                   onSelected: (_) => _onSizeSelected(size),
                                 ),
@@ -362,15 +368,50 @@ class _LandListingScreenState extends State<LandListingScreen> {
   }
 
   String _shortPriceLabel(String price) {
+    final loc = AppLocalizations.of(context);
     switch (price) {
       case 'Budget (< RM 1,000)':
-        return 'Budget (< RM1k)';
+        return loc.budgetPriceShort;
       case 'Standard (RM 1,000 - 3,000)':
-        return 'Standard (RM1k-3k)';
+        return loc.standardPriceShort;
       case 'Premium (> RM 3,000)':
-        return 'Premium (> RM3k)';
+        return loc.premiumPriceShort;
+      case _anyPriceLabel:
+        return loc.anyPrice;
       default:
         return price;
+    }
+  }
+
+  String _getLocalizedPriceLabel(String price) {
+    final loc = AppLocalizations.of(context);
+    switch (price) {
+      case 'Budget (< RM 1,000)':
+        return loc.budgetPrice;
+      case 'Standard (RM 1,000 - 3,000)':
+        return loc.standardPrice;
+      case 'Premium (> RM 3,000)':
+        return loc.premiumPrice;
+      case _anyPriceLabel:
+        return loc.anyPrice;
+      default:
+        return price;
+    }
+  }
+
+  String _getLocalizedSizeLabel(String size) {
+    final loc = AppLocalizations.of(context);
+    switch (size) {
+      case 'Small (< 1 Acre)':
+        return loc.smallSize;
+      case 'Medium (1-5 Acres)':
+        return loc.mediumSize;
+      case 'Large (> 5 Acres)':
+        return loc.largeSize;
+      case _allSizeLabel:
+        return loc.allSize;
+      default:
+        return size;
     }
   }
 

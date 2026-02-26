@@ -115,4 +115,77 @@ class CommunityService {
       print("Error deleting post: $e");
     }
   }
+
+  // --- 6. ADD COMMENT ---
+  Future<void> addComment({
+    required String postId,
+    required String uid,
+    required String username,
+    required String userProfilePic,
+    required String text,
+  }) async {
+    try {
+      // Add comment to the subcollection
+      await _postsRef.doc(postId).collection('comments').add({
+        'uid': uid,
+        'username': username,
+        'userProfilePic': userProfilePic,
+        'text': text,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      // Increment the commentsCount on the post
+      await _postsRef.doc(postId).update({
+        'commentsCount': FieldValue.increment(1),
+      });
+
+      // Send notification to the post author
+      try {
+        final postDoc = await _postsRef.doc(postId).get();
+        final data = postDoc.data() as Map<String, dynamic>?;
+        if (data != null) {
+          final publisherId = data['publisherId'];
+          if (publisherId != uid) {
+            await _notificationService.sendNotification(
+              targetUserId: publisherId,
+              title: 'New Comment',
+              body: '$username commented on your post.',
+              type: 'comment',
+            );
+          }
+        }
+      } catch (e) {
+        print("Error sending comment notification: $e");
+      }
+    } catch (e) {
+      print("Error adding comment: $e");
+    }
+  }
+
+  // --- 7. GET COMMENTS STREAM ---
+  Stream<QuerySnapshot> getCommentsStream(String postId) {
+    return _postsRef
+        .doc(postId)
+        .collection('comments')
+        .orderBy('timestamp', descending: false) // Oldest first
+        .snapshots();
+  }
+
+  // --- 8. DELETE COMMENT ---
+  Future<void> deleteComment(String postId, String commentId) async {
+    try {
+      await _postsRef
+          .doc(postId)
+          .collection('comments')
+          .doc(commentId)
+          .delete();
+
+      // Decrement the commentsCount
+      await _postsRef.doc(postId).update({
+        'commentsCount': FieldValue.increment(-1),
+      });
+    } catch (e) {
+      print("Error deleting comment: $e");
+    }
+  }
 }

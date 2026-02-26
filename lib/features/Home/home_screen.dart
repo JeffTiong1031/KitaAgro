@@ -11,6 +11,7 @@ import 'package:kita_agro/features/Home/Planting/planting_screen.dart';
 import 'package:kita_agro/features/Home/Dictionary/dictionary_screen.dart';
 import 'package:kita_agro/features/Home/my_journey/my_journey_screen.dart';
 import 'package:kita_agro/features/Home/search_users_screen.dart';
+import 'package:kita_agro/features/Home/global_search_screen.dart';
 import 'package:kita_agro/features/Profile/single_post_screen.dart';
 import 'package:kita_agro/services/notification_service.dart';
 import 'package:kita_agro/features/community/community_service.dart';
@@ -19,6 +20,7 @@ import 'package:kita_agro/core/services/notification_storage.dart';
 import 'package:kita_agro/features/Home/ai_assistant_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kita_agro/features/community/create_post_screen.dart';
+import 'package:kita_agro/features/community/comments_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -80,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => SearchUsersScreen(),
+                        builder: (context) => const GlobalSearchScreen(),
                       ),
                     );
                   },
@@ -699,7 +701,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.favorite,
             iconColor: Colors.teal,
             onTap: () async {
-              await FirebaseAnalytics.instance.logEvent(name: 'open_my_journey');
+              await FirebaseAnalytics.instance.logEvent(
+                name: 'open_my_journey',
+              );
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -714,7 +718,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.description,
             iconColor: Colors.orange,
             onTap: () async {
-              await FirebaseAnalytics.instance.logEvent(name: 'open_dictionary');
+              await FirebaseAnalytics.instance.logEvent(
+                name: 'open_dictionary',
+              );
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -729,7 +735,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.smart_toy,
             iconColor: Colors.purple,
             onTap: () async {
-              await FirebaseAnalytics.instance.logEvent(name: 'open_ai_assistant');
+              await FirebaseAnalytics.instance.logEvent(
+                name: 'open_ai_assistant',
+              );
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -789,7 +797,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: GestureDetector(
               onTap: () async {
                 if (index == 0) {
-                  await FirebaseAnalytics.instance.logEvent(name: 'view_community_tab');
+                  await FirebaseAnalytics.instance.logEvent(
+                    name: 'view_community_tab',
+                  );
                 }
                 setState(() {
                   _selectedTabIndex = index;
@@ -1024,14 +1034,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.comment_outlined,
                     count: commentsCount,
                     onTap: () {
-                      // Since both should link to single view, we navigate here as well
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              SinglePostScreen(postDoc: postDoc),
-                        ),
-                      );
+                      showCommentsBottomSheet(context, postDoc.id);
                     },
                   ),
                   _buildEngagementButton(icon: Icons.share_outlined, count: 0),
@@ -1202,7 +1205,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const Spacer(),
                               Text(
-                                plant['name'] as String,
+                                AppLocalizations.of(
+                                  context,
+                                ).getLocalizedPlantName(
+                                  plant['name'] as String,
+                                ),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
@@ -1227,7 +1234,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Health: $healthStatus',
+                                    AppLocalizations.of(
+                                      context,
+                                    ).healthLabel(healthStatus),
                                     style: TextStyle(
                                       color: Colors.white.withOpacity(0.95),
                                       fontSize: 12,
@@ -1252,7 +1261,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Text(
                                     latestPhotoStatus.isNotEmpty
                                         ? latestPhotoStatus
-                                        : 'No photo analysis yet',
+                                        : AppLocalizations.of(
+                                            context,
+                                          ).noPhotoAnalysis,
                                     style: TextStyle(
                                       color: Colors.white.withOpacity(0.8),
                                       fontSize: 11,
@@ -1262,7 +1273,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Growth Progress',
+                                    AppLocalizations.of(context).growthProgress,
                                     style: TextStyle(
                                       color: Colors.white.withOpacity(0.9),
                                       fontSize: 12,
@@ -1286,7 +1297,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
-                                    '$remainingDays days to harvest',
+                                    AppLocalizations.of(
+                                      context,
+                                    ).daysToHarvest(remainingDays),
                                     style: TextStyle(
                                       color: Colors.white.withOpacity(0.8),
                                       fontSize: 11,
@@ -1454,10 +1467,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _healthStatusLabel(int health) {
-    if (health >= 85) return 'Healthy';
-    if (health >= 65) return 'Stable';
-    if (health >= 40) return 'Needs Attention';
-    return 'Critical';
+    final loc = AppLocalizations.of(context);
+    if (health >= 85) return loc.healthy;
+    if (health >= 65) return loc.stable;
+    if (health >= 40) return loc.needsAttention;
+    return loc.critical;
   }
 
   Color _healthStatusColor(int health) {
@@ -1505,9 +1519,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Add your first plant',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context).addYourFirstPlant,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -1529,8 +1546,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ? Icons.check_circle
             : Icons.task_alt;
         final reminderTitle = totalPending == 0
-            ? 'All tasks done today!'
-            : '$totalPending task${totalPending > 1 ? 's' : ''} pending';
+            ? AppLocalizations.of(context).allTasksDoneToday
+            : AppLocalizations.of(context).tasksPending(totalPending);
 
         return GestureDetector(
           onTap: () {
@@ -1551,9 +1568,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Daily Tasks',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    Text(
+                      AppLocalizations.of(context).dailyTasks,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     Icon(reminderIcon, color: reminderColor, size: 20),
                   ],
@@ -1612,35 +1629,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _getWeatherAdvice(double temp, int weatherCode) {
+    final loc = AppLocalizations.of(context);
     // Rain conditions
     if (weatherCode >= 51 && weatherCode <= 67) {
-      return '☔ Skip watering today';
+      return loc.weatherSkipWatering;
     }
     if (weatherCode >= 80 && weatherCode <= 82) {
-      return '🌧️ Natural watering expected';
+      return loc.weatherNaturalWatering;
     }
 
     // Temperature-based advice
     if (temp > 35) {
-      return '🔥 Too hot, provide shade';
+      return loc.weatherTooHot;
     }
     if (temp > 30) {
-      return '☀️ Hot day, check soil moisture';
+      return loc.weatherHotDay;
     }
     if (temp >= 25 && temp <= 30) {
       if (weatherCode == 0) {
-        return '✅ Perfect for most crops';
+        return loc.weatherPerfect;
       }
-      return '👍 Good growing conditions';
+      return loc.weatherGood;
     }
     if (temp >= 20 && temp < 25) {
-      return '🌤️ Pleasant, water normally';
+      return loc.weatherPleasant;
     }
     if (temp < 20) {
-      return '❄️ Cool, reduce watering';
+      return loc.weatherCool;
     }
 
-    return '🌱 Check plant needs';
+    return loc.weatherCheck;
   }
 
   int _parsePositiveInt(dynamic value, {required int fallback}) {
@@ -1740,9 +1758,9 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           const Icon(Icons.yard_outlined, size: 48, color: Color(0xFF2E7D32)),
           const SizedBox(height: 12),
-          const Text(
-            'No plantations yet',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context).noPlantationsYet,
+            style: const TextStyle(
               fontSize: 16,
               color: Color(0xFF1B5E20),
               fontWeight: FontWeight.w600,
@@ -1750,7 +1768,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Add your first plant to start tracking growth.',
+            AppLocalizations.of(context).addFirstPlant,
             style: TextStyle(fontSize: 12, color: Colors.grey[700]),
             textAlign: TextAlign.center,
           ),
@@ -1765,7 +1783,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
               icon: const Icon(Icons.add),
-              label: const Text('Add Plantation'),
+              label: Text(AppLocalizations.of(context).addPlantation),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2E7D32),
                 foregroundColor: Colors.white,
@@ -1808,7 +1826,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const Icon(Icons.error_outline, size: 40, color: Color(0xFFD32F2F)),
           const SizedBox(height: 12),
           Text(
-            'Unable to load your garden right now.',
+            AppLocalizations.of(context).gardenLoadError,
             style: TextStyle(fontSize: 14, color: Colors.grey[700]),
             textAlign: TextAlign.center,
           ),

@@ -186,7 +186,7 @@ class AppLocalizations {
   String get today => _t('Today', 'Hari Ini', '今天');
   String get loading => _t('Loading...', 'Memuatkan...', '加载中...');
   String get unavailable => _t('Unavailable', 'Tidak tersedia', '不可用');
-  String get setLocation => _t('Set location', 'Tetapkan lokasi', '设置位置');
+  String get setLocation => _t('Set Location', 'Tetapkan Lokasi', '设置位置');
   String get myJourney => _t('My Journey', 'Perjalanan Saya', '我的旅程');
   String get dictionary => _t('Dictionary', 'Kamus', '字典');
   String get aiAssistant => _t('AI Assistant', 'Pembantu AI', 'AI 助手');
@@ -292,7 +292,24 @@ class AppLocalizations {
   String get comment => _t('Comment', 'Komen', '评论');
   String get send => _t('Send', 'Hantar', '发送');
   String get justNow => _t('Just now', 'Baru sahaja', '刚刚');
-  String get comments => _t('comments', 'komen', '条评论');
+  String get comments => _t('Comments', 'Komen', '评论');
+  String get writeAComment =>
+      _t('Write a comment...', 'Tulis komen...', '写下评论...');
+  String get noCommentsYet => _t('No comments yet', 'Belum ada komen', '还没有评论');
+  String get beFirstToComment => _t(
+    'Be the first to comment!',
+    'Jadilah yang pertama berkomen!',
+    '成为第一个评论的人！',
+  );
+  String get deleteComment => _t('Delete Comment', 'Padam Komen', '删除评论');
+  String get deleteCommentConfirm => _t(
+    'Are you sure you want to delete this comment?',
+    'Adakah anda pasti mahu memadam komen ini?',
+    '您确定要删除此评论吗？',
+  );
+  String get errorPostingComment =>
+      _t('Error posting comment', 'Ralat menghantar komen', '发布评论出错');
+  String get viewAllComments => _t('View all', 'Lihat semua', '查看全部');
 
   // ═══════════════════════════════════════════════════════════════════════
   //  EDIT PROFILE SCREEN
@@ -379,6 +396,16 @@ class AppLocalizations {
   String get reportOutbreak =>
       _t('REPORT OUTBREAK 🚨', 'LAPORKAN WABAK 🚨', '报告疫情 🚨');
   String get backToScan => _t('Back to Scan', 'Kembali ke Imbasan', '返回扫描');
+  String get translating => _t('Translating...', 'Menterjemah...', '翻译中...');
+  String get translationFailed => _t(
+    'Translation failed. Please try again.',
+    'Terjemahan gagal. Sila cuba lagi.',
+    '翻译失败，请重试。',
+  );
+  String get originalEnglish =>
+      _t('Original (English)', 'Asal (Inggeris)', '原文（英语）');
+  String get viewingTranslation =>
+      _t('Viewing translation', 'Melihat terjemahan', '正在查看翻译');
 
   // ═══════════════════════════════════════════════════════════════════════
   //  GRANT INTRO SCREEN
@@ -494,7 +521,7 @@ class AppLocalizations {
     '按标题或位置搜索...',
   );
   String get allStates => _t('All States', 'Semua Negeri', '所有州');
-  String get anyPrice => _t('Any Price', 'Sebarang Harga', '任何价格');
+  String get anyPrice => _t('Any Price', 'Mana-mana Harga', '任何价格');
   String get forRent => _t('For Rent', 'Untuk Disewa', '出租');
   String get contactOwner => _t('Contact Owner', 'Hubungi Pemilik', '联系业主');
   String get contactOwnerInfo => _t(
@@ -525,6 +552,388 @@ class AppLocalizations {
   String get myGarden => _t('My Garden', 'Kebun Saya', '我的花园');
   String get communityMember => _t('Community Member', 'Ahli Komuniti', '社区成员');
   String get home => _t('Home', 'Rumah', '首页');
+
+  // Plant card — health labels
+  String healthLabel(String status) =>
+      _t('Health: $status', 'Kesihatan: $status', '健康状况: $status');
+  String get healthy => _t('Healthy', 'Sihat', '健康');
+  String get stable => _t('Stable', 'Stabil', '稳定');
+  String get needsAttention => _t('Needs Attention', 'Perlu Perhatian', '需要关注');
+  String get critical => _t('Critical', 'Kritikal', '危急');
+  String get noPhotoAnalysis =>
+      _t('No photo analysis yet', 'Belum ada analisis foto', '尚无照片分析');
+  String get growthProgress =>
+      _t('Growth Progress', 'Kemajuan Pertumbuhan', '生长进度');
+  String daysToHarvest(int days) =>
+      _t('$days days to harvest', '$days hari lagi untuk tuai', '$days 天收获');
+
+  // Garden empty / error states
+  String get noPlantationsYet =>
+      _t('No plantations yet', 'Belum ada tanaman', '尚无种植');
+  String get addFirstPlant => _t(
+    'Add your first plant to start tracking growth.',
+    'Tambah tanaman pertama anda untuk mula menjejak pertumbuhan.',
+    '添加您的第一棵植物来开始跟踪生长。',
+  );
+  String get addPlantation => _t('Add Plantation', 'Tambah Tanaman', '添加种植');
+  String get gardenLoadError => _t(
+    'Unable to load your garden right now.',
+    'Tidak dapat memuatkan kebun anda sekarang.',
+    '暂时无法加载您的花园。',
+  );
+
+  // Daily Tasks / Reminder card
+  String get dailyTasks => _t('Daily Tasks', 'Tugas Harian', '每日任务');
+  String get reminder => _t('Reminder', 'Peringatan', '提醒');
+  String get addYourFirstPlant =>
+      _t('Add your first plant', 'Tambah tanaman pertama anda', '添加您的第一棵植物');
+  String get allTasksDoneToday => _t(
+    'All tasks done today!',
+    'Semua tugas selesai hari ini!',
+    '今天所有任务已完成！',
+  );
+  String tasksPending(int count) => _t(
+    '$count task${count > 1 ? 's' : ''} pending',
+    '$count tugas belum selesai',
+    '$count 个任务待完成',
+  );
+
+  // Weather advice
+  String get weatherSkipWatering =>
+      _t('☔ Skip watering today', '☔ Langkau penyiraman hari ini', '☔ 今天跳过浇水');
+  String get weatherNaturalWatering => _t(
+    '🌧️ Natural watering expected',
+    '🌧️ Penyiraman semula jadi dijangka',
+    '🌧️ 预计自然灌溉',
+  );
+  String get weatherTooHot => _t(
+    '🔥 Too hot, provide shade',
+    '🔥 Terlalu panas, berikan tedung',
+    '🔥 太热了，提供遮阳',
+  );
+  String get weatherHotDay => _t(
+    '☀️ Hot day, check soil moisture',
+    '☀️ Hari panas, periksa kelembapan tanah',
+    '☀️ 天气热，检查土壤湿度',
+  );
+  String get weatherPerfect => _t(
+    '✅ Perfect for most crops',
+    '✅ Sesuai untuk kebanyakan tanaman',
+    '✅ 适合大多数作物',
+  );
+  String get weatherGood => _t(
+    '👍 Good growing conditions',
+    '👍 Keadaan pertumbuhan baik',
+    '👍 良好的生长条件',
+  );
+  String get weatherPleasant => _t(
+    '🌤️ Pleasant, water normally',
+    '🌤️ Menyenangkan, siram seperti biasa',
+    '🌤️ 宜人，正常浇水',
+  );
+  String get weatherCool => _t(
+    '❄️ Cool, reduce watering',
+    '❄️ Sejuk, kurangkan penyiraman',
+    '❄️ 凉爽，减少浇水',
+  );
+  String get weatherCheck =>
+      _t('🌱 Check plant needs', '🌱 Semak keperluan tumbuhan', '🌱 检查植物需求');
+
+  // My Journey — photo analysis
+  String get analyzePhotoTitle =>
+      _t('Analyze Plant Photo', 'Analisis Foto Tumbuhan', '分析植物照片');
+  String get useCameraCapture => _t(
+    'Use camera to capture plant',
+    'Gunakan kamera untuk tangkap tumbuhan',
+    '使用相机拍摄植物',
+  );
+  String get chooseFromGallery =>
+      _t('Choose from Gallery', 'Pilih dari Galeri', '从相册选择');
+  String get uploadExistingPhoto =>
+      _t('Upload an existing photo', 'Muat naik foto sedia ada', '上传现有照片');
+  String get couldNotAnalyze => _t(
+    'Could not analyze photo. Try again.',
+    'Tidak dapat menganalisis foto. Cuba lagi.',
+    '无法分析照片，请重试。',
+  );
+  String get apiLimitReached => _t(
+    'API limit reached. Please try again later.',
+    'Had API tercapai. Sila cuba lagi nanti.',
+    'API限额已达到，请稍后重试。',
+  );
+  String get photoAnalysis => _t('Photo Analysis', 'Analisis Foto', '照片分析');
+  String get noPhotoYet => _t('No photo yet', 'Belum ada foto', '暂无照片');
+  String get progress => _t('Progress', 'Kemajuan', '进度');
+  String get days => _t('days', 'hari', '天');
+  String daysUntilHarvest(int days) => _t(
+    '$days day${days > 1 ? 's' : ''} until harvest',
+    '$days hari lagi untuk tuai',
+    '$days 天到收获',
+  );
+  String get readyToHarvest =>
+      _t('Ready to harvest!', 'Sedia untuk dituai!', '准备收获！');
+  String tasksCount(int completed, int total) => _t(
+    '$completed/$total tasks',
+    '$completed/$total tugas',
+    '$completed/$total 任务',
+  );
+  String get sortBy => _t('Sort by', 'Susun mengikut', '排序方式');
+  String get newest => _t('Newest', 'Terbaru', '最新');
+  String get daysPlantedLabel => _t('Days Planted', 'Hari Ditanam', '种植天数');
+  String get health => _t('Health', 'Kesihatan', '健康');
+  String get errorLoadingGarden =>
+      _t('Error loading your garden', 'Ralat memuatkan kebun anda', '加载花园出错');
+  String get gardenEmpty =>
+      _t('Your garden is empty', 'Kebun anda kosong', '您的花园是空的');
+  String get addPlantsToStart => _t(
+    'Add plants from the Dictionary to get started!',
+    'Tambah tumbuhan dari Kamus untuk bermula!',
+    '从字典中添加植物开始吧！',
+  );
+  String get myGardenLocation =>
+      _t('My Garden Location', 'Lokasi Kebun Saya', '我的花园位置');
+  String removePlantConfirmation(String plantName) => _t(
+    'Are you sure you want to remove "$plantName" from your garden?',
+    'Adakah anda pasti mahu memadam "$plantName" dari kebun anda?',
+    '确定要从花园中移除“$plantName”吗？',
+  );
+  String get deletePlantTitle => _t('Delete Plant', 'Padam Tumbuhan', '删除植物');
+
+  // Dictionary screen
+  String get plantDictionary =>
+      _t('Plant Dictionary', 'Kamus Tumbuhan', '植物字典');
+  String get cost => _t('Cost', 'Kos', '成本');
+  String get difficulty => _t('Difficulty', 'Kesukaran', '难度');
+  String get all => _t('All', 'Semua', '全部');
+  String get vegetables => _t('Vegetables', 'Sayuran', '蔬菜');
+  String get fruits => _t('Fruits', 'Buah-buahan', '水果');
+  String get herbs => _t('Herbs', 'Herba', '草药');
+  String get low => _t('Low', 'Rendah', '低');
+  String get medium => _t('Medium', 'Sederhana', '中等');
+  String get high => _t('High', 'Tinggi', '高');
+  String get easy => _t('Easy', 'Mudah', '简单');
+  String get hard => _t('Hard', 'Sukar', '困难');
+  String get growthTimeLabel => _t('Growth Time', 'Masa Pertumbuhan', '生长时间');
+  String get sunlight => _t('Sunlight', 'Cahaya Matahari', '阳光');
+  String get watering => _t('Watering', 'Penyiraman', '浇水');
+  String get soil => _t('Soil', 'Tanah', '土壤');
+  String get carbonReductionLabel =>
+      _t('Carbon Reduction', 'Pengurangan Karbon', '碳减排');
+  String get growthStages =>
+      _t('Growth Stages', 'Peringkat Pertumbuhan', '生长阶段');
+  String get materialsNeeded =>
+      _t('Materials Needed', 'Bahan Yang Diperlukan', '所需材料');
+  String get addToMyGarden =>
+      _t('Add to My Garden', 'Tambah ke Kebun Saya', '添加到我的花园');
+  String plantAddedToGarden(String plantName) => _t(
+    '$plantName added to your garden!',
+    '$plantName ditambah ke kebun anda!',
+    '$plantName 已添加到您的花园！',
+  );
+  String get pleaseSignIn => _t(
+    'Please sign in to add plants.',
+    'Sila log masuk untuk menambah tumbuhan.',
+    '请登录以添加植物。',
+  );
+  String get aboutLabel => _t('About', 'Mengenai', '关于');
+  String get growingGuide => _t('Growing Guide', 'Panduan Menanam', '种植指南');
+  String get localClimateMatch =>
+      _t('Local Climate Match', 'Padanan Iklim Tempatan', '当地气候匹配度');
+  String forLocation(String location) =>
+      _t('for $location', 'untuk $location', '$location的');
+  String get carbonImpact => _t('Carbon Impact', 'Kesan Karbon', '碳影响');
+  String get saveLocationForAdvice => _t(
+    'Save your garden location in My Journey for personalized local advice!',
+    'Simpan lokasi kebun anda di Perjalanan Saya untuk nasihat tempatan peribadi!',
+    '在“我的旅程”中保存您的花园位置以获取个性化的本地建议！',
+  );
+  String get excellentMatch =>
+      _t('Excellent Match', 'Padanan Cemerlang', '极佳匹配');
+  String get goodMatch => _t('Good Match', 'Padanan Baik', '良好匹配');
+  String get challengingMatch => _t('Challenging', 'Mencabar', '具挑战性');
+  String get aiAnalyzingLocalConditions => _t(
+    '🤖 AI is analyzing local conditions...',
+    '🤖 AI sedang menganalisis keadaan...',
+    '🤖 AI 正在分析当地情况...',
+  );
+
+  // Dictionary AI Fallback Advice Translations
+  String get fallbackVegetableCarbon => _t(
+    'About 2-3 kg CO₂/year reduction',
+    'Sekitar 2-3 kg pengurangan CO₂/tahun',
+    '大约减少 2-3 公斤二氧化碳/年',
+  );
+  String get fallbackHerbCarbon => _t(
+    'About 1-2 kg CO₂/year reduction',
+    'Sekitar 1-2 kg pengurangan CO₂/tahun',
+    '大约减少 1-2 公斤二氧化碳/年',
+  );
+  String get fallbackFruitCarbon => _t(
+    'About 5-12 kg CO₂/year reduction',
+    'Sekitar 5-12 kg pengurangan CO₂/tahun',
+    '大约减少 5-12 公斤二氧化碳/年',
+  );
+  String get fallbackDefaultCarbon => _t(
+    'About 3-5 kg CO₂/year reduction',
+    'Sekitar 3-5 kg pengurangan CO₂/tahun',
+    '大约减少 3-5 公斤二氧化碳/年',
+  );
+  String fallbackGrowingContext(String plant, String location) => _t(
+    '$plant is suitable in $location conditions.',
+    '$plant sesuai dalam keadaan $location.',
+    '$plant 适合 $location 的环境。',
+  );
+  String get fallbackDifficulty => _t(
+    'Moderate - monitor weather and pests',
+    'Sederhana - pantau cuaca dan perosak',
+    '中等 - 注意天气和害虫',
+  );
+  String get fallbackSunlight => _t(
+    '4-6 hours sunlight daily',
+    '4-6 jam cahaya matahari setiap hari',
+    '每天 4-6 小时日照',
+  );
+  String get fallbackWateringHot => _t(
+    'Water morning and late afternoon',
+    'Siram pagi dan lewat petang',
+    '早晚浇水',
+  );
+  String get fallbackWateringNormal =>
+      _t('Water once daily', 'Siram sekali sehari', '每天浇水一次');
+  String get fallbackSoil => _t(
+    'Well-drained soil with compost',
+    'Tanah bersaliran baik dengan kompos',
+    '排水良好的堆肥土壤',
+  );
+  String get fallbackCompost => _t('Organic compost', 'Kompos organik', '有机堆肥');
+  String get fallbackCompostPurpose =>
+      _t('Improve soil fertility', 'Meningkatkan kesuburan tanah', '提高土壤肥力');
+  String get fallbackMulch => _t('Mulch', 'Sungupan (Mulch)', '覆盖物');
+  String get fallbackMulchPurpose =>
+      _t('Keep moisture stable', 'Kekalkan kelembapan', '保持水分稳定');
+  String get fallbackWateringCan => _t('Watering can', 'Penyiram', '浇水壶');
+  String get fallbackWateringCanPurpose =>
+      _t('Gentle root watering', 'Siraman lembut ke akar', '温和浇水');
+  String get fallbackNeemSpray => _t('Neem spray', 'Semburan Neem', '苦楝油喷雾');
+  String get fallbackNeemSprayPurpose =>
+      _t('Prevent pests naturally', 'Cegah perosak secara semula jadi', '自然防虫');
+  String get fallbackStageSeedling => _t('Seedling', 'Anak benih', '幼苗');
+  String get fallbackStageSeedlingDesc =>
+      _t('Establish roots', 'Membina akar', '扎根');
+  String get fallbackStageVegetative => _t('Vegetative', 'Tumbesaran', '生长期');
+  String get fallbackStageVegetativeDesc =>
+      _t('Leaf and stem growth', 'Pertumbuhan daun dan batang', '长叶和茎');
+  String get fallbackStageFlowering => _t('Flowering', 'Berbunga', '开花期');
+  String get fallbackStageFloweringDesc =>
+      _t('Flower formation', 'Pembentukan bunga', '形成花朵');
+  String get fallbackStageMaturity => _t('Maturity', 'Kematangan', '成熟期');
+  String get fallbackStageMaturityDesc =>
+      _t('Harvest ready', 'Sedia untuk dituai', '可以收获');
+
+  // Detailed Info (Dictionary)
+  String growthTimeDetail(String location, String temp, String plantName) => _t(
+    'Growth time varies based on your local climate conditions in $location. Factors like temperature ($temp°C), daylight hours, and seasonal patterns all affect how quickly $plantName matures.',
+    'Masa tumbesaran bergantung pada keadaan iklim tempatan anda di $location. Faktor-faktor seperti suhu ($temp°C), tempoh cahaya siang, dan corak bermusim menjejaskan tempoh matang $plantName.',
+    '$location 的当地气候会影响 $plantName 的生长周期。温度 ($temp°C)、日照时长以及季节性变化都会影响其成熟的速度。',
+  );
+
+  String difficultyDetail(String plantName, String location) => _t(
+    'Difficulty rating considers climate compatibility, maintenance requirements, pest resistance, and how well $plantName adapts to $location conditions. Beginners should start with "Easy" rated plants.',
+    'Tahap kesukaran mengambil kira kesesuaian iklim, keperluan penyelenggaraan, daya tahan perosak, dan kemampuan $plantName menyesuaikan diri di $location. Penanam baru disyorkan bermula dengan tanaman "Mudah".',
+    '程度评级考虑了气候适应性、养护要求、病虫害抗性以及 $plantName 对 $location 环境的适应能力。初学者建议从“容易”等级的植物开始。',
+  );
+
+  String sunlightDetail(String location) => _t(
+    'Sunlight requirements are crucial for photosynthesis and healthy growth. In $location, consider seasonal variations and provide shade during extremely hot periods. Morning sun is generally gentler than harsh afternoon sun.',
+    'Keperluan cahaya matahari penting untuk fotosintesis dan pertumbuhan sihat. Di $location, beri perhatian pada perubahan musim dan sediakan tempat berteduh pada cuaca terlampau panas. Cahaya matahari pagi lebih lembut berbanding cahaya terik petang.',
+    '日照要求对于光合作用和健康生长至关重要。在 $location，需考虑季节性变化，并在极端炎热时提供遮阴。早上的阳光通常比下午的烈日更温和。',
+  );
+
+  String wateringDetail(String condition, String temp) => _t(
+    'Current weather: $condition at $temp°C. Adjust watering frequency based on rainfall, humidity, and soil moisture. Overwatering is a common mistake - check soil before watering.',
+    'Cuaca semasa: $condition pada $temp°C. Selaraskan kekerapan penyiraman berdasarkan hujan, kelembapan, dan keadaan tanah. Penyiraman berlebihan adalah kesilapan biasa - periksa tanah sebelum menyiram.',
+    '当前天气：$condition，气温 $temp°C。根据降雨量、湿度和土壤水分调整浇水频率。过度浇水是常见的错误 - 请在浇水前检查土壤。',
+  );
+
+  String soilDetail(String location) => _t(
+    'Soil quality directly impacts nutrient availability and root health. In $location, amend soil based on local conditions. Good drainage prevents root rot, while organic matter improves fertility and water retention.',
+    'Kualiti tanah memberi kesan terus kepada zat makanan dan kesihatan akar. Di $location, baiki kualiti tanah mengikut keadaan tempatan. Saliran yang baik mengelakkan reput akar, sementara bahan organik meningkatkan kesuburan.',
+    '土壤质量直接影响养分的获取和根系的健康。在 $location，请根据当地情况调整土壤。良好的排水性能防止根腐病，而有机质则能提高肥力和保水性。',
+  );
+
+  String get localGrowingContext =>
+      _t('Local Growing Context', 'Konteks Penanaman Tempatan', '当地种植环境');
+  String currentTempWeather(String temp, String weather) => _t(
+    '🌡️ Current: $temp°C, $weather',
+    '🌡️ Semasa: $temp°C, $weather',
+    '🌡️ 当前: $temp°C, $weather',
+  );
+
+  String getLocalizedPlantName(String englishName) {
+    final lowerName = englishName.toLowerCase();
+    if (lowerName == 'tomato') return _t('Tomato', 'Tomato', '番茄');
+    if (lowerName == 'chili') return _t('Chili', 'Cili', '辣椒');
+    if (lowerName == 'papaya') return _t('Papaya', 'Betik', '木瓜');
+    if (lowerName == 'banana') return _t('Banana', 'Pisang', '香蕉');
+    if (lowerName == 'strawberry') return _t('Strawberry', 'Strawberi', '草莓');
+    if (lowerName == 'apple') return _t('Apple', 'Epal', '苹果');
+    if (lowerName == 'pandan') return _t('Pandan', 'Pandan', '斑兰');
+    return englishName;
+  }
+
+  String getLocalizedPlantDescription(String englishName) {
+    final lowerName = englishName.toLowerCase();
+    if (lowerName == 'tomato') {
+      return _t(
+        'A popular garden vegetable rich in vitamins A and C. Tomatoes are used in salads, sauces, and many cuisines worldwide.',
+        'Sayuran popular yang kaya dengan vitamin A dan C. Tomato digunakan dalam salad, sos, dan pelbagai masakan di seluruh dunia.',
+        '一种富含维生素 A 和 C 的流行园林蔬菜。番茄被广泛用于沙拉、酱汁和世界各地的许多菜肴中。',
+      );
+    }
+    if (lowerName == 'chili') {
+      return _t(
+        'Spicy fruit used in many cuisines worldwide. Contains capsaicin which gives the heat.',
+        'Buah pedas yang digunakan dalam banyak masakan. Mengandungi capsaicin yang memberikan rasa pedas.',
+        '在世界许多菜肴中使用的辛辣果实。含有带来辣味的辣椒素。',
+      );
+    }
+    if (lowerName == 'papaya') {
+      return _t(
+        'Tropical fruit with sweet orange flesh. Rich in enzymes and vitamins.',
+        'Buah tropika dengan isi oren manis. Kaya dengan enzim dan vitamin.',
+        '带有甜美橙色果肉的热带水果。富含酶和维生素。',
+      );
+    }
+    if (lowerName == 'banana') {
+      return _t(
+        'Tropical fruit rich in potassium. Requires warm frost-free climate (above 10°C year-round). Dies at 0°C. NOT suitable for temperate zones with winter frost.',
+        'Buah tropika yang kaya dengan kalium. Memerlukan iklim hangat bebas fros (melebihi 10°C sepanjang tahun). Mati pada 0°C. TIDAK sesuai untuk zon beriklim sederhana.',
+        '富含钾的热带水果。需要温暖无霜的气候（全年 10°C 以上）。0°C 时会死亡。不适合有冬季霜冻的温带地区。',
+      );
+    }
+    if (lowerName == 'strawberry') {
+      return _t(
+        'Sweet red fruit rich in vitamin C and antioxidants. Best with good drainage and regular care.',
+        'Buah merah manis yang kaya dengan vitamin C dan antioksidan. Paling baik dengan saliran baik dan penjagaan tetap.',
+        '富含维生素 C 和抗氧化剂的甜红果实。最好有良好的排水和定期的护理。',
+      );
+    }
+    if (lowerName == 'apple') {
+      return _t(
+        'Temperate fruit tree requiring 800-1000 chill hours (below 7°C). NOT suitable for tropical lowlands. Best in highland areas above 1000m elevation.',
+        'Pokok buah beriklim sederhana yang memerlukan 800-1000 jam sejuk (bawah 7°C). TIDAK sesuai untuk dataran rendah tropika. Terbaik di tanah tinggi melebihi 1000m.',
+        '需要 800-1000 寒冷小时（低于 7°C）的温带果树。不适合热带低地。最适合海拔 1000 米以上的高地。',
+      );
+    }
+    if (lowerName == 'pandan') {
+      return _t(
+        'Fragrant leaves used in Southeast Asian desserts and rice dishes.',
+        'Daun wangi yang digunakan dalam pencuci mulut dan hidangan nasi Asia Tenggara.',
+        '用于东南亚甜点和米饭菜肴的芬芳叶子。',
+      );
+    }
+    return '';
+  }
 
   // ═══════════════════════════════════════════════════════════════════════
   //  COMMUNITY / CREATE POST SCREEN
@@ -825,6 +1234,214 @@ class AppLocalizations {
     'Imbas daun untuk mengesan penyakit',
     '扫描叶子以检测疾病',
   );
+  String get aiCropDiagnostics =>
+      _t('AI Crop Diagnostics', 'Diagnostik Tanaman AI', 'AI 作物诊断');
+  String get aiDiagnosticsSubtitle => _t(
+    'Instantly scan your plants to identify pest infestations, diseases, or nutritional deficiencies.',
+    'Imbas tanaman anda dengan segera untuk mengenal pasti serangan perosak, penyakit, atau kekurangan nutrisi.',
+    '即时扫描您的植物，识别害虫侵扰、疾病或营养缺乏。',
+  );
+  String get scanZoneHelper => _t(
+    'Take a photo or upload from gallery',
+    'Ambil foto atau muat naik dari galeri',
+    '拍照或从相册上传',
+  );
+  String get readyToScan => _t(
+    'Your image is ready! Choose an analysis type below.',
+    'Imej anda sudah sedia! Pilih jenis analisis di bawah.',
+    '您的图片已准备好！请在下方选择分析类型。',
+  );
+
+  String get imageReady => _t('Image Ready', 'Imej Sedia', '图片已就绪');
+  String get editLocation => _t('Edit Location', 'Edit Lokasi', '修改位置');
+
+  // ── Agropreneur Tutorial ──
+  String tutorialStepTitle(int index) {
+    switch (index) {
+      case 0:
+        return _t('Create e-GAN Account', 'Cipta Akaun e-GAN', '创建 e-GAN 账户');
+      case 1:
+        return _t('Verify Your Email', 'Sahkan Emel Anda', '验证您的电子邮件');
+      case 2:
+        return _t('Login to Portal', 'Log Masuk ke Portal', '登录门户网站');
+      case 3:
+        return _t('Select The Grant', 'Pilih Geran', '选择补助金');
+      case 4:
+        return _t('Confirm Eligibility', 'Sahkan Kelayakan', '确认资格');
+      case 5:
+        return _t(
+          'Step 1: Personal Details',
+          'Langkah 1: Butiran Peribadi',
+          '步骤 1：个人详情',
+        );
+      case 6:
+        return _t(
+          'Step 2: Project Information',
+          'Langkah 2: Maklumat Projek',
+          '步骤 2：项目信息',
+        );
+      case 7:
+        return _t(
+          'Step 3: Request for Aid',
+          'Langkah 3: Memohon Bantuan',
+          '步骤 3：申请援助',
+        );
+      case 8:
+        return _t(
+          'Step 4: Business Plan',
+          'Langkah 4: Rancangan Perniagaan',
+          '步骤 4：商业计划',
+        );
+      case 9:
+        return _t(
+          'Step 5: Financial Plan',
+          'Langkah 5: Rancangan Kewangan',
+          '步骤 5：财务计划',
+        );
+      case 10:
+        return _t(
+          'Step 6: Final Declaration',
+          'Langkah 6: Pengisytiharan Akhir',
+          '步骤 6：最终声明',
+        );
+      case 11:
+        return _t(
+          'Save, Review & Submit',
+          'Simpan, Semak & Hantar',
+          '保存、审核并提交',
+        );
+      default:
+        return '';
+    }
+  }
+
+  String tutorialStepDescription(int index) {
+    switch (index) {
+      case 0:
+        return _t(
+          'First, register on the official e-GAN portal. Fill in your Full Name (as per MyKad), IC Number, Email, and create a Password.\n\n💡 Pro Tip: Use an active email address as you need to verify it immediately.',
+          'Pertama, daftar di portal rasmi e-GAN. Isi Nama Penuh anda (seperti dalam MyKad), No. Kad Pengenalan, Emel, dan cipta Kata Laluan.\n\n💡 Petua Pro: Gunakan alamat emel yang aktif kerana anda perlu mengesahkannya dengan segera.',
+          '首先，在官方 e-GAN 门户网站注册。填写您的全名（按 MyKad）、身份证号码、电子邮件，并创建密码。\n\n💡 专业建议：使用有效的电子邮件地址，因为您需要立即进行验证。',
+        );
+      case 1:
+        return _t(
+          'Check your inbox for a verification link. Click the blue button \'Pengesahan Akaun\' to activate.\n\n⚠️ Important: Link expires in 60 minutes. Check Spam folder if missing.',
+          'Semak peti masuk anda untuk pautan pengesahan. Klik butang biru \'Pengesahan Akaun\' untuk mengaktifkan.\n\n⚠️ Penting: Pautan tamat tempoh dalam masa 60 minit. Semak folder Spam jika gagal diterima.',
+          '检查您的收件箱是否有验证链接。点击蓝色按钮“Pengesahan Akaun”以激活。\n\n⚠️ 重要提示：链接将在 60 分钟内失效。如果没有收到，请检查垃圾邮件文件夹。',
+        );
+      case 2:
+        return _t(
+          'Once verified, return to the portal. Enter your IC Number and the Password you just created to log in for the first time.',
+          'Setelah disahkan, kembali ke portal. Masukkan No. Kad Pengenalan dan Kata Laluan yang anda baru cipta untuk log masuk buat kali pertama.',
+          '验证后，返回门户网站。输入您的身份证号码和刚刚创建的密码以进行首次登录。',
+        );
+      case 3:
+        return _t(
+          'On the sidebar menu, click \'Permohonan Geran Agropreneur NextGen\'. Then, click \'Mohon Sekarang\' (Apply Now) to open the form.',
+          'Pada menu bar sisi, klik \'Permohonan Geran Agropreneur NextGen\'. Kemudian, klik \'Mohon Sekarang\' untuk membuka borang.',
+          '在侧边栏菜单中，点击“Permohonan Geran Agropreneur NextGen”。然后，点击“Mohon Sekarang”（立即申请）打开表格。',
+        );
+      case 4:
+        return _t(
+          'You must tick the boxes to declare your eligibility:\n\n1. Malaysian Citizen (18-45 years old).\n2. Can read, count, and write.\n3. Have attended training OR have a relevant Diploma/Degree OR have experience.\n\nAction: Click \'Lengkapkan Permohonan\' to proceed to the main form.',
+          'Anda mesti menanda kotak untuk menyatakan kelayakan anda:\n\n1. Warganegara Malaysia (18-45 tahun).\n2. Boleh membaca, mengira, dan menulis.\n3. Telah mengikuti latihan ATAU mempunyai Diploma/Ijazah berkaitan ATAU mempunyai pengalaman.\n\nTindakan: Klik \'Lengkapkan Permohonan\' untuk meneruskan ke borang utama.',
+          '您必须勾选这些框以声明您的资格：\n\n1. 马来西亚公民（18-45 岁）。\n2. 能够读、算、写。\n3. 参加过培训或具有相关文凭/学位或具有经验。\n\n操作：点击“Lengkapkan Permohonan”继续填写主表。',
+        );
+      case 5:
+        return _t(
+          'Fill in your personal information (Marital Status, Phone, Address, etc).\n\n📄 Documents Required:\n• Passport-sized Photo of applicant.\n• Copy of MyKad (IC) - Must be Certified.\n• SSM Registration or Business License - Must be Certified.',
+          'Isi maklumat peribadi anda (Status Perkahwinan, Telefon, Alamat, dll).\n\n📄 Dokumen Diperlukan:\n• Gambar bersaiz pasport pemohon.\n• Salinan MyKad (IC) - Mesti disahkan.\n• Pendaftaran SSM atau Lesen Perniagaan - Mesti disahkan.',
+          '填写您的个人信息（婚姻状况、电话、地址等）。\n\n📄 所需文件：\n• 申请人的护照尺寸照片。\n• MyKad (IC) 副本 - 必须经过认证。\n• SSM 注册或营业执照 - 必须经过认证。',
+        );
+      case 6:
+        return _t(
+          'Select your project project type and the Supervising Agency (Agensi Pembimbing), e.g., DOA for Crops.\n\n📄 Documents Required:\n• Proof of Land Ownership (Certified).\n• Stamped Tenancy Agreement (if renting).\n• Consent Letter (if using parents\' land).',
+          'Pilih jenis projek anda dan Agensi Pembimbing, cth., DOA untuk Tanaman.\n\n📄 Dokumen Diperlukan:\n• Bukti Pemilikan Tanah (Disahkan).\n• Perjanjian Sewaan Bersetem (jika menyewa).\n• Surat Kebenaran (jika menggunakan tanah ibu bapa).',
+          '选择您的项目类型和监督机构（Agensi Pembimbing），例如：作物的 DOA。\n\n📄 所需文件：\n• 土地所有权证明（经过认证）。\n• 盖章的租约（如果租用）。\n• 同意书（如果使用父母的土地）。',
+        );
+      case 7:
+        return _t(
+          'List the specific items or machinery you need to buy.\n\n💰 Maximum Limit: RM30,000 (for Crops, Livestock, Fisheries).\n\n⚠️ Important: You MUST upload current price quotations from three (3) different suppliers for the items you are requesting.',
+          'Senaraikan item spesifik atau jentera yang anda perlu beli.\n\n💰 Had Maksimum: RM30,000 (untuk Tanaman, Ternakan, Perikanan).\n\n⚠️ Penting: Anda MESTI memuat naik sebut harga semasa daripada tiga (3) pembekal berbeza bagi item yang anda mohon.',
+          '列出您需要购买的具体物品或机械。\n\n💰 最高限额：30,000 令吉（用于作物、畜牧业、渔业）。\n\n⚠️ 重要提示：您必须上传针对您所申请项目的三个（3）个不同供应商的当前价格报价。',
+        );
+      case 8:
+        return _t(
+          'This is the most critical section. Describe your business vision.\n\nKey Details to Fill:\n• Introduction: Purpose, Mission, and Vision.\n• Management: Employee roles.\n• Marketing: Sales channels (Online/Wholesalers).\n• Operations: Daily farm activities.\n\n📸 Requirement: You MUST upload at least 3 photos of your project site.',
+          'Ini adalah bahagian yang paling kritikal. Terangkan visi perniagaan anda.\n\nButiran Utama untuk Diisi:\n• Pengenalan: Matlamat, Misi, dan Visi.\n• Pengurusan: Peranan pekerja.\n• Pemasaran: Saluran jualan (Atas Talian/Pemborong).\n• Operasi: Aktiviti ladang harian.\n\n📸 Keperluan: Anda MESTI memuat naik sekurang-kurangnya 3 keping foto tapak projek anda.',
+          '这是最关键的部分。描述您的业务愿景。\n\n要填写的关键详情：\n• 简介：目的、使命和愿景。\n• 管理：员工角色。\n• 营销：销售渠道（在线/批发商）。\n• 运营：日常农场活动。\n\n📸 要求：您必须上传至少 3 张项目现场照片。',
+        );
+      case 9:
+        return _t(
+          'Calculate your project\'s profitability. Provide realistic estimates.\n\nCash Inflow:\n• Capital (Grant vs Own Money)\n• Sales Projection (Year 1, 2, 3)\n\nCash Outflow:\n• Development Costs (Machinery)\n• Operational Costs (Fertilizer, Feed, Labor)\n\n💡 Pro Tip: Ensure Sales Projection is higher than Operational Costs.',
+          'Kira keuntungan projek anda. Berikan anggaran yang realistik.\n\nAliran Masuk Tunai:\n• Modal (Geran vs Wang Sendiri)\n• Juran Jualan (Tahun 1, 2, 3)\n\nAliran Keluar Tunai:\n• Kos Pembangunan (Jentera)\n• Kos Operasi (Baja, Makanan, Buruh)\n\n💡 Petua Pro: Pastikan Juruan Jualan lebih tinggi daripada Kos Operasi.',
+          '计算您的项目盈利能力。提供现实的估计。\n\n现金流入：\n• 资本（补助金对比自有资金）\n• 销售额预测（第 1、2、3 年）\n\n现金流出：\n• 开发成本（机械）\n• 运营成本（肥料、饲料、劳动力）\n\n💡 专业建议：确保销售预测高于运营成本。',
+        );
+      case 10:
+        return _t(
+          'You must agree to the terms before submitting:\n\n✅ Acknowledge that the application will be rejected if you do not respond to queries within 3 months.\n✅ Declare that all information provided is TRUE.\n\n⚠️ Warning: Providing false information is a serious offense under Clause 463 of the Penal Code.',
+          'Anda mesti bersetuju dengan syarat sebelum menghantar:\n\n✅ Akui bahawa permohonan akan ditolak jika anda tidak menjawab pertanyaan dalam tempoh 3 bulan.\n✅ Isytihar bahawa semua maklumat yang diberikan adalah BENAR.\n\n⚠️ Amaran: Memberi maklumat palsu adalah kesalahan serius di bawah Seksyen 463 Kanun Keseksaan.',
+          '提交前您必须同意条款：\n\n✅ 承认如果您在 3 个月内未回复查询，申请将被拒绝。\n✅ 声明所提供的所有信息均为真实信息。\n\n⚠️ 警告：根据《刑法》第 463 条，提供虚假信息是一项严重罪行。',
+        );
+      case 11:
+        return _t(
+          'Do not submit immediately! Follow this safe process:\n\n1. Click \'Simpan Draf\' (Save Draft) to save your progress.\n2. Check your Dashboard. You can click the Green Pencil Icon to edit if needed.\n3. Once you are 100% satisfied, click the green \'Hantar\' (Submit) button.\n\n✅ Success: Your application is now sent to the Ministry for processing. Good luck!',
+          'Jangan hantar dengan segera! Ikuti proses selamat ini:\n\n1. Klik \'Simpan Draf\' untuk menyimpan kemajuan anda.\n2. Semak Papan Pemuka anda. Anda boleh klik Ikon Pensel Hijau untuk mengedit jika perlu.\n3. Setelah anda 100% berpuas hati, klik butang hijau \'Hantar\'.\n\n✅ Berjaya: Permohonan anda kini dihantar ke Kementerian untuk diproses. Semoga berjaya!',
+          '不要立即提交！遵循此安全流程：\n\n1. 点击“Simpan Draf”（保存草稿）以保存进度。\n2. 检查您的仪表板。如果需要，您可以点击绿色铅笔图标进行编辑。\n3. 在 100% 满意后，点击绿色的“Hantar”（提交）按钮。\n\n✅ 成功：您的申请现已发送至该部进行处理。祝你好运！',
+        );
+      default:
+        return '';
+    }
+  }
+
+  String get openPortal => _t(
+    'Open e-GAN Registration Portal',
+    'Buka Portal Pendaftaran e-GAN',
+    '打开 e-GAN 注册门户',
+  );
+
+  // ── Land Rent Filters ──
+
+  String get allSize => _t('All', 'Semua', '全部');
+  String get budgetPrice =>
+      _t('Budget (< RM 1,000)', 'Bajet (< RM 1,000)', '经济 (< RM 1,000)');
+  String get standardPrice => _t(
+    'Standard (RM 1,000 - 3,000)',
+    'Standard (RM 1,000 - 3,000)',
+    '标准 (RM 1,000 - 3,000)',
+  );
+  String get premiumPrice =>
+      _t('Premium (> RM 3,000)', 'Premium (> RM 3,000)', '优质 (> RM 3,000)');
+  String get budgetPriceShort =>
+      _t('Budget (< RM1k)', 'Bajet (< RM1k)', '经济 (< RM1k)');
+  String get standardPriceShort =>
+      _t('Standard (RM1k-3k)', 'Standard (RM1k-3k)', '标准 (RM1k-3k)');
+  String get premiumPriceShort =>
+      _t('Premium (> RM3k)', 'Premium (> RM3k)', '优质 (> RM3k)');
+  String get smallSize =>
+      _t('Small (< 1 Acre)', 'Kecil (< 1 Ekar)', '小型 (< 1 英亩)');
+  String get mediumSize =>
+      _t('Medium (1-5 Acres)', 'Sederhana (1-5 Ekar)', '中型 (1-5 英亩)');
+  String get largeSize =>
+      _t('Large (> 5 Acres)', 'Besar (> 5 Ekar)', '大型 (> 5 英亩)');
+
+  // ── Marketplace Map ──
+  String get business => _t('Business', 'Perniagaan', '业务');
+  String get product => _t('Product', 'Produk', '产品');
+
+  // ── AI Diagnostic ──
+  String get chooseAnalysisType =>
+      _t('Choose Analysis Type', 'Pilih Jenis Analisis', '选择分析类型');
+  String get detectPestsDesc => _t(
+    'Detect pest infestations & diseases',
+    'Kesan serangan perosak & penyakit',
+    '检测害虫侵袭和疾病',
+  );
+  String get checkNutrientsDesc => _t(
+    'Check for nutritional deficiencies',
+    'Periksa kekurangan nutrisi',
+    '检查营养缺乏',
+  );
 
   // ── Common ──
   String get pending => _t('Pending...', 'Menunggu...', '待处理...');
@@ -841,6 +1458,23 @@ class AppLocalizations {
       _t('Enable location services', 'Hidupkan perkhidmatan lokasi', '启用位置服务');
   String get locationPermissionDenied =>
       _t('Location permission denied', 'Kebenaran lokasi ditolak', '位置权限被拒绝');
+
+  // ── Feedback ──
+  String get sendFeedback => _t('Send Feedback', 'Hantar Maklum Balas', '发送反馈');
+  String get feedbackTitle =>
+      _t('We would love to hear from you!', 'Kami ingin mendengar daripada anda!', '我们很乐意听取您的意见！');
+  String get feedbackSubtitle => _t(
+    'Tell us what you like or any issues you have faced while using Kita Agro.',
+    'Beritahu kami perkara yang anda suka atau sebarang isu yang anda hadapi semasa menggunakan Kita Agro.',
+    '告诉我们您喜欢什么，或在使用 Kita Agro 时遇到的任何问题。'
+  );
+  String get typeFeedbackHint =>
+      _t('Type your feedback here...', 'Taip maklum balas anda di sini...', '在此处输入您的反馈...');
+  String get submitFeedback =>
+      _t('Submit Feedback', 'Hantar Maklum Balas', '提交反馈');
+  String get thankYouFeedback =>
+      _t('Thank you for your feedback!', 'Terima kasih atas maklum balas anda!', '感谢您的反馈！');
+  String get failedToSubmit => _t('Failed to submit', 'Gagal dihantar', '提交失败');
 }
 
 /// An InheritedWidget that provides LanguageService down the tree

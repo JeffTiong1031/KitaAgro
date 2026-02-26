@@ -12,6 +12,7 @@ import '../../services/user_service.dart';
 import 'edit_profile_screen.dart';
 import '../community/create_post_screen.dart';
 import 'single_post_screen.dart';
+import '../community/comments_screen.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/app_localizations.dart';
 import 'feedback_screen.dart';
@@ -201,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.settings, color: Colors.black),
+                icon: const Icon(Icons.feedback_outlined, color: Colors.black),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -918,13 +919,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.chat_bubble_outline,
                     label: loc.comment,
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              SinglePostScreen(postDoc: postDoc),
-                        ),
-                      );
+                      showCommentsBottomSheet(context, postDoc.id);
                     },
                   ),
                   _buildEngagementButton(

@@ -140,8 +140,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please sign in to add plants.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).pleaseSignIn),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -179,7 +179,13 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${plant['name']} added to your garden!'),
+        content: Text(
+          AppLocalizations.of(context).plantAddedToGarden(
+            AppLocalizations.of(
+              context,
+            ).getLocalizedPlantName(plant['name'] as String),
+          ),
+        ),
         backgroundColor: const Color(0xFF2E7D32),
         behavior: SnackBarBehavior.floating,
       ),
@@ -263,6 +269,33 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
     return 'spa';
   }
 
+  // Map English data keys to localized display text
+  String _localizeLabel(String key) {
+    final loc = AppLocalizations.of(context);
+    switch (key) {
+      case 'All':
+        return loc.all;
+      case 'Vegetables':
+        return loc.vegetables;
+      case 'Fruits':
+        return loc.fruits;
+      case 'Herbs':
+        return loc.herbs;
+      case 'Low':
+        return loc.low;
+      case 'Medium':
+        return loc.medium;
+      case 'High':
+        return loc.high;
+      case 'Easy':
+        return loc.easy;
+      case 'Hard':
+        return loc.hard;
+      default:
+        return key;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -271,9 +304,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
         backgroundColor: Color(0xFF2E7D32),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Plant Dictionary',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context).plantDictionary,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -307,7 +340,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          category,
+                          _localizeLabel(category),
                           style: TextStyle(
                             color: isSelected
                                 ? Color(0xFF2E7D32)
@@ -334,7 +367,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
               child: Row(
                 children: [
                   _buildFilterDropdown(
-                    label: 'Cost',
+                    label: AppLocalizations.of(context).cost,
                     value: _selectedCost,
                     options: _costFilters,
                     onChanged: (value) {
@@ -344,7 +377,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                   ),
                   const SizedBox(width: 8),
                   _buildFilterDropdown(
-                    label: 'Difficulty',
+                    label: AppLocalizations.of(context).difficulty,
                     value: _selectedDifficulty,
                     options: _difficultyFilters,
                     onChanged: (value) {
@@ -426,7 +459,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
               .map(
                 (option) => DropdownMenuItem<String>(
                   value: option,
-                  child: Text('$label: $option'),
+                  child: Text('$label: ${_localizeLabel(option)}'),
                 ),
               )
               .toList(),
@@ -481,7 +514,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
-                plant['name'],
+                AppLocalizations.of(
+                  context,
+                ).getLocalizedPlantName(plant['name'] as String),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
@@ -551,7 +586,34 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
   String _locationName = 'Unknown';
   double _temperature = 25.0;
   String _weatherCondition = 'Clear';
-  String _debugError = '';
+
+  // Map English data keys to localized display text
+  String _localizeLabel(String key) {
+    if (!mounted) return key;
+    final loc = AppLocalizations.of(context);
+    switch (key) {
+      case 'All':
+        return loc.all;
+      case 'Vegetables':
+        return loc.vegetables;
+      case 'Fruits':
+        return loc.fruits;
+      case 'Herbs':
+        return loc.herbs;
+      case 'Low':
+        return loc.low;
+      case 'Medium':
+        return loc.medium;
+      case 'High':
+        return loc.high;
+      case 'Easy':
+        return loc.easy;
+      case 'Hard':
+        return loc.hard;
+      default:
+        return key;
+    }
+  }
 
   // Track which cards are expanded
   final Set<String> _expandedCards = {};
@@ -616,15 +678,17 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
   Future<void> _fetchAIAdvice() async {
     try {
       final plantName = widget.plant['name'];
-      final cacheKey = '$plantName-$_locationName';
+      final langCode = LanguageServiceProvider.of(context).currentLanguage.code;
+      final cacheKey = '$plantName-$_locationName-$langCode';
 
       // Check cache first
       if (_aiCache.containsKey(cacheKey)) {
-        print('💾 Using cached data for $plantName in $_locationName');
+        print(
+          '💾 Using cached data for $plantName in $_locationName ($langCode)',
+        );
         setState(() {
           _aiAdvice = _aiCache[cacheKey];
           _isLoadingAI = false;
-          _debugError = 'Data: Cached ✓';
         });
         return;
       }
@@ -637,7 +701,6 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
         setState(() {
           _aiAdvice = fallback;
           _isLoadingAI = false;
-          _debugError = 'API cooling down. Using offline guidance.';
         });
         return;
       }
@@ -648,7 +711,6 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
       print('🌤️ Weather: $_weatherCondition');
 
       // Fetch AI advice
-      final langCode = LanguageServiceProvider.of(context).currentLanguage.code;
       final advice = await widget.geminiService.getLocalizedAdvice(
         plantName: plantName,
         scientificName: widget.plant['scientificName'],
@@ -667,13 +729,11 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
 
         // Cache the result
         _aiCache[cacheKey] = advice;
-        _debugError = 'Data: OK ✓';
       } else {
         print('⚠️ AI returned null - using fallback guidance');
         final fallback = _buildFallbackAdvice(plantName);
         _aiCache[cacheKey] = fallback;
         _aiQuotaCooldownUntil = DateTime.now().add(const Duration(seconds: 60));
-        _debugError = 'API quota exceeded. Showing offline guidance.';
         setState(() {
           _aiAdvice = fallback;
           _isLoadingAI = false;
@@ -688,7 +748,6 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
     } catch (e) {
       print('❌ Error fetching AI advice: $e');
       final fallback = _buildFallbackAdvice(widget.plant['name']);
-      _debugError = 'Network issue. Showing offline guidance.';
       setState(() {
         _aiAdvice = fallback;
         _isLoadingAI = false;
@@ -697,55 +756,64 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
   }
 
   Map<String, dynamic> _buildFallbackAdvice(String plantName) {
+    if (!mounted) return {};
     final category = (widget.plant['category'] as String? ?? '').toLowerCase();
+    final loc = AppLocalizations.of(context);
+
     final carbonByCategory = {
-      'vegetable': 'About 2-3 kg CO₂/year reduction',
-      'herb': 'About 1-2 kg CO₂/year reduction',
-      'fruit': 'About 5-12 kg CO₂/year reduction',
+      'vegetable': loc.fallbackVegetableCarbon,
+      'herb': loc.fallbackHerbCarbon,
+      'fruit': loc.fallbackFruitCarbon,
     };
 
     return {
       'localMatchScore': 78,
-      'growingContext': '$plantName is suitable in $_locationName conditions.',
+      'growingContext': loc.fallbackGrowingContext(plantName, _locationName),
       'growthTime': widget.plant['growthTime'] ?? '60-120 days',
-      'difficulty': 'Moderate - monitor weather and pests',
-      'sunlight': '4-6 hours sunlight daily',
+      'difficulty': loc.fallbackDifficulty,
+      'sunlight': loc.fallbackSunlight,
       'watering': _temperature >= 30
-          ? 'Water morning and late afternoon'
-          : 'Water once daily',
-      'soil': 'Well-drained soil with compost',
+          ? loc.fallbackWateringHot
+          : loc.fallbackWateringNormal,
+      'soil': loc.fallbackSoil,
       'carbonReduction':
-          carbonByCategory[category] ?? 'About 3-5 kg CO₂/year reduction',
+          carbonByCategory[category] ?? loc.fallbackDefaultCarbon,
       'materialsNeeded': [
-        {'item': 'Organic compost', 'purpose': 'Improve soil fertility'},
-        {'item': 'Mulch', 'purpose': 'Keep moisture stable'},
-        {'item': 'Watering can', 'purpose': 'Gentle root watering'},
-        {'item': 'Neem spray', 'purpose': 'Prevent pests naturally'},
+        {'item': loc.fallbackCompost, 'purpose': loc.fallbackCompostPurpose},
+        {'item': loc.fallbackMulch, 'purpose': loc.fallbackMulchPurpose},
+        {
+          'item': loc.fallbackWateringCan,
+          'purpose': loc.fallbackWateringCanPurpose,
+        },
+        {
+          'item': loc.fallbackNeemSpray,
+          'purpose': loc.fallbackNeemSprayPurpose,
+        },
       ],
       'growthStages': [
         {
-          'stage': 'Seedling',
+          'stage': loc.fallbackStageSeedling,
           'startDay': 1,
           'endDay': 14,
-          'description': 'Establish roots',
+          'description': loc.fallbackStageSeedlingDesc,
         },
         {
-          'stage': 'Vegetative',
+          'stage': loc.fallbackStageVegetative,
           'startDay': 15,
           'endDay': 45,
-          'description': 'Leaf and stem growth',
+          'description': loc.fallbackStageVegetativeDesc,
         },
         {
-          'stage': 'Flowering',
+          'stage': loc.fallbackStageFlowering,
           'startDay': 46,
           'endDay': 75,
-          'description': 'Flower formation',
+          'description': loc.fallbackStageFloweringDesc,
         },
         {
-          'stage': 'Maturity',
+          'stage': loc.fallbackStageMaturity,
           'startDay': 76,
           'endDay': 120,
-          'description': 'Harvest ready',
+          'description': loc.fallbackStageMaturityDesc,
         },
       ],
     };
@@ -763,34 +831,35 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
   }
 
   String _getDetailedInfo(String key) {
-    final plantName = widget.plant['name'];
+    if (!mounted) return '';
+    final loc = AppLocalizations.of(context);
+    final plantName = loc.getLocalizedPlantName(
+      widget.plant['name'] as String? ?? 'Plant',
+    );
     final location = _locationName;
 
     switch (key) {
       case 'growthTime':
-        return 'Growth time varies based on your local climate conditions in $location. '
-            'Factors like temperature (${_temperature.toStringAsFixed(1)}°C), daylight hours, '
-            'and seasonal patterns all affect how quickly $plantName matures.';
+        return loc.growthTimeDetail(
+          location,
+          _temperature.toStringAsFixed(1),
+          plantName,
+        );
 
       case 'difficulty':
-        return 'Difficulty rating considers climate compatibility, maintenance requirements, '
-            'pest resistance, and how well $plantName adapts to $location conditions. '
-            'Beginners should start with "Easy" rated plants.';
+        return loc.difficultyDetail(plantName, location);
 
       case 'sunlight':
-        return 'Sunlight requirements are crucial for photosynthesis and healthy growth. '
-            'In $location, consider seasonal variations and provide shade during extremely hot periods. '
-            'Morning sun is generally gentler than harsh afternoon sun.';
+        return loc.sunlightDetail(location);
 
       case 'watering':
-        return 'Current weather: $_weatherCondition at ${_temperature.toStringAsFixed(1)}°C. '
-            'Adjust watering frequency based on rainfall, humidity, and soil moisture. '
-            'Overwatering is a common mistake - check soil before watering.';
+        return loc.wateringDetail(
+          _weatherCondition,
+          _temperature.toStringAsFixed(1),
+        );
 
       case 'soil':
-        return 'Soil quality directly impacts nutrient availability and root health. '
-            'In $location, amend soil based on local conditions. Good drainage prevents root rot, '
-            'while organic matter improves fertility and water retention.';
+        return loc.soilDetail(location);
 
       default:
         return '';
@@ -847,7 +916,9 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Save your garden location in My Journey for personalized local advice!',
+                              AppLocalizations.of(
+                                context,
+                              ).saveLocationForAdvice,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.orange.shade900,
@@ -858,70 +929,6 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                       ),
                     ),
                   if (_locationName == 'Malaysia') const SizedBox(height: 16),
-
-                  const SizedBox(height: 8),
-
-                  // DEBUG PANEL - Remove after testing
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '🔍 Debug Info',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Loading: $_isLoadingAI',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.blue.shade800,
-                          ),
-                        ),
-                        Text(
-                          'AI Data: ${_aiAdvice != null ? "✅ Received" : "❌ Null"}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.blue.shade800,
-                          ),
-                        ),
-                        Text(
-                          'Location: $_locationName',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.blue.shade800,
-                          ),
-                        ),
-                        if (_aiAdvice != null)
-                          Text(
-                            'Score: ${_aiAdvice!['localMatchScore']}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.blue.shade800,
-                            ),
-                          ),
-                        if (_debugError.isNotEmpty)
-                          Text(
-                            'Error: $_debugError',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.red.shade800,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
 
                   // AI SECTION 1: Local Match Score
                   if (_aiAdvice != null) ...[
@@ -936,7 +943,12 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                   ],
 
                   // Description
-                  _buildSection('About', widget.plant['description']),
+                  _buildSection(
+                    AppLocalizations.of(context).aboutLabel,
+                    AppLocalizations.of(context).getLocalizedPlantDescription(
+                      widget.plant['name'] as String,
+                    ),
+                  ),
                   const SizedBox(height: 24),
 
                   // AI SECTION 3: AI-Enhanced Growing Guide
@@ -985,8 +997,10 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                           ),
                           const SizedBox(width: 16),
                           Text(
-                            '🤖 AI is analyzing local conditions...',
-                            style: TextStyle(
+                            AppLocalizations.of(
+                              context,
+                            ).aiAnalyzingLocalConditions,
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF1B5E20),
@@ -1007,7 +1021,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                         widget.onAddToGarden();
                       },
                       icon: const Icon(Icons.add),
-                      label: const Text('Add to My Garden'),
+                      label: Text(AppLocalizations.of(context).addToMyGarden),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF2E7D32),
                         foregroundColor: Colors.white,
@@ -1077,7 +1091,9 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.plant['name'],
+                AppLocalizations.of(
+                  context,
+                ).getLocalizedPlantName(widget.plant['name'] as String),
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -1104,7 +1120,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  widget.plant['category'],
+                  _localizeLabel(widget.plant['category']),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -1125,13 +1141,13 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
     String scoreLabel;
     if (score >= 80) {
       scoreColor = Colors.green;
-      scoreLabel = 'Excellent Match';
+      scoreLabel = AppLocalizations.of(context).excellentMatch;
     } else if (score >= 60) {
       scoreColor = Colors.orange;
-      scoreLabel = 'Good Match';
+      scoreLabel = AppLocalizations.of(context).goodMatch;
     } else {
       scoreColor = Colors.red;
-      scoreLabel = 'Challenging';
+      scoreLabel = AppLocalizations.of(context).challengingMatch;
     }
 
     return Container(
@@ -1171,7 +1187,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Local Climate Match',
+                  AppLocalizations.of(context).localClimateMatch,
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
                 Text(
@@ -1184,7 +1200,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'for $_locationName',
+                  AppLocalizations.of(context).forLocation(_locationName),
                   style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                 ),
               ],
@@ -1197,7 +1213,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
   }
 
   // AI SECTION 2: Local Growing Context
-  Widget _buildLocalGrowingContext(String context) {
+  Widget _buildLocalGrowingContext(String adviceContext) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1213,7 +1229,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
               Icon(Icons.location_on, color: Color(0xFF2E7D32), size: 20),
               const SizedBox(width: 8),
               Text(
-                'Local Growing Context',
+                AppLocalizations.of(context).localGrowingContext,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -1224,7 +1240,7 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            context,
+            adviceContext,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[700],
@@ -1233,7 +1249,10 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            '🌡️ Current: ${_temperature.toStringAsFixed(1)}°C, $_weatherCondition',
+            AppLocalizations.of(context).currentTempWeather(
+              _temperature.toStringAsFixed(1),
+              _weatherCondition,
+            ),
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[600],
@@ -1254,9 +1273,9 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
           children: [
             Icon(Icons.local_florist, color: Color(0xFF2E7D32), size: 20),
             const SizedBox(width: 8),
-            const Text(
-              'Growing Guide',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context).growingGuide,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1B5E20),
@@ -1293,31 +1312,31 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
 
         _buildInfoCard(
           Icons.schedule,
-          'Growth Time',
+          AppLocalizations.of(context).growthTimeLabel,
           'growthTime',
           _aiAdvice?['growthTime'] ?? '',
         ),
         _buildInfoCard(
           Icons.trending_up,
-          'Difficulty',
+          AppLocalizations.of(context).difficulty,
           'difficulty',
           _aiAdvice?['difficulty'] ?? '',
         ),
         _buildInfoCard(
           Icons.wb_sunny,
-          'Sunlight',
+          AppLocalizations.of(context).sunlight,
           'sunlight',
           _aiAdvice?['sunlight'] ?? '',
         ),
         _buildInfoCard(
           Icons.water_drop,
-          'Water',
+          AppLocalizations.of(context).watering,
           'watering',
           _aiAdvice?['watering'] ?? '',
         ),
         _buildInfoCard(
           Icons.landscape,
-          'Soil',
+          AppLocalizations.of(context).soil,
           'soil',
           _aiAdvice?['soil'] ?? '',
         ),
@@ -1376,9 +1395,9 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
           children: [
             Icon(Icons.timeline, color: Color(0xFF2E7D32), size: 20),
             const SizedBox(width: 8),
-            const Text(
-              'Growth Stages',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context).growthStages,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1B5E20),
@@ -1620,9 +1639,9 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
             children: [
               Icon(Icons.shopping_bag, color: Colors.amber[800], size: 20),
               const SizedBox(width: 8),
-              const Text(
-                'Materials Needed',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).materialsNeeded,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1B5E20),
@@ -1745,9 +1764,9 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Carbon Impact',
-                  style: TextStyle(fontSize: 12, color: Colors.white70),
+                Text(
+                  AppLocalizations.of(context).carbonImpact,
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
                 ),
                 const SizedBox(height: 4),
                 Text(

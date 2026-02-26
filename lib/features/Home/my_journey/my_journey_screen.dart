@@ -479,15 +479,18 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Text(
-                'Analyze Plant Photo',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context).analyzePhotoTitle,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: Color(0xFF2E7D32)),
-                title: const Text('Take Photo'),
-                subtitle: const Text('Use camera to capture plant'),
+                title: Text(AppLocalizations.of(context).takePhoto),
+                subtitle: Text(AppLocalizations.of(context).useCameraCapture),
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
               ),
               ListTile(
@@ -495,8 +498,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                   Icons.photo_library,
                   color: Color(0xFF2E7D32),
                 ),
-                title: const Text('Choose from Gallery'),
-                subtitle: const Text('Upload an existing photo'),
+                title: Text(AppLocalizations.of(context).chooseFromGallery),
+                subtitle: Text(
+                  AppLocalizations.of(context).uploadExistingPhoto,
+                ),
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
               ),
             ],
@@ -553,8 +558,8 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
         setState(() => _photoAnalyzing[plantId] = false);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not analyze photo. Try again.'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context).couldNotAnalyze),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -565,7 +570,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
         setState(() => _photoAnalyzing[plantId] = false);
 
         final errorMessage = e.toString().contains('API limit reached')
-            ? 'API limit reached. Please try again later.'
+            ? AppLocalizations.of(context).apiLimitReached
             : 'Analysis error: $e';
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -621,7 +626,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                 Icon(Icons.camera_alt, size: 14, color: statusColor),
                 const SizedBox(width: 6),
                 Text(
-                  'Photo Analysis',
+                  AppLocalizations.of(context).photoAnalysis,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -1249,10 +1254,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
             children: [
               const Icon(Icons.location_on, color: Color(0xFF2E7D32)),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'My Garden Location',
-                  style: TextStyle(
+                  AppLocalizations.of(context).myGardenLocation,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1B5E20),
@@ -1292,7 +1297,11 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                   foregroundColor: Colors.white,
                 ),
                 icon: const Icon(Icons.edit_location_alt),
-                label: Text(hasLocation ? 'Edit Location' : 'Set Location'),
+                label: Text(
+                  hasLocation
+                      ? AppLocalizations.of(context).editLocation
+                      : AppLocalizations.of(context).setLocation,
+                ),
               ),
             ],
           ),
@@ -1453,6 +1462,23 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     return 60;
   }
 
+  String _localizeLabel(String key) {
+    if (!mounted) return key;
+    final loc = AppLocalizations.of(context);
+    switch (key) {
+      case 'All':
+        return loc.all;
+      case 'Vegetables':
+        return loc.vegetables;
+      case 'Fruits':
+        return loc.fruits;
+      case 'Herbs':
+        return loc.herbs;
+      default:
+        return key;
+    }
+  }
+
   int _calculateHealth(Map<String, dynamic> plant) {
     final latestStatus = (plant['latestPhotoStatus'] as String?)?.trim();
     if (latestStatus != null && latestStatus.isNotEmpty) {
@@ -1470,10 +1496,11 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   }
 
   String _getHealthStatus(int health) {
-    if (health >= 85) return 'Healthy';
-    if (health >= 65) return 'Stable';
-    if (health >= 40) return 'Needs Attention';
-    return 'Critical';
+    final loc = AppLocalizations.of(context);
+    if (health >= 85) return loc.healthy;
+    if (health >= 65) return loc.stable;
+    if (health >= 40) return loc.needsAttention;
+    return loc.critical;
   }
 
   Color _getHealthColor(int health) {
@@ -1528,21 +1555,28 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Plant'),
+        title: Text(AppLocalizations.of(context).deletePlantTitle),
         content: Text(
-          'Are you sure you want to remove "${plant['name']}" from your garden?',
+          AppLocalizations.of(context).removePlantConfirmation(
+            AppLocalizations.of(
+              context,
+            ).getLocalizedPlantName(plant['name'] as String),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _deletePlant(plant['id'] as String);
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(
+              AppLocalizations.of(context).delete,
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -1556,9 +1590,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
         backgroundColor: Color(0xFF2E7D32),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'My Journey',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context).myJourney,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -1573,13 +1607,22 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildSortButton('Newest', 'newest'),
+                  _buildSortButton(
+                    AppLocalizations.of(context).newest,
+                    'newest',
+                  ),
                   const SizedBox(width: 8),
-                  _buildSortButton('Name', 'name'),
+                  _buildSortButton(AppLocalizations.of(context).name, 'name'),
                   const SizedBox(width: 8),
-                  _buildSortButton('Days Planted', 'daysPlanted'),
+                  _buildSortButton(
+                    AppLocalizations.of(context).daysPlantedLabel,
+                    'daysPlanted',
+                  ),
                   const SizedBox(width: 8),
-                  _buildSortButton('Health', 'health'),
+                  _buildSortButton(
+                    AppLocalizations.of(context).health,
+                    'health',
+                  ),
                 ],
               ),
             ),
@@ -1606,7 +1649,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                           color: Colors.red[300],
                         ),
                         const SizedBox(height: 16),
-                        const Text('Error loading your garden'),
+                        Text(AppLocalizations.of(context).errorLoadingGarden),
                       ],
                     ),
                   );
@@ -1622,7 +1665,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                         Icon(Icons.grass, size: 80, color: Colors.grey[300]),
                         const SizedBox(height: 16),
                         Text(
-                          'Your garden is empty',
+                          AppLocalizations.of(context).gardenEmpty,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -1631,7 +1674,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Add plants from the Dictionary to get started!',
+                          AppLocalizations.of(context).addPlantsToStart,
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[600],
@@ -1754,7 +1797,11 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  plant['name'] as String,
+                                  AppLocalizations.of(
+                                    context,
+                                  ).getLocalizedPlantName(
+                                    plant['name'] as String,
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -1781,7 +1828,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    plant['category'] as String,
+                                    _localizeLabel(plant['category'] as String),
                                     style: const TextStyle(
                                       fontSize: 11,
                                       color: Color(0xFF2E7D32),
@@ -1802,7 +1849,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Health: $healthStatus',
+                            AppLocalizations.of(
+                              context,
+                            ).healthLabel(healthStatus),
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -1812,7 +1861,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                           Text(
                             latestPhotoStatus?.isNotEmpty == true
                                 ? latestPhotoStatus!
-                                : 'No photo yet',
+                                : AppLocalizations.of(context).noPhotoYet,
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -1843,7 +1892,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Progress',
+                            AppLocalizations.of(context).progress,
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -1851,7 +1900,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                             ),
                           ),
                           Text(
-                            '${plant['daysPlanted']} / ${plant['totalDays']} days ($growthPercent%)',
+                            '${plant['daysPlanted']} / ${plant['totalDays']} ${AppLocalizations.of(context).days} ($growthPercent%)',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -1888,9 +1937,9 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                daysRemaining > 1
-                                    ? '$daysRemaining days until harvest'
-                                    : '$daysRemaining day until harvest',
+                                AppLocalizations.of(
+                                  context,
+                                ).daysUntilHarvest(daysRemaining),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[600],
@@ -1906,7 +1955,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                'Ready to harvest!',
+                                AppLocalizations.of(context).readyToHarvest,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.green,
@@ -1940,7 +1989,10 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
-                                        '$completedCount/$totalTasks tasks',
+                                        AppLocalizations.of(context).tasksCount(
+                                          completedCount,
+                                          totalTasks,
+                                        ),
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,

@@ -198,7 +198,7 @@ Provide helpful, accurate, and practical advice in $langName. Format your respon
 Answer the user's question in $langName:''';
 
     final String urlString =
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${_geminiService.apiKey}';
+        'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${_geminiService.apiKey}';
 
     final Uri url = Uri.parse(urlString);
 

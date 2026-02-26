@@ -46,18 +46,7 @@ class GeminiApiService {
   }
 
   String _buildPhotoFallback(String mode, {String languageCode = 'en'}) {
-    if (languageCode == 'ms') {
-      if (mode.contains("pest")) {
-        return '**Nama Perosak:** Tidak dapat menganalisis sekarang\n\n**Ancaman:** Rendah\n\n**Simptom:** Kuota AI telah melebihi buat sementara, jadi diagnosis imej dijeda.\n\n**Penyelesaian:** Cuba semula selepas satu minit. Sementara itu, asingkan daun yang terjejas dan elakkan penyiraman berlebihan.\n\n**Nasihat Ringkas:** Cuba semula; pastikan daun kering.';
-      }
-      return '**Nama Kekurangan:** Tidak dapat menganalisis sekarang\n\n**Ancaman:** Rendah\n\n**Simptom:** Kuota AI telah melebihi buat sementara, jadi diagnosis nutrien dijeda.\n\n**Penyelesaian:** Cuba semula selepas satu minit. Sementara itu, periksa kelembapan tanah dan gunakan baja seimbang dengan berhati-hati.\n\n**Nasihat Ringkas:** Cuba semula; pantau warna daun.';
-    } else if (languageCode == 'zh') {
-      if (mode.contains("pest")) {
-        return '**害虫名称:** 暂时无法分析\n\n**威胁:** 低\n\n**症状:** AI配额暂时超限，图像诊断已暂停。\n\n**解决方案:** 请在一分钟后重试。同时，隔离受影响的叶片并避免过度浇水。\n\n**简短建议:** 稍后重试；保持叶片干燥。';
-      }
-      return '**缺乏名称:** 暂时无法分析\n\n**威胁:** 低\n\n**症状:** AI配额暂时超限，营养诊断已暂停。\n\n**解决方案:** 请在一分钟后重试。同时，检查土壤湿度并谨慎使用均衡肥料。\n\n**简短建议:** 稍后重试；观察叶片颜色。';
-    }
-    // English fallback
+    // Always return English fallback — translation happens on the result page
     if (mode.contains("pest")) {
       return '**Pest Name:** Unable to analyze now\n\n**Threat:** Low\n\n**Symptoms:** AI quota is temporarily exceeded, so image diagnosis is paused.\n\n**Solutions:** Retry after about one minute. Meanwhile, isolate affected leaves and avoid overwatering.\n\n**Short Advice:** Retry soon; keep leaves dry.';
     }
@@ -86,14 +75,11 @@ class GeminiApiService {
     final bytes = await imageFile.readAsBytes();
     final base64Image = base64Encode(bytes);
 
-    // 2. Set the Prompt with language instruction
-    final String langName = _languageName(languageCode);
-    final String langInstruction =
-        'IMPORTANT: You MUST write your ENTIRE response in $langName. Do NOT use English unless the language is English.\n\n';
+    // 2. Set the Prompt — always in English
     String prompt;
     if (mode.contains("pest")) {
       prompt =
-          '''${langInstruction}You are an expert Malaysian agricultural extension officer. Analyze this plant image for pests or diseases. 
+          '''You are an expert Malaysian agricultural extension officer. Analyze this plant image for pests or diseases. 
 Provide a detailed, highly informative analysis using Markdown formatting.
 
 *IMPORTANT:* if you **do not** see any pests or diseases, do **not** guess at a nutrient
@@ -117,14 +103,13 @@ You MUST otherwise strictly follow this exact template with double line breaks b
 [Provide detailed symptoms using bullet points]
 
 **Solutions:**
-[Provide detailed treatment steps using bullet points]
+[Provide detailed treatment steps using bullet points. *CRITICAL: When recommending chemical or organic treatments, you MUST NOT just provide the generic active ingredient (like 'copper fungicide' or 'spinosad'). You MUST list 2-3 common local commercial brand names that a farmer would easily find in a typical Malaysian 'kedai baja' (agricultural supply shop). For example, if you recommend Glyphosate, mention 'Roundup' or 'Ecomax'. Highlight the brand names clearly.*]
 
 At the VERY END of your response, on a new line, you MUST add this exact text:
 **Short Advice:** [Insert exactly ONE short sentence (max 10 words) of advice for a mobile push notification]''';
     } else {
-      // 👉 NEW: Instruct the AI to ignore pests and focus ONLY on nutrients
       prompt =
-          '''${langInstruction}You are an expert Malaysian agricultural extension officer. Analyze this plant image SPECIFICALLY for nutrient deficiencies. 
+          '''You are an expert Malaysian agricultural extension officer. Analyze this plant image SPECIFICALLY for nutrient deficiencies. 
 Provide a detailed, highly informative analysis using Markdown formatting.
 
 *IMPORTANT:* Focus ONLY on nutrition. If the plant looks nutritionally healthy (even if there are pests, bugs, or insect damage visible), do **not** diagnose a pest issue. Instead reply with a simple report indicating no nutrient deficiencies were found – for example:
@@ -147,7 +132,7 @@ You MUST otherwise strictly follow this exact template with double line breaks b
 [Provide detailed symptoms using bullet points]
 
 **Solutions:**
-[Provide detailed fertilizer recommendations using bullet points]
+[Provide detailed fertilizer recommendations using bullet points. *CRITICAL: When recommending fertilizers or treatments, you MUST NOT just provide generic advice (like 'apply NPK fertilizer' or 'add calcium'). You MUST list 2-3 common local commercial brand names or types that a farmer would easily find in a typical Malaysian 'kedai baja' (agricultural supply shop). Highlight the local Malaysian brand names clearly.*]
 
 At the VERY END of your response, on a new line, you MUST add this exact text:
 **Short Advice:** [Insert exactly ONE short sentence (max 10 words) of advice for a mobile push notification]''';
@@ -209,11 +194,11 @@ At the VERY END of your response, on a new line, you MUST add this exact text:
 
     final String prompt =
         '''
-IMPORTANT: Write ALL text field values in $langName.
+IMPORTANT: DO NOT TRANSLATE JSON KEYS. ONLY translate the text values inside the fields to $langName.
 
 Growing conditions for $plantName ($scientificName) in $location. Temp: $temperature°C, Weather: $weatherCondition, Category: $category.
 
-Return ONLY valid JSON with these fields (be VERY concise, max 8 words per field, in $langName):
+Return ONLY valid JSON with EXACTLY these English keys (be VERY concise, max 8 words per field, values in $langName):
 {
   "localMatchScore": <0-100>,
   "growingContext": "<suitable or not, 1 short sentence in $langName>",
@@ -228,6 +213,7 @@ Return ONLY valid JSON with these fields (be VERY concise, max 8 words per field
 }
 
 Rules:
+- DO NOT translate the JSON keys (e.g. keep "localMatchScore", "difficulty", etc. exact).
 - materialsNeeded: 4-8 essential items (seeds, fertilizer, tools, pots, etc.).
 - growthStages: 4-7 contiguous stages from day 1 to total growth days.
 - ALL text fields: max 8 words. Be direct. Write in $langName.
@@ -245,7 +231,7 @@ Rules:
         "temperature": 0.7,
         "topK": 40,
         "topP": 0.95,
-        "maxOutputTokens": 2048,
+        "maxOutputTokens": 8192,
       },
     };
 
@@ -348,7 +334,7 @@ Rules:
     final String prompt =
         '''
 You are a smart farming assistant. Generate 3-5 practical daily tasks for TODAY for a user growing $plantName ($scientificName).
-IMPORTANT: Write ALL task strings in $langName.
+IMPORTANT: DO NOT TRANSLATE JSON KEYS. ONLY translate the text values inside the fields to $langName.
 
 Context:
 - Category: $category
@@ -357,7 +343,7 @@ Context:
 - Temperature: $temperature°C
 - Weather: $weatherCondition
 
-Respond ONLY with a valid JSON array. Each task object has "task" (under 10 words, in $langName) and "icon" (one of: water, sun, fertilizer, prune, inspect, harvest, protect, soil).
+Respond ONLY with a valid JSON array. Each task object MUST HAVE EXACTLY THESE ENGLISH KEYS: "task" (under 10 words, value in $langName) and "icon" (one of exact english words: water, sun, fertilizer, prune, inspect, harvest, protect, soil).
 
 Keep it SHORT. Return ONLY the JSON array.
 ''';
@@ -374,7 +360,7 @@ Keep it SHORT. Return ONLY the JSON array.
         "temperature": 0.8,
         "topK": 40,
         "topP": 0.95,
-        "maxOutputTokens": 2048,
+        "maxOutputTokens": 8192,
       },
     };
 
@@ -468,9 +454,9 @@ Keep it SHORT. Return ONLY the JSON array.
     final String prompt =
         '''
 You are a plant doctor. Analyze the photo of this $plantName (day $daysPlanted of $totalDays).
-IMPORTANT: Write ALL text values in $langName.
+IMPORTANT: DO NOT TRANSLATE JSON KEYS. ONLY translate the text values inside the fields to $langName.
 
-Return ONLY valid JSON:
+Return ONLY valid JSON with EXACTLY these English keys:
 {
   "status": "<Healthy / Needs Attention / Critical, in $langName>",
   "diagnosis": "<1 sentence, max 15 words, what you see, in $langName>",
@@ -478,6 +464,7 @@ Return ONLY valid JSON:
 }
 
 Rules:
+- DO NOT translate the JSON keys. Keep "status", "diagnosis", "tasks", "task", and "icon" exact.
 - Give 2-4 tasks based on what you SEE in the photo.
 - Be specific to the visual condition (yellowing, wilting, pests, healthy growth, etc.).
 - Return ONLY the JSON.
@@ -494,7 +481,7 @@ Rules:
           ],
         },
       ],
-      "generationConfig": {"temperature": 0.7, "maxOutputTokens": 2048},
+      "generationConfig": {"temperature": 0.7, "maxOutputTokens": 8192},
     };
 
     try {
@@ -538,6 +525,65 @@ Rules:
     } catch (e) {
       print('❌ Photo analysis error: $e');
       if (e.toString().contains('API limit reached')) throw e;
+      return null;
+    }
+  }
+
+  /// Translate analysis text to a target language using Gemini AI
+  Future<String?> translateText({
+    required String text,
+    required String targetLanguageCode,
+  }) async {
+    if (_isInQuotaCooldown) return null;
+
+    final String langName = _languageName(targetLanguageCode);
+    final String urlString =
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey';
+
+    final Uri url = Uri.parse(urlString);
+
+    final String prompt =
+        '''Translate the following agricultural diagnosis report into $langName.
+
+Rules:
+- Keep the EXACT same Markdown formatting (bold labels with **, bullet points, line breaks).
+- Translate the label names too (e.g., "Pest Name" → the equivalent in $langName).
+- Do NOT add any extra commentary or explanation.
+- Return ONLY the translated text.
+
+Original text:
+$text''';
+
+    final requestBody = {
+      "contents": [
+        {
+          "parts": [
+            {"text": prompt},
+          ],
+        },
+      ],
+      "generationConfig": {"temperature": 0.3, "maxOutputTokens": 8192},
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        return jsonResponse['candidates']?[0]?['content']?['parts']?[0]?['text'];
+      } else {
+        if (response.statusCode == 429) {
+          _startQuotaCooldownFromBody(response.body);
+        }
+        print('Translation API error: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Translation error: $e');
       return null;
     }
   }

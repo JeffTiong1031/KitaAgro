@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kita_agro/features/community/community_service.dart';
+import 'package:kita_agro/features/community/comments_screen.dart';
 import 'package:kita_agro/services/user_service.dart';
 import 'package:kita_agro/core/models/user_model.dart';
+import 'package:kita_agro/core/services/app_localizations.dart';
 
 class SinglePostScreen extends StatefulWidget {
   final DocumentSnapshot postDoc;
@@ -234,10 +236,13 @@ class _SinglePostScreenState extends State<SinglePostScreen> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Icon(
-                        Icons.chat_bubble_outline,
-                        size: 26,
-                        color: Colors.black,
+                      GestureDetector(
+                        onTap: () => showCommentsBottomSheet(context, doc.id),
+                        child: const Icon(
+                          Icons.chat_bubble_outline,
+                          size: 26,
+                          color: Colors.black,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       const Icon(
@@ -295,9 +300,29 @@ class _SinglePostScreenState extends State<SinglePostScreen> {
                 if (commentsCount > 0)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text(
-                      'View all $commentsCount comments',
-                      style: const TextStyle(color: Colors.grey, fontSize: 14),
+                    child: GestureDetector(
+                      onTap: () => showCommentsBottomSheet(context, doc.id),
+                      child: Text(
+                        '${AppLocalizations.of(context).viewAllComments} $commentsCount ${AppLocalizations.of(context).comments.toLowerCase()}',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: GestureDetector(
+                      onTap: () => showCommentsBottomSheet(context, doc.id),
+                      child: Text(
+                        AppLocalizations.of(context).writeAComment,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ),
 

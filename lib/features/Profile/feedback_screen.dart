@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:kita_agro/core/services/app_localizations.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -42,8 +43,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Thank you for your feedback!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).thankYouFeedback),
             backgroundColor: Colors.green,
           ),
         );
@@ -53,7 +54,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to submit: $e'),
+            content: Text('${AppLocalizations.of(context).failedToSubmit}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -75,9 +76,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Send Feedback',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context).sendFeedback,
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
       ),
       body: Padding(
@@ -85,21 +86,21 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'We would love to hear from you!',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              AppLocalizations.of(context).feedbackTitle,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Tell us what you like or any issues you have faced while using Kita Agro.',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+            Text(
+              AppLocalizations.of(context).feedbackSubtitle,
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 20),
             TextField(
               controller: _feedbackController,
               maxLines: 6,
               decoration: InputDecoration(
-                hintText: 'Type your feedback here...',
+                hintText: AppLocalizations.of(context).typeFeedbackHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -125,9 +126,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         width: 24,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
                       )
-                    : const Text(
-                        'Submit Feedback',
-                        style: TextStyle(
+                    : Text(
+                        AppLocalizations.of(context).submitFeedback,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,

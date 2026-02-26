@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:firebase_analytics/firebase_analytics.dart';
 // Import wrapper screens
 import 'features/Home/home_screen.dart';
 import 'features/Farmer/farmer_screen.dart';
@@ -57,7 +57,14 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
-  void _onItemTapped(int index) {
+  void _onItemTapped(int index) async {
+    // Log Custom Events for specific Bottom Nav Tabs
+    if (index == 1) {
+      await FirebaseAnalytics.instance.logEvent(name: 'open_marketplace_map');
+    } else if (index == 2) {
+      await FirebaseAnalytics.instance.logEvent(name: 'open_ai_diagnostic_scan');
+    }
+    
     setState(() {
       _selectedIndex = index;
     });

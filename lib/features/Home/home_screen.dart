@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:kita_agro/core/services/app_localizations.dart';
 
 import 'package:flutter/material.dart';
@@ -697,7 +698,8 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.teal[100]!,
             icon: Icons.favorite,
             iconColor: Colors.teal,
-            onTap: () {
+            onTap: () async {
+              await FirebaseAnalytics.instance.logEvent(name: 'open_my_journey');
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -711,7 +713,8 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.orange[100]!,
             icon: Icons.description,
             iconColor: Colors.orange,
-            onTap: () {
+            onTap: () async {
+              await FirebaseAnalytics.instance.logEvent(name: 'open_dictionary');
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -725,7 +728,8 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.purple[100]!,
             icon: Icons.smart_toy,
             iconColor: Colors.purple,
-            onTap: () {
+            onTap: () async {
+              await FirebaseAnalytics.instance.logEvent(name: 'open_ai_assistant');
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -783,7 +787,10 @@ class _HomeScreenState extends State<HomeScreen> {
           tabs.length,
           (index) => Expanded(
             child: GestureDetector(
-              onTap: () {
+              onTap: () async {
+                if (index == 0) {
+                  await FirebaseAnalytics.instance.logEvent(name: 'view_community_tab');
+                }
                 setState(() {
                   _selectedTabIndex = index;
                 });

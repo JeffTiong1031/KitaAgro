@@ -14,6 +14,7 @@ import '../community/create_post_screen.dart';
 import 'single_post_screen.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/app_localizations.dart';
+import 'feedback_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -202,8 +203,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               IconButton(
                 icon: const Icon(Icons.settings, color: Colors.black),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(loc.settingsComingSoon)),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const FeedbackScreen(),
+                    ),
                   );
                 },
               ),

@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "437822465539-ikhp9tquk5ob43ruit512fqjermnvh12.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.kita_agro",
+            "certificate_hash": "d4c66ae77b700bc8df8e644d903fbf853294672e"
+          }
+        },
+        {
           "client_id": "437822465539-unodc8ggt8habhhh1hoh6n09bp4ljjda.apps.googleusercontent.com",
           "client_type": 3
         }

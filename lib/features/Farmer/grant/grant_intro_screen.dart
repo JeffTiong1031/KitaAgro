@@ -59,7 +59,7 @@ class GrantIntroScreen extends StatelessWidget {
                 Text(
                   'Young Agropreneur\nGrant',
                   style: TextStyle(
-                    fontSize: 36,
+                    fontSize: 34,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     height: 1.2,
@@ -76,7 +76,7 @@ class GrantIntroScreen extends StatelessWidget {
                 _outlinedText(
                   'Accelerating Your Career in Agriculture',
                   const TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
                   ),

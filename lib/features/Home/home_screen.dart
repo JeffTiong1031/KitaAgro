@@ -15,6 +15,8 @@ import 'package:kita_agro/features/community/community_service.dart';
 import 'package:kita_agro/features/Home/notification_screen.dart'; 
 import 'package:kita_agro/core/services/notification_storage.dart';
 import 'package:kita_agro/features/Home/ai_assistant_screen.dart'; 
+import 'package:image_picker/image_picker.dart';
+import 'package:kita_agro/features/community/create_post_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1761,11 +1763,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _pickImageAndNavigate(BuildContext context) {
-    // Placeholder for image picker and navigation
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Image picker will be implemented here')),
-    );
+  Future<void> _pickImageAndNavigate(BuildContext context) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null && context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CreatePostScreen(imageFile: pickedFile),
+        ),
+      );
+    }
   }
 }
 

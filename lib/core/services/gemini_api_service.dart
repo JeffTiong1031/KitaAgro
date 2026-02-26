@@ -78,7 +78,7 @@ class GeminiApiService {
     // 2. Set the Prompt
     String prompt;
     if (mode.contains("pest")) {
-      prompt = '''Analyze this plant image for pests or diseases. 
+      prompt = '''You are an expert Malaysian agricultural extension officer. Analyze this plant image for pests or diseases. 
 Provide a detailed, highly informative analysis using Markdown formatting.
 
 *IMPORTANT:* if you **do not** see any pests or diseases, do **not** guess at a nutrient
@@ -102,7 +102,7 @@ You MUST otherwise strictly follow this exact template with double line breaks b
 [Provide detailed symptoms using bullet points]
 
 **Solutions:**
-[Provide detailed treatment steps using bullet points]
+[Provide detailed treatment steps using bullet points. *CRITICAL: When recommending chemical or organic treatments, you MUST NOT just provide the generic active ingredient (like 'copper fungicide' or 'spinosad'). You MUST list 2-3 common local commercial brand names that a farmer would easily find in a typical Malaysian 'kedai baja' (agricultural supply shop). For example, if you recommend Glyphosate, mention 'Roundup' or 'Ecomax'. Highlight the brand names clearly.*]
 
 At the VERY END of your response, on a new line, you MUST add this exact text:
 **Short Advice:** [Insert exactly ONE short sentence (max 10 words) of advice for a mobile push notification]''';
@@ -110,7 +110,7 @@ At the VERY END of your response, on a new line, you MUST add this exact text:
     } else {
       
       // 👉 NEW: Instruct the AI to ignore pests and focus ONLY on nutrients
-      prompt = '''Analyze this plant image SPECIFICALLY for nutrient deficiencies. 
+      prompt = '''You are an expert Malaysian agricultural extension officer. Analyze this plant image SPECIFICALLY for nutrient deficiencies. 
 Provide a detailed, highly informative analysis using Markdown formatting.
 
 *IMPORTANT:* Focus ONLY on nutrition. If the plant looks nutritionally healthy (even if there are pests, bugs, or insect damage visible), do **not** diagnose a pest issue. Instead reply with a simple report indicating no nutrient deficiencies were found – for example:
@@ -133,7 +133,7 @@ You MUST otherwise strictly follow this exact template with double line breaks b
 [Provide detailed symptoms using bullet points]
 
 **Solutions:**
-[Provide detailed fertilizer recommendations using bullet points]
+[Provide detailed fertilizer recommendations using bullet points. *CRITICAL: When recommending fertilizers or treatments, you MUST NOT just provide generic advice (like 'apply NPK fertilizer' or 'add calcium'). You MUST list 2-3 common local commercial brand names or types that a farmer would easily find in a typical Malaysian 'kedai baja' (agricultural supply shop). Highlight the local Malaysian brand names clearly.*]
 
 At the VERY END of your response, on a new line, you MUST add this exact text:
 **Short Advice:** [Insert exactly ONE short sentence (max 10 words) of advice for a mobile push notification]''';

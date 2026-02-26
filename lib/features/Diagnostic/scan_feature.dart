@@ -51,7 +51,7 @@ class _ScanFeatureState extends State<ScanFeature> {
         result = '''**Pest Name:** None detected\n\n**Threat:** Low\n\n**Symptoms:** No visible pest symptoms\n\n**Solutions:** No treatment needed\n\n**Short Advice:** No pests found''';
       }
     } 
-    // 👉 SANITIZER 2: They wanted Nutrients, but AI gave Pests (The new fix!)
+    // 👉 SANITIZER 2: They wanted Nutrients, but AI gave Pests
     else if (!userWantsPestDetection && result != null) {
       final low = result.toLowerCase();
       if (low.contains('pest name') || (!low.contains('deficiency name') && low.contains('pest'))) {

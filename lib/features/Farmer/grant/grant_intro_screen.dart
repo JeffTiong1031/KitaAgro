@@ -60,7 +60,7 @@ class GrantIntroScreen extends StatelessWidget {
                 Text(
                   AppLocalizations.of(context).youngAgropreneurGrant,
                   style: TextStyle(
-                    fontSize: 36,
+                    fontSize: 35,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     height: 1.2,
@@ -77,7 +77,7 @@ class GrantIntroScreen extends StatelessWidget {
                 _outlinedText(
                   AppLocalizations.of(context).acceleratingCareer,
                   const TextStyle(
-                    fontSize: 18,
+                    fontSize: 17,
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
                   ),

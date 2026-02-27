@@ -421,7 +421,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                   crossAxisCount: 4,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.75,
+                  childAspectRatio: 0.7,
                 ),
                 itemCount: _filteredPlants.length,
                 itemBuilder: (context, index) {
@@ -485,7 +485,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
           ],
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             // Plant icon in circle
             Container(
@@ -509,7 +509,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                 size: 22,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             // Plant name
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -527,7 +527,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Text(
@@ -996,14 +996,16 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          Text(
-                            AppLocalizations.of(
-                              context,
-                            ).aiAnalyzingLocalConditions,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1B5E20),
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(
+                                context,
+                              ).aiAnalyzingLocalConditions,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1B5E20),
+                              ),
                             ),
                           ),
                         ],
@@ -1099,6 +1101,8 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1B5E20),
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Text(
@@ -1108,6 +1112,8 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                   fontStyle: FontStyle.italic,
                   color: Colors.grey[600],
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
               Container(
@@ -1694,13 +1700,9 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.amber.shade100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.amber.withOpacity(0.08),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+                  ),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.7,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1711,27 +1713,33 @@ class _PlantDetailSheetState extends State<_PlantDetailSheet> {
                         color: Colors.amber[700],
                       ),
                       const SizedBox(width: 6),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            item,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1B5E20),
-                            ),
-                          ),
-                          if (purpose.isNotEmpty)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             Text(
-                              purpose,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[600],
+                              item,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1B5E20),
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                        ],
+                            if (purpose.isNotEmpty)
+                              Text(
+                                purpose,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey[600],
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

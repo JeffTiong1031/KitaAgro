@@ -42,13 +42,12 @@ Malaysia’s agricultural sector is facing a compounding crisis with two root ca
 
 | SDG | Targets | What KitaAgro enables | Features in app |
 | --- | --- | --- | --- |
-| **1: No Poverty** | **1.2**, **1.4** | Improves livelihoods by lowering entry barriers and reducing avoidable losses. | Grant application guidance, land rental marketplace, AI diagnosis |
-| **2: Zero Hunger** | **2.3**, **2.4** | Higher productivity and more resilient farming through faster detection and action. | AI diagnosis, pest early warning map + alerts, AI assistant |
-| **4: Quality Education** | **4.4**, **4.7** | Practical learning and skills for agropreneurship and sustainable practices. | Dictionary guidance, AI assistant, community knowledge sharing |
-| **8: Decent Work & Economic Growth** | **8.3** | Supports entrepreneurship and job pathways in agriculture. | Land/marketplace discovery, farmer hub, community + messaging |
-| **11: Sustainable Cities & Communities** | **11.a** | Strengthens rural–urban links via local resource and market connectivity. | Marketplace/map discovery, community network |
-| **12: Responsible Consumption & Production** | **12.2** | More targeted interventions reduce waste and input overuse. | Diagnosis-driven recommendations, progress tracking |
-| **13: Climate Action** | **13.1** | Faster adaptation to risk through weather/wind-aware guidance and alerts. | Wind-based pest early warning, location-aware guidance |
+| **2: Zero Hunger** | **2.3**, **2.4** | Improves smallholder productivity and resilience through earlier detection and faster intervention. | AI diagnostics (pest/nutrient), wind-based pest early warning map + alerts, AI assistant |
+| **4: Quality Education** | **4.4** | Builds practical agricultural skills through accessible, context-aware learning and guidance. | Plant Dictionary, AI assistant chat/video guidance, community knowledge sharing |
+| **8: Decent Work & Economic Growth** | **8.2** | Increases agropreneur productivity by lowering onboarding friction and adding technology-assisted decision support. | e-GAN grant tutorial, land rental marketplace, AI diagnostics + assistant |
+| **12: Responsible Consumption & Production** | **12.3** | Reduces avoidable crop and post-harvest losses through earlier risk detection and more targeted farm actions. | Pest outbreak reporting + alerts, My Garden/My Journey tracking, marketplace/discovery features |
+
+These targets are selected to address Malaysia's demographic and agronomic pressures: low youth participation in agriculture and high crop-loss risk from pests and diseases. KitaAgro links onboarding and economic enablement (grant guidance + land access) with practical AI-driven support (diagnosis, wind-based alerts, and assistant guidance), so farming shifts from reactive decision-making to proactive, technology-assisted practice.
 
 ---
 

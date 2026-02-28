@@ -26,7 +26,7 @@ class _MyJourneyScreenState extends State<MyJourneyScreen> {
   );
 
   final GeminiApiService _geminiApi = GeminiApiService(
-    'AIzaSyBM5iu-EhSPggjAcQffEVUFLTq655xHea4',
+    'AIzaSyAt1Bf6sQ8m9poMosINUfnmpGDRuIDlV-I',
   );
 
   String _sortBy = 'newest'; // 'newest', 'name', 'daysPlanted', 'health'

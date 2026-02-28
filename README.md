@@ -115,11 +115,11 @@ flowchart TB
 	APP --> NOTIF[Local Notifications]
 	APP --> PREFS[(SharedPreferences)]
 
-	APP -->|HTTP POST| GEM[Gemini API\n(generativelanguage.googleapis.com)]
-	APP -->|HTTP GET| OSM[Nominatim / OSM Tiles]
-	APP -->|HTTP GET| WX[Weather APIs\n(Open-Meteo / OpenWeather)]
+	APP -->|HTTP POST| GEM["Gemini API\n(generativelanguage.googleapis.com)"]
+	APP -->|HTTP GET| OSM["Nominatim / OSM Tiles"]
+	APP -->|HTTP GET| WX["Weather APIs\n(Open-Meteo / OpenWeather)"]
 
-	FS -->|snapshots| ALERT[PestAlertService\n(report listener + zone calc)]
+	FS -->|snapshots| ALERT["PestAlertService\n(report listener + zone calc)"]
 	ALERT --> NOTIF
 	ALERT --> PREFS
 
@@ -149,7 +149,7 @@ flowchart TD
 	A[App Launch] --> B[Firebase init]
 	B --> C{Signed in?}
 	C -- No --> W[Welcome / Sign in]
-	C -- Yes --> D{Profile complete in Firestore users/{uid}?}
+	C -- Yes --> D{"Profile complete in Firestore users/{uid}?"}
 	D -- No --> P[CompleteProfileScreen]
 	D -- Yes --> M[MainLayout]
 ```
@@ -186,7 +186,7 @@ flowchart LR
 	R[New doc in pest_reports] --> S[PestAlertService listener]
 	S --> L{Location permission OK?}
 	L -- No --> X[Abort alert]
-	L -- Yes --> Z[Compute zones\n(ellipses + wind angle)]
+	L -- Yes --> Z["Compute zones\n(ellipses + wind angle)"]
 	Z --> C{Zone == CLEAR?}
 	C -- Yes --> N[No notification]
 	C -- No --> PN[Local push notification]
@@ -234,7 +234,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-	FS[(Firestore users/{uid}/plantations)] --> S[Stream snapshots]
+	FS[("Firestore users/{uid}/plantations")] --> S[Stream snapshots]
 	S --> P[Compute daysPlanted + progress]
 	S --> H[Compute health from latestPhotoStatus]
 	S --> T[Aggregate dailyTasks for today]
@@ -278,7 +278,7 @@ sequenceDiagram
 ```mermaid
 flowchart LR
 	U[User opens Land Listing] --> A[Enable Firestore persistence]
-	A --> Q[Query lands snapshots\n(includeMetadataChanges)]
+	A --> Q["Query lands snapshots\n(includeMetadataChanges)"]
 	Q --> UI[Render listing cards + filters]
 	UI --> OFF[Offline: cached results still show]
 ```
@@ -336,7 +336,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-	U[User opens Grant Tutorial] --> S[Step-by-step pages\n(images + instructions)]
+	U[User opens Grant Tutorial] --> S["Step-by-step pages\n(images + instructions)"]
 	S --> L{Needs official portal?}
 	L -- Yes --> B[Open e-GAN link via url_launcher]
 	L -- No --> N[Continue tutorial in-app]
@@ -424,6 +424,14 @@ flutter run
 flutter run --dart-define=GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_API_KEY
 ```
 
-### Notes on secrets (Gemini API)
+### Setup Instructions for Judges
 
-This repo currently contains Gemini API keys in source for hackathon speed. For any real deployment, rotate keys and load them from secure config.
+Since this repository is public, sensitive configuration files and API keys have been removed for security to protect our backend infrastructure and database. 
+
+**To test the application with our live, pre-populated database:**
+Instead of compiling from source, please download and install the provided compiled Android APK. This APK is securely configured to connect to our live Firebase database so you can experience all features, including mock community posts, pre-populated lands, and AI chat features.
+
+[👉 **Download the KitaAgro APK Here**](https://drive.google.com/file/d/1zP-7qlMci5dxPDjeV4r7ZTVQ1hnUkiRV/view?usp=sharing)
+
+*(Note: If you wish to compile from source, you will need to set up your own Firebase project, run `flutterfire configure`, and provide your own Gemini API keys in a `.env` file).*
+

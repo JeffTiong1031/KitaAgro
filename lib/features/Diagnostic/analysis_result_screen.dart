@@ -38,7 +38,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
   final Map<String, String> _translationCache = {};
 
   final GeminiApiService _apiService = GeminiApiService(
-    'AIzaSyDPR3Y8gUYHKEqK8EuPyyXMouGLddBHb5E',
+    'AIzaSyAt1Bf6sQ8m9poMosINUfnmpGDRuIDlV-I',
   );
 
   @override

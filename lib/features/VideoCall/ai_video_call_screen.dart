@@ -51,7 +51,7 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _selectedLanguage = widget.initialLanguage;
-    _aiService = AiVideoCallService('AIzaSyAUDApBmW0U8iMgOOCkY9pajLN-yG1voY4');
+    _aiService = AiVideoCallService('AIzaSyAt1Bf6sQ8m9poMosINUfnmpGDRuIDlV-I');
     _initializeAll();
   }
 

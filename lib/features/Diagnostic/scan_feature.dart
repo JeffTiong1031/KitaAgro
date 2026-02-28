@@ -21,7 +21,7 @@ class _ScanFeatureState extends State<ScanFeature>
   late Animation<double> _pulseAnimation;
 
   final GeminiApiService _apiService = GeminiApiService(
-    'AIzaSyDPR3Y8gUYHKEqK8EuPyyXMouGLddBHb5E',
+    'AIzaSyAt1Bf6sQ8m9poMosINUfnmpGDRuIDlV-I',
   );
 
   // ─── Design Constants ──────────────────────────────────────────────
@@ -483,7 +483,11 @@ class _ScanFeatureState extends State<ScanFeature>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.check_circle, color: Colors.white, size: 16),
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           loc.imageReady,

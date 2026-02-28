@@ -153,57 +153,60 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _showFarmerDetails(FarmerProfile farmer) async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     final isOwner = userId != null && userId == farmer.ownerId;
-    await showModalBottomSheet<void>(
+    await showDialog<void>(
       context: context,
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                farmer.name,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(farmer.description),
-              const SizedBox(height: 8),
-              Text('${AppLocalizations.of(context).phone}: ${farmer.phone}'),
-              Text(
-                '${AppLocalizations.of(context).address}: ${farmer.address}',
-              ),
-              if (isOwner) ...[
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          _onEditFarmerProfile(farmer);
-                        },
-                        icon: const Icon(Icons.edit),
-                        label: Text(AppLocalizations.of(context).edit),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          _deleteFarmerProfile(farmer);
-                        },
-                        icon: const Icon(Icons.delete),
-                        label: Text(AppLocalizations.of(context).delete),
-                      ),
-                    ),
-                  ],
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  farmer.name,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 8),
+                Text(farmer.description),
+                const SizedBox(height: 8),
+                Text('${AppLocalizations.of(context).phone}: ${farmer.phone}'),
+                Text(
+                  '${AppLocalizations.of(context).address}: ${farmer.address}',
+                ),
+                if (isOwner) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _onEditFarmerProfile(farmer);
+                          },
+                          icon: const Icon(Icons.edit),
+                          label: Text(AppLocalizations.of(context).edit),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _deleteFarmerProfile(farmer);
+                          },
+                          icon: const Icon(Icons.delete),
+                          label: Text(AppLocalizations.of(context).delete),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
@@ -211,29 +214,32 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _showCompanyDetails(Company company) async {
-    await showModalBottomSheet<void>(
+    await showDialog<void>(
       context: context,
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                company.name,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text('Type: ${company.type}'),
-              const SizedBox(height: 8),
-              Text('${AppLocalizations.of(context).phone}: ${company.phone}'),
-              Text(
-                '${AppLocalizations.of(context).address}: ${company.address}',
-              ),
-            ],
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  company.name,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text('Type: ${company.type}'),
+                const SizedBox(height: 8),
+                Text('${AppLocalizations.of(context).phone}: ${company.phone}'),
+                Text(
+                  '${AppLocalizations.of(context).address}: ${company.address}',
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -242,53 +248,56 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _showProductDetails(ProductListing product) async {
     final dateLabel = DateFormat.yMMMd().format(product.harvestDate);
-    await showModalBottomSheet<void>(
+    await showDialog<void>(
       context: context,
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: Color(product.colorValue),
-                    child: Icon(
-                      IconData(
-                        product.iconCodePoint,
-                        fontFamily: 'MaterialIcons',
-                      ),
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      product.cropName,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: Color(product.colorValue),
+                      child: Icon(
+                        IconData(
+                          product.iconCodePoint,
+                          fontFamily: 'MaterialIcons',
+                        ),
+                        color: Colors.white,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                AppLocalizations.of(
-                  context,
-                ).weightKg(product.weight.toStringAsFixed(2)),
-              ),
-              Text('${AppLocalizations.of(context).harvested}: $dateLabel'),
-              const SizedBox(height: 8),
-              Text(
-                '${AppLocalizations.of(context).contactLabel(product.contactNumber)}',
-              ),
-              Text(
-                '${AppLocalizations.of(context).address}: ${product.address}',
-              ),
-            ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        product.cropName,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  AppLocalizations.of(
+                    context,
+                  ).weightKg(product.weight.toStringAsFixed(2)),
+                ),
+                Text('${AppLocalizations.of(context).harvested}: $dateLabel'),
+                const SizedBox(height: 8),
+                Text(
+                  '${AppLocalizations.of(context).contactLabel(product.contactNumber)}',
+                ),
+                Text(
+                  '${AppLocalizations.of(context).address}: ${product.address}',
+                ),
+              ],
+            ),
           ),
         );
       },

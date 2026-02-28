@@ -41,4 +41,13 @@ class PlantData {
       'color': Color(0xFF388E3C),
     },
   ];
+
+  static IconData getIconForCrop(String cropName) {
+    for (final plant in allPlants) {
+      if (plant['name'] == cropName) {
+        return plant['icon'] as IconData;
+      }
+    }
+    return Icons.spa; // Default fallback icon
+  }
 }

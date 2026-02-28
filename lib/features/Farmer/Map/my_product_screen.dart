@@ -204,10 +204,7 @@ class _MyProductScreenState extends State<MyProductScreen> {
                               CircleAvatar(
                                 backgroundColor: Color(product.colorValue),
                                 child: Icon(
-                                  IconData(
-                                    product.iconCodePoint,
-                                    fontFamily: 'MaterialIcons',
-                                  ),
+                                  PlantData.getIconForCrop(product.cropName),
                                   color: Colors.white,
                                 ),
                               ),

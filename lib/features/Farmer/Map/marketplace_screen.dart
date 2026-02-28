@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/services/app_localizations.dart';
 
+import 'package:kita_agro/data/plant_data.dart';
 import 'package:kita_agro/models/product_listing.dart';
 import 'package:kita_agro/widgets/dynamic_contact_button.dart';
 
@@ -95,10 +96,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     CircleAvatar(
                       backgroundColor: Color(product.colorValue),
                       child: Icon(
-                        IconData(
-                          product.iconCodePoint,
-                          fontFamily: 'MaterialIcons',
-                        ),
+                        PlantData.getIconForCrop(product.cropName),
                         color: Colors.white,
                       ),
                     ),

@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'package:kita_agro/data/plant_data.dart';
 import 'package:kita_agro/models/company.dart';
 import 'package:kita_agro/models/farmer_profile.dart';
 import 'package:kita_agro/models/product_listing.dart';
@@ -264,10 +265,7 @@ class _MapScreenState extends State<MapScreen> {
                     CircleAvatar(
                       backgroundColor: Color(product.colorValue),
                       child: Icon(
-                        IconData(
-                          product.iconCodePoint,
-                          fontFamily: 'MaterialIcons',
-                        ),
+                        PlantData.getIconForCrop(product.cropName),
                         color: Colors.white,
                       ),
                     ),
@@ -406,10 +404,7 @@ class _MapScreenState extends State<MapScreen> {
                   onTap: () => _showProductDetails(product),
                   child: _ProductMarkerIcon(
                     color: Color(product.colorValue),
-                    iconData: IconData(
-                      product.iconCodePoint,
-                      fontFamily: 'MaterialIcons',
-                    ),
+                    iconData: PlantData.getIconForCrop(product.cropName),
                   ),
                 ),
               ),

@@ -1,8 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
+
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../core/services/gemini_api_service.dart';
 import '../../core/services/app_localizations.dart';
@@ -197,45 +196,11 @@ Provide helpful, accurate, and practical advice in $langName. Format your respon
 
 Answer the user's question in $langName:''';
 
-    final String urlString =
-        'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${_geminiService.apiKey}';
-
-    final Uri url = Uri.parse(urlString);
-
-    final requestBody = {
-      "contents": [
-        {
-          "parts": [
-            {"text": "$systemPrompt\n\n$userMessage"},
-          ],
-        },
-      ],
-      "generationConfig": {
-        "temperature": 0.7,
-        "topK": 40,
-        "topP": 0.95,
-        "maxOutputTokens": 1024,
-      },
-    };
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
-      );
-
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-        final text =
-            jsonResponse['candidates']?[0]?['content']?['parts']?[0]?['text'];
-        return text ?? "I couldn't generate a response. Please try again.";
-      } else {
-        return "Server error (${response.statusCode}). Please try again later.";
-      }
-    } catch (e) {
-      return "Connection error: $e";
-    }
+    // Use centralized service method to ensure correct model/URL
+    return await _geminiService.getChatResponse(
+      prompt: userMessage,
+      systemInstruction: systemPrompt,
+    );
   }
 
   void _scrollToBottom() {

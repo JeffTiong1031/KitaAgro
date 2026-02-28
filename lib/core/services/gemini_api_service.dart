@@ -529,6 +529,66 @@ Rules:
     }
   }
 
+  /// General chat response method
+  Future<String> getChatResponse({
+    required String prompt,
+    String? systemInstruction,
+    List<Map<String, dynamic>> history = const [],
+  }) async {
+    final String urlString =
+        'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent?key=$apiKey';
+    final Uri url = Uri.parse(urlString);
+
+    final List<Map<String, dynamic>> contents = [];
+    for (var msg in history) {
+      contents.add(msg);
+    }
+    contents.add({
+      "role": "user",
+      "parts": [
+        {"text": prompt},
+      ],
+    });
+
+    final Map<String, dynamic> requestBody = {
+      "contents": contents,
+      "generationConfig": {
+        "temperature": 0.7,
+        "topK": 40,
+        "topP": 0.95,
+        "maxOutputTokens": 1024,
+      },
+    };
+
+    if (systemInstruction != null) {
+      requestBody["system_instruction"] = {
+        "parts": [
+          {"text": systemInstruction},
+        ],
+      };
+    }
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['candidates']?[0]?['content']?['parts']?[0]?['text'] ??
+            "I couldn't generate a response.";
+      } else {
+        return "Error ${response.statusCode}: ${response.body}";
+      }
+    } catch (e) {
+      return "Connection error: $e";
+    }
+  }
+
+  static const String _model = 'gemini-2.5-flash';
+
   /// Translate analysis text to a target language using Gemini AI
   Future<String?> translateText({
     required String text,
@@ -538,7 +598,7 @@ Rules:
 
     final String langName = _languageName(targetLanguageCode);
     final String urlString =
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey';
+        'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent?key=$apiKey';
 
     final Uri url = Uri.parse(urlString);
 

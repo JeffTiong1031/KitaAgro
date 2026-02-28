@@ -12,7 +12,6 @@ class WelcomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        // 核心修复：使用 SingleChildScrollView 包裹 Column，消灭 1.2 像素溢出
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(

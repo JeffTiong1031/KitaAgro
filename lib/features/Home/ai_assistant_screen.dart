@@ -31,7 +31,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   void initState() {
     super.initState();
     _geminiService = GeminiApiService(
-      'AIzaSyBM5iu-EhSPggjAcQffEVUFLTq655xHea4',
+      'AIzaSyAUDApBmW0U8iMgOOCkY9pajLN-yG1voY4',
     );
     _loadUserContext();
     _addWelcomeMessage();

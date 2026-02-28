@@ -51,8 +51,7 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _selectedLanguage = widget.initialLanguage;
-    _aiService =
-        AiVideoCallService('AIzaSyAUDApBmW0U8iMgOOCkY9pajLN-yG1voY4');
+    _aiService = AiVideoCallService('AIzaSyAUDApBmW0U8iMgOOCkY9pajLN-yG1voY4');
     _initializeAll();
   }
 
@@ -140,9 +139,11 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
 
       final cameraIndex = _isUsingFrontCamera
           ? _cameras.indexWhere(
-              (c) => c.lensDirection == CameraLensDirection.front)
+              (c) => c.lensDirection == CameraLensDirection.front,
+            )
           : _cameras.indexWhere(
-              (c) => c.lensDirection == CameraLensDirection.back);
+              (c) => c.lensDirection == CameraLensDirection.back,
+            );
 
       final camera = _cameras[cameraIndex == -1 ? 0 : cameraIndex];
 
@@ -193,9 +194,8 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
     // Android requires specific engine setup
     await _flutterTts.setEngine('com.google.android.tts');
 
-    final lang =
-        AiVideoCallService.supportedLanguages[_selectedLanguage]!;
-    
+    final lang = AiVideoCallService.supportedLanguages[_selectedLanguage]!;
+
     // Check if the language is available
     final isAvailable = await _flutterTts.isLanguageAvailable(lang.ttsLanguage);
     debugPrint('TTS language ${lang.ttsLanguage} available: $isAvailable');
@@ -259,8 +259,7 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
       setState(() => _isSpeaking = false);
     }
 
-    final lang =
-        AiVideoCallService.supportedLanguages[_selectedLanguage]!;
+    final lang = AiVideoCallService.supportedLanguages[_selectedLanguage]!;
 
     setState(() {
       _isListening = true;
@@ -275,8 +274,12 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
       },
       localeId: lang.speechLocale,
       listenMode: stt.ListenMode.dictation,
-      cancelOnError: true,
+      cancelOnError: false, // Don't stop on minor glitches
       partialResults: true,
+      listenFor: const Duration(
+        minutes: 1,
+      ), // Keep listening for up to 5 minutes
+      pauseFor: const Duration(seconds: 30), // Allow 30 seconds of silence
     );
   }
 
@@ -303,10 +306,9 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
     final imageBytes = await _captureFrame();
 
     // Add to conversation history
-    _conversationHistory.add(ConversationMessage(
-      text: spokenText,
-      isUser: true,
-    ));
+    _conversationHistory.add(
+      ConversationMessage(text: spokenText, isUser: true),
+    );
 
     try {
       final response = await _aiService.analyzeFrameWithSpeech(
@@ -317,10 +319,9 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
       );
 
       // Add AI response to history
-      _conversationHistory.add(ConversationMessage(
-        text: response,
-        isUser: false,
-      ));
+      _conversationHistory.add(
+        ConversationMessage(text: response, isUser: false),
+      );
 
       // Add AI message to chat
       _addChatMessage(response, false);
@@ -328,8 +329,8 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
       // Speak the response
       await _speakResponse(response);
     } catch (e) {
-      final errorMsg = AiVideoCallService
-              .supportedLanguages[_selectedLanguage]?.name ??
+      final errorMsg =
+          AiVideoCallService.supportedLanguages[_selectedLanguage]?.name ??
           'Error processing your request.';
       _addChatMessage('Error: $errorMsg', false);
     } finally {
@@ -344,8 +345,7 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
     if (text.isEmpty) return;
 
     setState(() => _isSpeaking = true);
-    final lang =
-        AiVideoCallService.supportedLanguages[_selectedLanguage]!;
+    final lang = AiVideoCallService.supportedLanguages[_selectedLanguage]!;
 
     try {
       await _flutterTts.setLanguage(lang.ttsLanguage);
@@ -353,7 +353,9 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
       await _flutterTts.setVolume(1.0);
       await _flutterTts.setPitch(1.0);
 
-      debugPrint('TTS speaking in ${lang.ttsLanguage}: ${text.substring(0, text.length > 50 ? 50 : text.length)}...');
+      debugPrint(
+        'TTS speaking in ${lang.ttsLanguage}: ${text.substring(0, text.length > 50 ? 50 : text.length)}...',
+      );
       var result = await _flutterTts.speak(text);
       debugPrint('TTS speak result: $result');
 
@@ -374,11 +376,9 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
 
   void _addChatMessage(String text, bool isUser) {
     setState(() {
-      _chatMessages.add(_ChatBubble(
-        text: text,
-        isUser: isUser,
-        timestamp: DateTime.now(),
-      ));
+      _chatMessages.add(
+        _ChatBubble(text: text, isUser: isUser, timestamp: DateTime.now()),
+      );
     });
     // Scroll to bottom
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -506,10 +506,7 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0.7),
-              Colors.transparent,
-            ],
+            colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent],
           ),
         ),
         child: Row(
@@ -557,7 +554,8 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                itemBuilder: (_) => AiVideoCallService.supportedLanguages
+                itemBuilder: (_) => AiVideoCallService
+                    .supportedLanguages
                     .entries
                     .map(
                       (e) => PopupMenuItem(
@@ -565,8 +563,11 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
                         child: Row(
                           children: [
                             if (e.key == _selectedLanguage)
-                              const Icon(Icons.check,
-                                  color: Colors.green, size: 18)
+                              const Icon(
+                                Icons.check,
+                                color: Colors.green,
+                                size: 18,
+                              )
                             else
                               const SizedBox(width: 18),
                             const SizedBox(width: 8),
@@ -585,8 +586,11 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
                       lang.name,
                       style: const TextStyle(color: Colors.white, fontSize: 14),
                     ),
-                    const Icon(Icons.arrow_drop_down,
-                        color: Colors.white, size: 18),
+                    const Icon(
+                      Icons.arrow_drop_down,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ],
                 ),
               ),
@@ -682,9 +686,11 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.smart_toy,
-                        size: 14,
-                        color: Colors.green.shade700),
+                    Icon(
+                      Icons.smart_toy,
+                      size: 14,
+                      color: Colors.green.shade700,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'KitaAgro AI',
@@ -792,10 +798,7 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0.8),
-              Colors.transparent,
-            ],
+            colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
           ),
         ),
         child: Row(
@@ -836,7 +839,7 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
                             color: Colors.red.withValues(alpha: 0.5),
                             blurRadius: 20,
                             spreadRadius: 5,
-                          )
+                          ),
                         ]
                       : [],
                 ),
@@ -896,11 +899,15 @@ class _AiVideoCallScreenState extends State<AiVideoCallScreen>
   String _getWelcomeMessage() {
     const messages = {
       'zh': '按下麦克风按钮，向我展示您的农作物并用中文与我交流。',
-      'ms': 'Tekan butang mikrofon, tunjukkan tanaman anda dan bercakap dengan saya dalam Bahasa Melayu.',
-      'ta': 'மைக்ரோஃபோன் பொத்தானை அழுத்தி, உங்கள் பயிர்களைக் காட்டி தமிழில் என்னிடம் பேசுங்கள்.',
+      'ms':
+          'Tekan butang mikrofon, tunjukkan tanaman anda dan bercakap dengan saya dalam Bahasa Melayu.',
+      'ta':
+          'மைக்ரோஃபோன் பொத்தானை அழுத்தி, உங்கள் பயிர்களைக் காட்டி தமிழில் என்னிடம் பேசுங்கள்.',
       'en': 'Press the microphone button, show me your crops, and talk to me.',
-      'hi': 'माइक्रोफ़ोन बटन दबाएं, मुझे अपनी फसलें दिखाएं और हिंदी में बात करें।',
-      'id': 'Tekan tombol mikrofon, tunjukkan tanaman Anda, dan bicara dengan saya dalam Bahasa Indonesia.',
+      'hi':
+          'माइक्रोफ़ोन बटन दबाएं, मुझे अपनी फसलें दिखाएं और हिंदी में बात करें।',
+      'id':
+          'Tekan tombol mikrofon, tunjukkan tanaman Anda, dan bicara dengan saya dalam Bahasa Indonesia.',
     };
     return messages[_selectedLanguage] ?? messages['en']!;
   }
